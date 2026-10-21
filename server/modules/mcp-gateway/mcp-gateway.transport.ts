@@ -560,7 +560,10 @@ export function createMcpGatewayModule(deps: McpGatewayModuleDeps): McpGatewayDe
     writeTools: {
       ...writeTools,
       control,
-      runs: { getRun: (sessionId: string) => chatRunRegistry.getRun(sessionId) },
+      runs: {
+        getRun: (sessionId: string) => chatRunRegistry.getRun(sessionId),
+        getRunReadback: (runId: string) => chatRunRegistry.getRunReadback(runId),
+      },
       runGet: { ...writeTools.runGet, deps: { ...writeTools.runGet.deps, runs: chatRunRegistry } },
     },
   };

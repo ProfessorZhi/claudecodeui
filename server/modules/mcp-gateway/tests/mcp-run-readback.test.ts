@@ -395,3 +395,24 @@ test('native message reference cannot read through a changed session mapping or 
     assert.equal((result as any).resultAttribution, 'terminal_result_snapshot');
   }
 });
+
+test('production gateway assembly advertises the actual SQLite admission receipt on a send ACK', async () => {
+  const { createChatControlService } = await import('@/modules/websocket/index.js');
+  const { createMcpGatewayModule } = await import('../index.js');
+  const sessionId = 'durable-admission-ack';
+  database.sessionsDb.createSession(sessionId, 'claude', scratch, 'ACK fixture', new Date().toISOString(), new Date().toISOString(), null);
+  let release!: () => void; const held = new Promise<void>(resolve => { release = resolve; });
+  const control = createChatControlService({ runtime: { hasRuntime: () => true, abort: async () => true,
+    run: async (_provider: unknown, _command: unknown, _options: unknown, writer: any) => { await held; writer.sendComplete({ exitCode: 0 }); },
+  } } as any);
+  const tokens = createAccessTokensService({ now: () => new Date() });
+  const issued = tokens.issueToken({ userId: 1, scopes: ['cloudcli:session:send'] }); assert.ok(issued.ok); if (!issued.ok) throw new Error('fixture');
+  const runGet = { ...setup().deps }; const app = express(); app.use(express.json());
+  mountMcpGateway(app, createMcpGatewayModule({ env: { MCP_ENABLED: 'true' }, tokens, control, writeTools: { runGet: { deps: runGet, build: buildRunGet } } }));
+  const server = app.listen(0, '127.0.0.1'); await new Promise<void>(resolve => server.once('listening', resolve));
+  try {
+    const ack = await callWire((server.address() as any).port, issued.token.token, 'session_send', { session: sessionId, message: 'held admission' });
+    assert.equal(ack.result.isError, undefined); assert.equal(ack.result.structuredContent.durability, 'sqlite');
+    assert.equal(receipts.read(ack.result.structuredContent.runId).status, 'running');
+  } finally { release(); await new Promise<void>(resolve => setImmediate(resolve)); await new Promise<void>(resolve => server.close(() => resolve())); }
+});
