@@ -29,7 +29,7 @@
  * the bags carry the instance it was given.
  */
 
-import type { providerCapabilitiesService, providerModelsService } from '@/modules/providers/index.js';
+import type { providerCapabilitiesService } from '@/modules/providers/index.js';
 import type { LLMProvider, ProjectRepositoryRow } from '@/shared/types.js';
 
 import type {
@@ -74,7 +74,7 @@ export type McpSessionCreateWiring = {
    * verify against the matrix.
    */
   capabilities?: Pick<typeof providerCapabilitiesService, 'getProviderCapabilities'>;
-  models?: Pick<typeof providerModelsService, 'setSessionPermissionMode'>;
+  models?: McpSessionCreateDeps['models'];
 };
 
 /**

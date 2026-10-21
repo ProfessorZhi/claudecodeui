@@ -117,7 +117,9 @@ export type McpSessionCreateDeps = {
    */
   capabilities?: Pick<typeof providerCapabilitiesService, 'getProviderCapabilities'>;
   /** The session-row writer for the recorded permission mode (the same service `session_reconfigure` uses). */
-  models?: Pick<typeof providerModelsService, 'setSessionPermissionMode'>;
+  models?: Pick<typeof providerModelsService, 'setSessionPermissionMode'> & Partial<
+    Pick<typeof providerModelsService, 'setSessionModel' | 'resolveSessionModel'>
+  >;
 };
 
 /** The services `session_interrupt` answers from. */
@@ -268,6 +270,14 @@ export async function buildSessionCreate(
   }
 
   const provider = input.provider ?? ('claude' as LLMProvider);
+  const model = input.model?.trim();
+  if (input.model !== undefined && !model) {
+    throw new McpToolError(MCP_ERROR_CODES.INVALID_ARGUMENT, 'An explicit model must not be empty.');
+  }
+  if ((model !== undefined && (!deps.models?.setSessionModel || !deps.models.resolveSessionModel))
+    || (input.permissionMode !== undefined && !deps.models)) {
+    throw new McpToolError(MCP_ERROR_CODES.MCP_TOOL_NOT_IMPLEMENTED, 'Session configuration persistence and readback are not wired.');
+  }
 
   // Refuse an unsupported permission mode BEFORE the row exists: the same read
   // `session_reconfigure` performs, against the same matrix. With the matrix
@@ -290,8 +300,26 @@ export async function buildSessionCreate(
   // Record the mode on the row right after creation, so it is readable even when
   // no message follows (the session is configured, just not started) and every
   // later turn inherits it.
-  if (input.permissionMode !== undefined && deps.models !== undefined) {
-    deps.models.setSessionPermissionMode(provider, created.sessionId, input.permissionMode);
+  try {
+    if (input.permissionMode !== undefined) {
+      const saved = deps.models!.setSessionPermissionMode(provider, created.sessionId, input.permissionMode);
+      if (saved?.source !== 'session' || saved.sessionId !== created.sessionId || saved.provider !== provider || saved.permissionMode !== input.permissionMode) {
+        throw new Error('Permission persistence was not confirmed.');
+      }
+    }
+    if (model !== undefined) {
+      deps.models!.setSessionModel!(provider, created.sessionId, model);
+      // Never pass requestedModel here: that fallback would turn an echo of the
+      // request into false proof that the real session configuration was saved.
+      const effective = await deps.models!.resolveSessionModel!(provider, { sessionId: created.sessionId });
+      if (effective.source !== 'session' || effective.provider !== provider || effective.sessionId !== created.sessionId
+        || effective.model !== model || (input.permissionMode !== undefined && effective.permissionMode !== input.permissionMode)) {
+        throw new Error('The effective session configuration does not match.');
+      }
+    }
+  } catch {
+    throw new McpToolError('SESSION_CONFIGURATION_FAILED', 'The session exists, but its requested configuration could not be confirmed; no initial message was sent.', false,
+      { sessionId: created.sessionId, mayHaveCreatedSession: true, retrySafe: false });
   }
 
   if (input.lifecycleMode !== undefined) {
@@ -313,9 +341,12 @@ export async function buildSessionCreate(
   // reading rather than a convention.
   const sent = await deps.control.send(
     caller,
-    input.permissionMode === undefined
+    input.permissionMode === undefined && model === undefined
       ? { sessionId: created.sessionId, content: message }
-      : { sessionId: created.sessionId, content: message, options: { permissionMode: input.permissionMode } },
+      : { sessionId: created.sessionId, content: message, options: {
+        ...(input.permissionMode === undefined ? {} : { permissionMode: input.permissionMode }),
+        ...(model === undefined ? {} : { model }),
+      } },
   );
   if (!sent.ok) {
     throw new McpToolError(sent.code, sent.message, false, { sessionId: created.sessionId });
