@@ -27,3 +27,6 @@ The parent explicitly requires actual result recovery for Codex without a stable
 
 ## MCP queue receipt fence
 A SESSION_BUSY error may name the current run only as context; it is not a new ACK and creates no new receipt. For an MCP busy-accepted attempt without this writer's own queue UUID, return QUEUE_ACCEPTANCE_UNKNOWN with its actual registered ticket, mayHaveExecuted=true and retrySafe=false. Do not invent the newest queue entry or report accepted/queued success. Preserve the owner record for later reconciliation. Legacy interactive WebSocket degraded-UUID behavior remains unchanged.
+
+## Attribution review corrections
+Opaque queue UUIDs are meaningful only within the actual receiving writer's app session and provider family. Both immediate lifecycle propagation and cached late binding must apply that scope while retaining legitimate cross-round events within one scope. Terminal writers cannot retarget their native session; SQLite freezes terminal providerSessionId as well as the result. A superseded running writer may record its own native identity, but cannot replace an already bound newer current session. Native history lookup must verify the current session's native ID and family against the receipt before following an opaque message ID; otherwise return the writer-bound snapshot.

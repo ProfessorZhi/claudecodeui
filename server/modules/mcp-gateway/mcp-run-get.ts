@@ -149,6 +149,9 @@ export type McpRunGetDeps = {
   sessions: {
     fetchHistory(sessionId: string, options: { limit: number }): Promise<{ messages: NormalizedMessage[] }>;
     fetchWindowAround?(sessionId: string, options: { aroundId: string; before: number; after: number }): Promise<{ messages: NormalizedMessage[] }>;
+    /** Native references are scoped to the receipt's exact conversation/family. */
+    resolveProviderSessionId?(sessionId: string): string | null;
+    readSessionLifecycle?(sessionId: string): { provider: string } | null;
   };
   now: () => number;
   sleep: (ms: number) => Promise<void>;
@@ -261,11 +264,14 @@ async function buildHit(
   const evidence = deps.runs.getRunReadback?.(runId) ?? null;
   let lastAssistantMessage = summary.status === 'running' ? null : evidence?.lastAssistantMessage ?? null;
   let attribution: McpRunGetHit['resultAttribution'] = lastAssistantMessage ? 'run_events' : evidence?.terminal ? 'terminal_receipt' : 'unavailable';
-  if (!lastAssistantMessage && evidence?.assistantMessageId && deps.sessions.fetchWindowAround) {
+  if (!lastAssistantMessage && evidence?.assistantMessageId && evidence.providerSessionId && deps.sessions.fetchWindowAround) {
     try {
-      const window = await deps.sessions.fetchWindowAround(summary.sessionId, { aroundId: evidence.assistantMessageId, before: 0, after: 0 });
-      lastAssistantMessage = window.messages.find(message => message.role === 'assistant' && (message.id === evidence.assistantMessageId || message.transcriptAnchorId === evidence.assistantMessageId)) ?? null;
-      if (lastAssistantMessage) attribution = 'native_message_reference';
+      if (deps.sessions.resolveProviderSessionId?.(summary.sessionId) === evidence.providerSessionId
+        && deps.sessions.readSessionLifecycle?.(summary.sessionId)?.provider === evidence.provider) {
+        const window = await deps.sessions.fetchWindowAround(summary.sessionId, { aroundId: evidence.assistantMessageId, before: 0, after: 0 });
+        lastAssistantMessage = window.messages.find(message => message.provider === evidence.provider && message.role === 'assistant' && (message.id === evidence.assistantMessageId || message.transcriptAnchorId === evidence.assistantMessageId)) ?? null;
+        if (lastAssistantMessage) attribution = 'native_message_reference';
+      }
     } catch { /* Terminal proof survives an unavailable/missing exact native reference. */ }
   }
   const snapshotResult = evidence?.resultSnapshot ?? null;

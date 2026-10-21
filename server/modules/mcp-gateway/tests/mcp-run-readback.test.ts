@@ -335,3 +335,63 @@ test('MCP busy acceptance without this writer queue UUID is unknown, never a fab
     });
   } finally { release(); await new Promise<void>(resolve => setImmediate(resolve)); }
 });
+
+
+test('opaque queue UUID cannot cross the emitting writer session or provider family', () => {
+  const h = setup(); const shared = 'opaque-reused-uuid';
+  h.registry.setRunQueuedInput(h.run.runId, shared);
+  const other = h.registry.startRun({ appSessionId: 'other-queue-session', provider: 'claude', providerSessionId: 'other-native', connection: null, userId: 1 })!;
+  other.writer.send(createNormalizedMessage({ kind: 'command_lifecycle', provider: 'claude', commandUuid: shared, commandState: 'cancelled' }));
+  assert.equal(h.registry.getRunReadback(h.run.runId)!.queueState, 'queued');
+  const foreign = h.registry.startRun({ appSessionId: h.sessionId, provider: 'codex', providerSessionId: 'other-family-native', connection: null, userId: 1, supersedeRunning: true })!;
+  // The caller-visible label cannot override the receiving writer context.
+  foreign.writer.send(createNormalizedMessage({ kind: 'command_lifecycle', provider: 'claude', commandUuid: shared, commandState: 'started' }));
+  assert.equal(h.registry.getRunReadback(h.run.runId)!.queueState, 'queued');
+});
+
+test('late queue UUID binding cannot adopt cached lifecycle events from another session', () => {
+  const h = setup(); const shared = 'late-reused-uuid';
+  const other = h.registry.startRun({ appSessionId: 'other-late-queue-session', provider: 'claude', providerSessionId: 'other-native', connection: null, userId: 1 })!;
+  other.writer.send(createNormalizedMessage({ kind: 'command_lifecycle', provider: 'claude', commandUuid: shared, commandState: 'started' }));
+  h.registry.setRunQueuedInput(h.run.runId, shared);
+  assert.equal(h.registry.getRunReadback(h.run.runId)!.queueState, 'queued');
+});
+
+test('terminal writer cannot retarget its native receipt or the newer current session', () => {
+  const h = setup();
+  database.sessionsDb.createSession(h.sessionId, 'claude', scratch, 'Owner fixture', new Date().toISOString(), new Date().toISOString(), null);
+  h.run.writer.setSessionId('native-before-complete'); h.run.writer.sendComplete({ exitCode: 0 });
+  const newer = h.registry.startRun({ appSessionId: h.sessionId, provider: 'claude', providerSessionId: null, connection: null, userId: 1 })!;
+  newer.writer.setSessionId('native-current-run');
+  h.run.writer.setSessionId('native-old-writer-after-complete');
+  assert.equal(receipts.read(h.run.runId).providerSessionId, 'native-before-complete');
+  assert.equal(database.sessionsDb.getSessionById(h.sessionId)!.provider_session_id, 'native-current-run');
+  assert.throws(() => receipts.write({ ...receipts.read(h.run.runId), providerSessionId: 'retarget-terminal' }));
+});
+
+test('running initialization binds native identity while superseded writer cannot replace current mapping', () => {
+  const h = setup();
+  database.sessionsDb.createSession(h.sessionId, 'claude', scratch, 'Owner fixture', new Date().toISOString(), new Date().toISOString(), null);
+  h.run.writer.setSessionId('native-initial');
+  assert.equal(database.sessionsDb.getSessionById(h.sessionId)!.provider_session_id, 'native-initial');
+  const newer = h.registry.startRun({ appSessionId: h.sessionId, provider: 'claude', providerSessionId: null, connection: null, userId: 1, supersedeRunning: true })!;
+  newer.writer.setSessionId('native-current'); h.run.writer.setSessionId('native-superseded');
+  assert.equal(receipts.read(h.run.runId).providerSessionId, 'native-superseded');
+  assert.equal(database.sessionsDb.getSessionById(h.sessionId)!.provider_session_id, 'native-current');
+});
+
+test('native message reference cannot read through a changed session mapping or family', async () => {
+  const h = setup();
+  h.run.writer.send(createNormalizedMessage({ id: 'opaque-assistant-id', kind: 'text', provider: 'claude', role: 'assistant', content: 'OWN SNAPSHOT' }));
+  h.run.writer.sendComplete({ exitCode: 0 });
+  const cold = createChatRunRegistry({ bootId: () => 'another-boot', receipts });
+  for (const [nativeId, provider] of [['foreign-native', 'claude'], ['native-session', 'codex']] as const) {
+    let foreignReads = 0;
+    const result = await buildRunGet({ runId: h.run.runId }, { ...h.deps, runs: cold, bootId: () => 'another-boot', sessions: {
+      ...h.deps.sessions, resolveProviderSessionId: () => nativeId, readSessionLifecycle: () => ({ provider }),
+      fetchWindowAround: async () => { foreignReads++; return { messages: [createNormalizedMessage({ id: 'opaque-assistant-id', kind: 'text', provider, role: 'assistant', content: 'FOREIGN RESULT' })] }; },
+    } } as any);
+    assert.equal(foreignReads, 0); assert.equal((result as any).lastAssistantMessage.content, 'OWN SNAPSHOT');
+    assert.equal((result as any).resultAttribution, 'terminal_result_snapshot');
+  }
+});
