@@ -100,7 +100,8 @@ export type McpGatewayToolName =
   | 'approval_answer'
   // gap-mcp-ui-open-session: registered alongside `MCP_STAGE4_WRITE_TOOLS` (it
   // is the sixth write tool but not one of AC-249's five), so it is named here.
-  | 'ui_open_session';
+  | 'ui_open_session'
+  | 'project_create';
 
 /**
  * The annotation every registered tool declares, keyed by tool name.
@@ -140,6 +141,9 @@ export const MCP_TOOL_ANNOTATIONS: Record<McpGatewayToolName, ToolAnnotations> =
   // matches. The scan touches files on disk, but it drives no provider agent and
   // mutates no CloudCLI state, so the world stays closed.
   session_search: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+
+  // Creates a directory and project row; repeats of active paths are conflicts.
+  project_create: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
 
   // -- stage-4 write tools ---------------------------------------------------
   // additive: a message is queued/sent and a run starts; nothing is discarded.

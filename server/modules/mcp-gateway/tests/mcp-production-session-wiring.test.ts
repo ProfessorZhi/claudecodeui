@@ -115,7 +115,7 @@ function say(line: string): void {
 
 const MODULE_FN = 'createMcpGatewayModule';
 const WRITE_TOOLS_MEMBER = 'writeTools';
-const REQUIRED_MEMBERS = ['sessionCreate', 'sessionInterrupt', 'sessionHostControl'] as const;
+const REQUIRED_MEMBERS = ['sessionCreate', 'sessionInterrupt', 'sessionHostControl', 'projectCreate'] as const;
 /** The singletons the WebSocket / scheduled paths already share, per AC-253. */
 const SHARED_SINGLETONS = ['chatControl', 'sessionsService', 'sessionHostManager'] as const;
 const SHARED_CONSUMERS = ['createWebSocketServer', 'initializeScheduledMessageDispatcher'] as const;
@@ -370,6 +370,12 @@ test('(a) server/index.ts hands sessionCreate / sessionInterrupt / sessionHostCo
   // `sessionsService` + `chatControl`, `session_interrupt` reaching the one
   // `chatControl`, and `sessionHostControl` reaching `sessionHostManager` are
   // properties of the assembly, not of a comment.
+  const projectCreate = memberIdentifiers(real, 'projectCreate');
+  assert.ok(projectCreate.includes('createProjectWithinWorkspaceRoot'), 'projectCreate must bind the projects rooted service');
+  assert.ok(projectCreate.includes('WORKSPACES_ROOT'), 'projectCreate must use the device-configured root');
+  const withoutProject = scanWriteToolsWiring(withoutWriteToolsMember(indexSource, 'projectCreate'));
+  assert.ok(!withoutProject.members.some((member) => member.name === 'projectCreate'));
+
   const sessionCreate = memberIdentifiers(real, 'sessionCreate');
   const sessionInterrupt = memberIdentifiers(real, 'sessionInterrupt');
   const sessionHostControl = memberIdentifiers(real, 'sessionHostControl');

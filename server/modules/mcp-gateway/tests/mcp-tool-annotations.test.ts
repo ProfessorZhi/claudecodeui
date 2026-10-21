@@ -249,6 +249,7 @@ test('(c) the read-only set is the seven read tools plus approvals_list; no writ
     'session_reconfigure',
     'session_background',
     'approval_answer',
+    'project_create',
   ];
   for (const name of writes) {
     assert.equal(

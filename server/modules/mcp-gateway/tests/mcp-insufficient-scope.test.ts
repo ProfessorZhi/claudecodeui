@@ -133,6 +133,7 @@ function declaredToolScopes(): Map<string, string> {
   // gap-mcp-ui-open-session: registered alongside the stage-4 table, so it is
   // not covered by the loop above.
   scopes.set('ui_open_session', NAVIGATE_SCOPE);
+  scopes.set('project_create', SESSION_CREATE_SCOPE);
   return scopes;
 }
 

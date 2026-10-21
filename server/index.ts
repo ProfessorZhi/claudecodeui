@@ -61,6 +61,7 @@ import {
 } from './modules/oauth/index.js';
 import { createSystemModule } from './modules/system/index.js';
 import projectModuleRoutes from './modules/projects/projects.routes.js';
+import { createProjectWithinWorkspaceRoot } from './modules/projects/index.js';
 import notificationRoutes from './modules/notifications/notifications.routes.js';
 import { userRoutes } from './modules/user/index.js';
 import {
@@ -732,6 +733,9 @@ const mcpGateway = mountMcpGateway(
         // `runGet` reuses AC-248's deps so a `waitSeconds` send and a `run_get`
         // wait move through one clock.
         writeTools: {
+            projectCreate: {
+                createProject: (input) => createProjectWithinWorkspaceRoot(input, process.env.WORKSPACES_ROOT),
+            },
             runGet: { deps: mcpRunGetDeps, build: buildRunGet },
             // AC-272: an options-less `session_send` reads the session's recorded
             // model/effort/permissionMode and puts them on the run, so a
