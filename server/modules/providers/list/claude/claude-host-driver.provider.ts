@@ -2563,12 +2563,18 @@ export class ClaudeResidentHostDriver implements IProviderHostDriver {
    * which the websocket control service's busy-send branch reads
    * (`chat-control.service.ts`).
    */
-  queuedInputUuid(appSessionId: string): string | null {
+  queuedInputUuid(appSessionId: string, writer?: ProviderRuntimeWriter): string | null {
     const state = this.liveStateFor(appSessionId);
     if (!state || state.closed) {
       return null;
     }
 
+    if (writer) {
+      const round = state.rounds.find(candidate => candidate.writer === writer);
+      if (!round) return null;
+      const own = state.queuedInputs.find(input => round.queuedUuids.includes(input.uuid) && input.startedAt === null);
+      return own?.uuid ?? null;
+    }
     for (let index = state.queuedInputs.length - 1; index >= 0; index -= 1) {
       const input = state.queuedInputs[index];
       if (input.startedAt === null) {

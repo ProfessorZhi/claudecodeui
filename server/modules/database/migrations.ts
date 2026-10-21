@@ -5,6 +5,7 @@ import { Database } from 'better-sqlite3';
 import { isSelfAssignedSessionName, stripSelfAssignedSuffix } from '@/modules/database/repositories/sessions.db.js';
 import {
   ACCESS_TOKENS_TABLE_SCHEMA_SQL,
+  CHAT_RUN_RECEIPTS_TABLE_SCHEMA_SQL,
   APP_CONFIG_TABLE_SCHEMA_SQL,
   LAST_SCANNED_AT_SQL,
   MCP_AUDIT_LOG_TABLE_SCHEMA_SQL,
@@ -1069,6 +1070,7 @@ export const runMigrations = (db: Database) => {
     // retention sweep, which scans by `at`. An existing table is widened with
     // `denied_scopes` (AC-286) by the guarded migration that follows.
     db.exec(MCP_AUDIT_LOG_TABLE_SCHEMA_SQL);
+    db.exec(CHAT_RUN_RECEIPTS_TABLE_SCHEMA_SQL);
     addMcpAuditLogDeniedScopesColumn(db);
     db.exec('CREATE INDEX IF NOT EXISTS idx_mcp_audit_log_at ON mcp_audit_log(at)');
     // The browser's last-opened session (gap-mcp-ui-last-opened-session). One row,

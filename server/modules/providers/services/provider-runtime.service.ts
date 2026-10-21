@@ -388,7 +388,7 @@ type ResidentTurnEntry = {
    * the driver's own memory: the message was written before the dispatch that
    * queued it resolved, so there is no I/O to await.
    */
-  queuedInputUuid?(appSessionId: string): string | null;
+  queuedInputUuid?(appSessionId: string, writer?: ProviderRuntimeWriter): string | null;
   /**
    * Stops one named background task the resident process is running, leaving
    * the turn and the process alone.
@@ -767,14 +767,14 @@ export function createProviderRuntimeService(
      * "queued with an empty uuid" would be a lie. Consumed by the websocket
      * control service's busy-send branch (`chat-control.service.ts`).
      */
-    async queuedInputUuid(providerName: LLMProvider, sessionId: string): Promise<string | null> {
+    async queuedInputUuid(providerName: LLMProvider, sessionId: string, writer?: ProviderRuntimeWriter): Promise<string | null> {
       try {
         const resolved = resolveResidentDriver(dependencies.resolveProvider(providerName), sessionId);
         const read = resolved?.entry.queuedInputUuid;
         if (!resolved || typeof read !== 'function') {
           return null;
         }
-        const uuid = read.call(resolved.entry, sessionId);
+        const uuid = read.call(resolved.entry, sessionId, writer);
         return typeof uuid === 'string' && uuid.length > 0 ? uuid : null;
       } catch {
         return null;

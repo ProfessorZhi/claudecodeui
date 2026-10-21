@@ -71,3 +71,6 @@ export { voiceSettingsDb } from '@/modules/database/repositories/voice-settings.
 export { voiceUserIdentifiersDb } from '@/modules/database/repositories/voice-user-identifiers.db.js';
 export { scheduledMessagesDb } from './repositories/scheduled-messages.db.js';
 export type { ScheduledMessageRow, ScheduledMessageStatus } from './repositories/scheduled-messages.db.js';
+
+// Sole chatRunRegistry owner uses the existing sessions DB for durable receipts.
+export { chatRunReceiptsDb } from '@/modules/database/repositories/chat-run-receipts.db.js';

@@ -174,7 +174,7 @@ export type ProviderRuntimeGateway = {
    * an id that no withdrawal can match. Only the resident drivers can answer
    * this — a process-per-turn provider has no queue to name a message in.
    */
-  queuedInputUuid?(provider: LLMProvider, sessionId: string): Promise<string | null>;
+  queuedInputUuid?(provider: LLMProvider, sessionId: string, writer?: ProviderRuntimeWriter): Promise<string | null>;
   /**
    * Stops one named background task through the provider's own process.
    *
@@ -813,81 +813,82 @@ export async function dispatchRun(
     return { started: false, error: 'A run is already in progress for this session.' };
   }
 
-  const rawClientOptions = (data.options ?? {}) as AnyRecord;
-  const clientOptions = (dependencies.dropClientEnv ?? withoutClientEnv)(rawClientOptions);
-  const command = typeof data.content === 'string' ? data.content : '';
-
-  // THE ONE PLACE a message the person composed is recorded into the U-source
-  // lexicon. `dispatchRun` is the single funnel every accepted human turn passes
-  // through — the control service's `chat.send` and the inline `chat.edit-send`
-  // both land here — so this is the whole auto-record path, not one of several.
-  // A second hook anywhere else would count a message twice, which is exactly the
-  // number this index exists to report.
-  //
-  // It is deliberately AFTER the `!run` refusal above: a turn that was refused
-  // because the session was busy was never sent, so its words are not something
-  // the user said yet. `command` is what the comment below already calls "a
-  // message somebody composed"; the injected prompts and credential-style
-  // messages are filtered inside the lexicon, so no caller has to know the rules.
-  voiceLexicon.observeSentText(command, session.project_path ?? '');
-
-  // Record what this turn runs with so reopening the session later restores the
-  // same model and reasoning effort, and so the resume path has a
-  // session-scoped model answer to use.
-  if (typeof clientOptions.model === 'string' && clientOptions.model.trim()) {
-    providerModelsService.setSessionModel(provider, sessionId, clientOptions.model);
-  }
-  if (typeof clientOptions.effort === 'string' && clientOptions.effort.trim()) {
-    providerModelsService.setSessionEffort(provider, sessionId, clientOptions.effort);
-  }
-  // The permission mode is a session attribute the client no longer persists
-  // anywhere, so this send is the only place it can be recorded. Only a mode
-  // the provider's capability matrix lists is stored; an unsupported one is
-  // ignored rather than rejected, because the run still has to go out and the
-  // client would otherwise be told its message failed over a display detail.
-  if (typeof clientOptions.permissionMode === 'string' && clientOptions.permissionMode.trim()) {
-    providerModelsService.setSessionPermissionMode(provider, sessionId, clientOptions.permissionMode);
-  }
-
-  const attachmentCandidates = [
-    ...normalizeAttachmentDescriptors(clientOptions.images),
-    ...normalizeAttachmentDescriptors(clientOptions.files),
-    ...normalizeAttachmentDescriptors(clientOptions.attachments),
-  ];
-  const verifiedAttachments = filterAttachmentsToUploadStore(attachmentCandidates);
-  const uniqueAttachments = verifiedAttachments.filter(
-    (descriptor, index, all) => all.findIndex((candidate) => candidate.path === descriptor.path) === index,
-  );
-
-  // The provider runtimes receive the stable app session id. When their
-  // CLI/SDK needs the provider-native id for resume, they resolve it from the
-  // session row themselves (sessionsService.resolveProviderSessionId).
-  // Brand-new sessions have no provider id yet, so the runtime starts fresh
-  // and announces one, which the gateway writer captures and maps back to the
-  // app session id.
-  const runtimeOptions: AnyRecord = {
-    ...clientOptions,
-    ...extraRuntimeOptions,
-    // Attachments are re-validated server-side: only direct children of the
-    // global upload store may reach provider runtimes or their file tools.
-    attachments: uniqueAttachments,
-    images: uniqueAttachments.filter(isImageAttachmentDescriptor),
-    files: uniqueAttachments.filter((descriptor) => !isImageAttachmentDescriptor(descriptor)),
-    sessionId,
-    cwd: clientOptions.cwd ?? session.project_path ?? undefined,
-    projectPath: session.project_path ?? clientOptions.projectPath,
-    // This dispatch's `command` is a message somebody composed — typed now, or
-    // scheduled earlier and fired by the timer below. Marked here and not left
-    // to the runtime to infer, because the runtime cannot: an internal driver
-    // reaching the same entry passes the same option keys with a *label* in
-    // `command`, and a provider that records the prompt it was handed (the
-    // debug agent, whose "process" runs a scenario instead of a CLI that would
-    // write the row itself) has no other way to tell the two apart.
-    [CHAT_TURN_OPTION]: true,
-  };
-
   let failure: string | null = null;
   try {
+    const rawClientOptions = (data.options ?? {}) as AnyRecord;
+    const clientOptions = (dependencies.dropClientEnv ?? withoutClientEnv)(rawClientOptions);
+    const command = typeof data.content === 'string' ? data.content : '';
+
+    // THE ONE PLACE a message the person composed is recorded into the U-source
+    // lexicon. `dispatchRun` is the single funnel every accepted human turn passes
+    // through — the control service's `chat.send` and the inline `chat.edit-send`
+    // both land here — so this is the whole auto-record path, not one of several.
+    // A second hook anywhere else would count a message twice, which is exactly the
+    // number this index exists to report.
+    //
+    // It is deliberately AFTER the `!run` refusal above: a turn that was refused
+    // because the session was busy was never sent, so its words are not something
+    // the user said yet. `command` is what the comment below already calls "a
+    // message somebody composed"; the injected prompts and credential-style
+    // messages are filtered inside the lexicon, so no caller has to know the rules.
+    voiceLexicon.observeSentText(command, session.project_path ?? '');
+
+    // Record what this turn runs with so reopening the session later restores the
+    // same model and reasoning effort, and so the resume path has a
+    // session-scoped model answer to use.
+    if (typeof clientOptions.model === 'string' && clientOptions.model.trim()) {
+      providerModelsService.setSessionModel(provider, sessionId, clientOptions.model);
+    }
+    if (typeof clientOptions.effort === 'string' && clientOptions.effort.trim()) {
+      providerModelsService.setSessionEffort(provider, sessionId, clientOptions.effort);
+    }
+    // The permission mode is a session attribute the client no longer persists
+    // anywhere, so this send is the only place it can be recorded. Only a mode
+    // the provider's capability matrix lists is stored; an unsupported one is
+    // ignored rather than rejected, because the run still has to go out and the
+    // client would otherwise be told its message failed over a display detail.
+    if (typeof clientOptions.permissionMode === 'string' && clientOptions.permissionMode.trim()) {
+      providerModelsService.setSessionPermissionMode(provider, sessionId, clientOptions.permissionMode);
+    }
+
+    const attachmentCandidates = [
+      ...normalizeAttachmentDescriptors(clientOptions.images),
+      ...normalizeAttachmentDescriptors(clientOptions.files),
+      ...normalizeAttachmentDescriptors(clientOptions.attachments),
+    ];
+    const verifiedAttachments = filterAttachmentsToUploadStore(attachmentCandidates);
+    const uniqueAttachments = verifiedAttachments.filter(
+      (descriptor, index, all) => all.findIndex((candidate) => candidate.path === descriptor.path) === index,
+    );
+
+    // The provider runtimes receive the stable app session id. When their
+    // CLI/SDK needs the provider-native id for resume, they resolve it from the
+    // session row themselves (sessionsService.resolveProviderSessionId).
+    // Brand-new sessions have no provider id yet, so the runtime starts fresh
+    // and announces one, which the gateway writer captures and maps back to the
+    // app session id.
+    const runtimeOptions: AnyRecord = {
+      ...clientOptions,
+      ...extraRuntimeOptions,
+      // Attachments are re-validated server-side: only direct children of the
+      // global upload store may reach provider runtimes or their file tools.
+      attachments: uniqueAttachments,
+      images: uniqueAttachments.filter(isImageAttachmentDescriptor),
+      files: uniqueAttachments.filter((descriptor) => !isImageAttachmentDescriptor(descriptor)),
+      sessionId,
+      cwd: clientOptions.cwd ?? session.project_path ?? undefined,
+      projectPath: session.project_path ?? clientOptions.projectPath,
+      // This dispatch's `command` is a message somebody composed — typed now, or
+      // scheduled earlier and fired by the timer below. Marked here and not left
+      // to the runtime to infer, because the runtime cannot: an internal driver
+      // reaching the same entry passes the same option keys with a *label* in
+      // `command`, and a provider that records the prompt it was handed (the
+      // debug agent, whose "process" runs a scenario instead of a CLI that would
+      // write the row itself) has no other way to tell the two apart.
+      [CHAT_TURN_OPTION]: true,
+    };
+
+
     // Runs only now that the session is reserved, because an edit rewinds the
     // conversation here and a rewind for a run that was never admitted cannot
     // be taken back. Inside the try so a rewind that throws still releases the
@@ -903,7 +904,7 @@ export async function dispatchRun(
     // "processing" forever on every connected client. Scoped to THIS run —
     // a queued message can start the session's next run before this promise
     // settles, and the session-keyed completeRun would kill that new run.
-    chatRunRegistry.completeRunIfCurrent(run, { exitCode: 1 });
+    if (run.status === 'running') run.writer.sendComplete({ exitCode: 1 });
   }
 
   return { started: true, error: failure };

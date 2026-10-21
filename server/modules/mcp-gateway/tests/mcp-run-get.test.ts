@@ -293,6 +293,7 @@ async function withRunGetHarness(run: (harness: Harness) => Promise<void>): Prom
     for (const [session, at] of runtime.settleAt) {
       if (!runtime.settled.has(session) && runtime.clock >= at) {
         runtime.settled.add(session);
+        registry.getRun(session)?.writer.send({ ...LAST_ASSISTANT, sessionId: session });
         registry.completeRun(session, { exitCode: 0 });
       }
     }
@@ -473,7 +474,7 @@ test('(c) a run that ends at the 3rd second returns then, with its last assistan
     );
     assert.equal(payload.status, 'completed', 'the run settled');
     assert.equal(payload.outcome, 'settled', 'the wait returned because the run settled');
-    assert.deepEqual(payload.lastAssistantMessage, LAST_ASSISTANT, 'the settled reading must attach the last assistant message verbatim');
+    assert.deepEqual(payload.lastAssistantMessage, { ...LAST_ASSISTANT, runId, seq: 1 }, "the settled reading must attach this run writer's own assistant message");
   });
 });
 
@@ -552,11 +553,13 @@ test('(f) expired and never-issued are RUN_NOT_FOUND errors, explained different
     assert.equal(unknown.isError, true, 'a never-issued run is an error');
     assert.equal(unknown.payload?.code, 'RUN_NOT_FOUND', 'the never-issued error carries RUN_NOT_FOUND');
     assert.equal(expiredPayload.reason, 'expired', 'a run past its retention window reads expired');
-    assert.equal(unknownPayload.reason, 'never_issued', 'an id never handed out reads never_issued');
+    assert.equal(unknownPayload.reason, 'unknown_in_current_process', 'an absent id is not proof that it was never issued');
+    assert.equal(unknownPayload.retrySafe, false);
+    assert.equal(unknownPayload.mayHaveExecuted, true);
     assert.notEqual(expiredPayload.reason, unknownPayload.reason, 'the two causes are distinguished, not collapsed');
     assert.notEqual(expired.payload?.message, unknown.payload?.message, 'the two explanations must be different text');
     assert.match(String(expired.payload?.message), /retention/, 'the expired explanation must say the run aged out');
-    assert.match(String(unknown.payload?.message), /never issued/, 'the never-issued explanation must say the id was never issued');
+    assert.match(String(unknown.payload?.message), /may have executed/, 'the unknown explanation must retain the uncertain-effect fence');
 
     assert.deepEqual(
       (expiredPayload.fallback as AnyRecord).messages,
@@ -598,7 +601,7 @@ test('(g) a run from a previous boot is RUN_NOT_FOUND (reason expired) saying re
     // restarted; the stronger assertions below pin both halves separately.
     assert.equal(second.isError, true, 'a restarted run is an error');
     assert.equal(second.payload?.code, 'RUN_NOT_FOUND', 'the restarted error carries RUN_NOT_FOUND');
-    assert.equal(secondPayload.reason, 'expired', 'a previous boot\'s run reports the coarse expired reason');
+    assert.equal(secondPayload.reason, 'unknown_after_restart', 'a previous boot without terminal proof is unknown after restart');
     assert.match(String(second.payload?.message), /restarted/i, 'the explanation must say the service restarted');
     assert.doesNotMatch(
       String(second.payload?.message),

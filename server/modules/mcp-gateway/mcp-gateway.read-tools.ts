@@ -115,7 +115,7 @@ export const MCP_STAGE3_READ_TOOLS = [
   {
     name: 'run_get',
     requiredScope: READ_SCOPE,
-    description: 'Read one run by id, waiting a bounded time for it to settle.',
+    description: 'Read an app Run immediately by default. Durable terminal receipts survive event retention and restarts; an unfinished prior boot is unknown and must be reconciled before resending.',
   },
   {
     name: 'quay_snapshot',
@@ -673,6 +673,7 @@ export function buildSessionDetail(deps: McpReadToolDeps, sessionId: string) {
 
 /** The registered body of one tool: everything except the table-owned scope. */
 type McpReadToolBody = {
+  handlerBound?: boolean;
   // AC-288: a raw shape, or a built schema carrying a constraint a raw shape
   // cannot express (`session_read`'s bounded `limit` and its `aroundId` /
   // `cursor` exclusivity). The wrapper advertises and enforces whichever it gets.
@@ -861,6 +862,7 @@ const TOOL_BODIES = {
   overview: {
     inputSchema: { project: z.string().optional() },
     outputSchema: { overview: z.unknown().optional() },
+    handlerBound: false,
     handle: () => notImplemented('overview', 'AC-247'),
   },
   projects_list: {
@@ -943,6 +945,7 @@ const TOOL_BODIES = {
     // `registerMcpReadTools` when the deps carry the pointer reader. A mount
     // without it reads this named refusal, exactly like the overview/run_get
     // placeholders before their tasks landed.
+    handlerBound: false,
     handle: () => notImplemented('ui_last_opened_session', 'gap-mcp-ui-last-opened-session'),
   },
   ui_visible_context: {
@@ -1006,6 +1009,7 @@ const TOOL_BODIES = {
     // `registerMcpReadTools` when the deps carry the round trip. A mount without
     // it reads this named refusal, exactly like the overview/run_get placeholders
     // before their tasks landed.
+    handlerBound: false,
     handle: () => notImplemented('ui_visible_context', 'gap-mcp-ui-visible-context'),
   },
   ui_clients_list: {
@@ -1032,6 +1036,7 @@ const TOOL_BODIES = {
     // `registerMcpReadTools` when the deps carry the round trip. A mount without
     // it reads this named refusal, exactly like the overview/run_get placeholders
     // before their tasks landed.
+    handlerBound: false,
     handle: () => notImplemented('ui_clients_list', 'gap-mcp-ui-clients-list'),
   },
   session_search: {
@@ -1042,6 +1047,7 @@ const TOOL_BODIES = {
     // without it reads this named refusal, exactly like the overview/run_get
     // placeholders before their tasks landed — and `{ query: 'anything' }` is
     // the shallowest call that reaches it, since `query` is declared required.
+    handlerBound: false,
     handle: () => notImplemented('session_search', 'gap-mcp-session-search'),
   },
   session_read: {
@@ -1101,12 +1107,26 @@ const TOOL_BODIES = {
       run: z.string().optional(),
       wait: z.boolean().optional(),
     },
-    outputSchema: { run: z.unknown().optional() },
+    outputSchema: {
+      runId: z.string(), sessionId: z.string(), source: z.string(),
+      status: z.enum(['running', 'queued', 'completed', 'failed', 'aborted', 'cancelled', 'unknown']),
+      phase: z.string().nullable(), toolName: z.string().nullable(), activityNote: z.string().nullable(),
+      startedAt: timeSchema, completedAt: nullableTimeSchema, elapsedMs: z.number(), bootId: z.string(),
+      outcome: z.enum(['settled', 'awaitingPermission', 'timeout']).optional(),
+      lastAssistantMessage: z.unknown().nullable(), note: z.string().nullable(), explanation: z.null(),
+      durability: z.enum(['sqlite', 'process_local']),
+      terminal: z.object({ exitCode: z.number().nullable(), success: z.boolean().nullable(), aborted: z.boolean() }).nullable(),
+      queue: z.object({ queued: z.boolean(), uuid: z.string().nullable(), state: z.enum(['queued', 'started', 'cancelled', 'completed']).nullable() }),
+      resultAttribution: z.enum(['run_events', 'native_message_reference', 'terminal_result_snapshot', 'terminal_receipt', 'unavailable']),
+      resultSnapshot: z.unknown().nullable(),
+    },
+    handlerBound: false,
     handle: () => notImplemented('run_get', 'AC-248'),
   },
   quay_snapshot: {
     inputSchema: { project: z.string().optional(), refresh: z.boolean().optional() },
     outputSchema: { snapshot: z.unknown().optional() },
+    handlerBound: false,
     handle: () => notImplemented('quay_snapshot', 'AC-247'),
   },
 } satisfies Record<McpStage3ReadToolName, McpReadToolBody>;
@@ -1115,6 +1135,7 @@ const TOOL_BODIES = {
 
 /** One read tool as it is handed to the registration seam. */
 export type McpReadToolRegistration = {
+  handlerBound?: boolean;
   name: string;
   description: string;
   requiredScope: string;
@@ -1218,6 +1239,7 @@ export function registerMcpReadTools(seam: McpReadToolSeam, deps: McpReadToolDep
       requiredScope: tool.requiredScope,
       inputSchema: body.inputSchema,
       outputSchema: body.outputSchema,
+      handlerBound: 'handlerBound' in body ? body.handlerBound : true,
       handler: (args) => body.handle(args, deps),
     });
   }

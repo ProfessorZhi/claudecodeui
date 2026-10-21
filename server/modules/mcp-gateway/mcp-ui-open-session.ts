@@ -450,6 +450,7 @@ export function registerMcpUiOpenSessionTool(
     requiredScope: registration.requiredScope,
     inputSchema: registration.inputSchema,
     outputSchema: registration.outputSchema,
+    handlerBound: deps !== null,
     handler: body,
   });
 }

@@ -155,6 +155,7 @@ function createMcpServer(
     inputSchema: McpToolInputSchema,
     outputSchema: ZodRawShape | undefined,
     handle: (args: Record<string, unknown>) => unknown | Promise<unknown>,
+    handlerBound = true,
   ): void => {
     const guarded = resolveDeps === undefined ? handle : resolveInputTargets(handle, resolveDeps);
     withMcpAudit(
@@ -171,7 +172,7 @@ function createMcpServer(
         // `MCP_TOOL_ERROR_CODES` table and rides `tools/list` as `_meta`. Like
         // the annotations, it is metadata only — declared OUTSIDE the target gate
         // and the scope check — so it cannot widen or narrow what a caller may do.
-        meta: { 'cloudcli/errorCodes': readMcpToolErrorCodes(name) },
+        meta: { 'cloudcli/errorCodes': readMcpToolErrorCodes(name), 'cloudcli/handlerBound': handlerBound },
         requiredScopes: [requiredScope],
         handler: (args) => guarded(args as Record<string, unknown>),
       },
@@ -191,6 +192,7 @@ function createMcpServer(
         registration.inputSchema,
         registration.outputSchema,
         (args) => registration.handler(args),
+        registration.handlerBound,
       );
     registerMcpReadTools(register, readTools);
   }
@@ -212,6 +214,7 @@ function createMcpServer(
           }
           return registration.handler(args, { principal });
         },
+        registration.handlerBound,
       );
     registerMcpWriteTools(
       register,

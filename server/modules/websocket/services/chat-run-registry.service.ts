@@ -1,11 +1,14 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
-import { sessionsDb } from '@/modules/database/index.js';
+import { chatRunReceiptsDb, sessionsDb } from '@/modules/database/index.js';
 import { BOOT_ID } from '@/modules/websocket/services/activity-heartbeat.service.js';
 import { ChatSessionWriter } from '@/modules/websocket/services/chat-session-writer.service.js';
 import { broadcastSessionUpserted } from '@/modules/websocket/services/session-upsert-broadcast.service.js';
 import type {
   ChatRunSource,
+  ChatRunReceipt,
+  ChatRunReceiptStore,
+  ChatRunReadback,
   LLMProvider,
   NormalizedMessage,
   RealtimeClientConnection,
@@ -65,6 +68,14 @@ type ChatRun = {
   startedAt: number;
   completedAt: number | null;
   bootId: string;
+  queued: boolean;
+  queuedMessageUuid: string | null;
+  queueState: ChatRunReceipt['queueState'];
+  assistantMessageId: string | null;
+  terminal: ChatRunReceipt['terminal'];
+  resultSnapshot: ChatRunReceipt['resultSnapshot'];
+  lastAssistantMessage: NormalizedMessage | null;
+  receiptPersisted: boolean;
 };
 
 /**
@@ -92,7 +103,7 @@ export type ChatRunSummary = {
  * Why a `getRunById` lookup returned no summary.
  *
  * `expired` means the run existed and stayed terminal past the retention
- * window; `unknown` means the id was never handed out. The two are kept apart
+ * window; `unknown` means this in-memory index has no evidence for the id. The two are kept apart
  * so a caller can distinguish "you waited too long" from "that id is not
  * ours". Consumed by the same criterion as `ChatRunSummary`.
  */
@@ -156,6 +167,8 @@ function resolveRetentionMs(explicit: number | undefined): number {
  */
 export function createChatRunRegistry(options?: {
   retentionMs?: number;
+  /** Production supplies the existing SQLite owner backing; isolated factories may omit it. */
+  receipts?: ChatRunReceiptStore;
   now?: () => number;
   /**
    * The process identity stamped onto every run this registry opens. Defaults to
@@ -193,14 +206,14 @@ export function createChatRunRegistry(options?: {
    */
   const runsById = new Map<string, ChatRun>();
 
-  function evictRunLater(appSessionId: string): void {
+  function evictRunLater(expiring: ChatRun): void {
     const timer = setTimeout(() => {
-      const run = runs.get(appSessionId);
+      const run = expiring;
       // A terminal run — completed or aborted — is what the retention window
       // is for. A run still `running` in its slot is never dropped: its own
       // writer has not sent its terminal event yet.
       if (run && run.status !== 'running') {
-        runs.delete(appSessionId);
+        if (runs.get(run.appSessionId) === run) runs.delete(run.appSessionId);
         runsById.delete(run.runId);
       }
     }, retentionMs);
@@ -220,6 +233,40 @@ export function createChatRunRegistry(options?: {
       completedAt: run.completedAt,
       lastSeq: run.lastSeq,
     };
+  }
+
+
+  function receipt(run: ChatRun): ChatRunReceipt {
+    return { ...summarize(run), provider: run.provider, providerSessionId: run.providerSessionId,
+      bootId: run.bootId, queued: run.queued, queuedMessageUuid: run.queuedMessageUuid,
+      queueState: run.queueState, assistantMessageId: run.assistantMessageId, terminal: run.terminal, resultSnapshot: run.resultSnapshot };
+  }
+  function persist(run: ChatRun, required = false): void {
+    if (!options?.receipts) return;
+    try { options.receipts.write(receipt(run)); run.receiptPersisted = true; }
+    catch (error) {
+      run.receiptPersisted = false;
+      if (required) throw error;
+      console.error('[ChatRunRegistry] Critical receipt is not durable; reconciliation is required.', { runId: run.runId });
+    }
+  }
+  function finalResult(run: ChatRun): ChatRunReceipt['resultSnapshot'] {
+    const message = run.lastAssistantMessage;
+    if (!message || typeof message.content !== 'string') return null;
+    const bytes = Buffer.from(message.content, 'utf8');
+    let end = Math.min(bytes.length, 64 * 1024);
+    if (end < bytes.length) while (end > 0 && (bytes[end] & 0xc0) === 0x80) end--;
+    const prefix = bytes.subarray(0, end);
+    return { text: prefix.toString('utf8'), messageId: message.id, timestamp: message.timestamp,
+      source: 'live-run-writer', completeness: run.terminal?.success === true && run.terminal.exitCode === 0 && !run.terminal.aborted ? 'final' : 'partial',
+      truncated: end < bytes.length, utf8Bytes: bytes.length, storedBytes: prefix.length,
+      sha256: createHash('sha256').update(bytes).digest('hex'), storedSha256: createHash('sha256').update(prefix).digest('hex') };
+  }
+  function queueLifecycle(message: NormalizedMessage): void {
+    if (message.kind !== 'command_lifecycle' || !message.commandUuid || !message.commandState) return;
+    for (const candidate of runsById.values()) {
+      if (candidate.queuedMessageUuid === message.commandUuid) { candidate.queueState = message.commandState; persist(candidate); }
+    }
   }
 
   /**
@@ -242,7 +289,7 @@ export function createChatRunRegistry(options?: {
     // the run is no longer `running` — whether it ended `completed` or
     // `aborted`. Narrowing this guard to `completed` would let a late
     // `complete` overwrite a run that already ended in `aborted`.
-    if (message.kind === 'complete' && run.status !== 'running') {
+    if (run.status !== 'running' && (message.kind === 'complete' || (message.kind === 'text' && message.role === 'assistant'))) {
       return null;
     }
 
@@ -264,10 +311,23 @@ export function createChatRunRegistry(options?: {
       // rather than be flattened into a run that completed.
       run.status = message.aborted === true ? 'aborted' : 'completed';
       run.completedAt = now();
-      evictRunLater(run.appSessionId);
+      run.terminal = { exitCode: typeof message.exitCode === 'number' ? message.exitCode : null, success: typeof message.success === 'boolean' ? message.success : null, aborted: message.aborted === true };
+      run.resultSnapshot = finalResult(run);
+      evictRunLater(run);
     }
 
     run.events.push(outbound);
+    if (message.kind === 'text' && message.role === 'assistant') {
+      run.lastAssistantMessage = outbound;
+      // Only Claude's normalized SDK UUID has been verified against its
+      // native parser. Codex live item ids are turn-local; persisted rollouts
+      // synthesize other ids, so use the writer-bound terminal snapshot there.
+      const reference = run.provider === 'claude' ? message.id : null;
+      run.assistantMessageId = typeof reference === 'string' && reference.length <= 1024 ? reference : null;
+      persist(run);
+    }
+    queueLifecycle(message);
+    if (message.kind === 'complete') persist(run);
     if (run.events.length > MAX_BUFFERED_EVENTS_PER_RUN) {
       run.events.splice(0, run.events.length - MAX_BUFFERED_EVENTS_PER_RUN);
     }
@@ -290,6 +350,7 @@ export function createChatRunRegistry(options?: {
     }
 
     run.providerSessionId = providerSessionId;
+    persist(run);
 
     try {
       sessionsDb.assignProviderSessionId(run.appSessionId, providerSessionId);
@@ -384,6 +445,7 @@ export function createChatRunRegistry(options?: {
       startedAt: now(),
       completedAt: null,
       bootId: bootId(),
+      queued: false, queuedMessageUuid: null, queueState: null, assistantMessageId: null, terminal: null, resultSnapshot: null, lastAssistantMessage: null, receiptPersisted: false,
     };
 
     run.writer = new ChatSessionWriter({
@@ -397,6 +459,8 @@ export function createChatRunRegistry(options?: {
       decorateOutboundEvent: (message) => decorateAndRecordEvent(run, message),
     });
 
+    // Admission is durable before any provider execution or outward ACK.
+    persist(run, true);
     runs.set(input.appSessionId, run);
     // Both runs are registered by their own id: the superseded one must remain
     // reachable through the id it was already handed out under.
@@ -416,8 +480,7 @@ export function createChatRunRegistry(options?: {
    *
    * A terminal run is reported only while it is inside the retention window,
    * judged lazily against the injected clock; past it the lookup answers
-   * `{ status: 'unknown', reason: 'expired' }`, and an id that was never handed
-   * out answers `{ status: 'unknown', reason: 'unknown' }`. Consumed by this
+   * `{ status: 'unknown', reason: 'expired' }`, and an id absent from this index answers `{ status: 'unknown', reason: 'unknown' }`. Consumed by this
    * module's criteria `chat-run-by-id.test.ts` and `chat-control-busy.test.ts`
    * and, later, by the MCP gateway's run-addressing verbs.
    */
@@ -484,6 +547,29 @@ export function createChatRunRegistry(options?: {
     },
 
     getRunById,
+
+    /** MCP reads exact owner evidence; persistence is never mutated by a lookup. */
+    getRunReadback(runId: string): ChatRunReadback | null {
+      const live = runsById.get(runId);
+      if (live && (live.status === 'running' || live.completedAt === null || now() - live.completedAt <= retentionMs || live.receiptPersisted)) {
+        return { ...receipt(live), lastAssistantMessage: live.lastAssistantMessage,
+          durability: live.receiptPersisted ? 'sqlite' : 'process_local' };
+      }
+      const stored = options?.receipts?.read(runId);
+      return stored ? { ...stored, lastAssistantMessage: null, durability: 'sqlite' } : null;
+    },
+
+    /** Control binds the actual provider queue UUID to the Run that sent it. */
+    setRunQueuedInput(runId: string, uuid: string | null): void {
+      const run = runsById.get(runId); if (!run) return;
+      run.queued = true; run.queuedMessageUuid = uuid; run.queueState = uuid ? 'queued' : null;
+      // The CLI may have announced the lifecycle before the ACK handover. Read
+      // that actual event instead of inventing a fresh queued state.
+      if (uuid) for (const owner of runsById.values()) for (const event of owner.events) {
+        if (event.kind === 'command_lifecycle' && event.commandUuid === uuid && event.commandState) run.queueState = event.commandState;
+      }
+      persist(run);
+    },
 
     /**
      * The process identity the run was created under, or `null` when the
@@ -648,4 +734,4 @@ export function createChatRunRegistry(options?: {
  * instance `server/index.ts`, the websocket gateway and the control plane
  * share; the factory above is the injection seam for an isolated instance.
  */
-export const chatRunRegistry = createChatRunRegistry();
+export const chatRunRegistry = createChatRunRegistry({ receipts: chatRunReceiptsDb });

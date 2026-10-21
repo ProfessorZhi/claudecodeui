@@ -217,6 +217,7 @@ export type McpWriteToolDeps = McpSessionSendDeps & {
  * `structuredContent`) share one seam shape.
  */
 export type McpWriteToolRegistration = {
+  handlerBound?: boolean;
   name: string;
   description: string;
   requiredScope: string;
@@ -323,6 +324,7 @@ export function registerMcpWriteTools(seam: McpWriteToolSeam, deps: McpWriteTool
           queued: z.boolean(),
           queuedMessageUuid: z.string().nullable(),
           source: z.string(),
+          durability: z.enum(['sqlite', 'process_local']),
           run: z.unknown().optional(),
         },
         handler: protect(tool.name, (args, ctx) => buildSessionSend(readSessionSendInput(args), ctx, deps)),
@@ -392,6 +394,7 @@ export function registerMcpWriteTools(seam: McpWriteToolSeam, deps: McpWriteTool
       description: tool.description,
       requiredScope: tool.requiredScope,
       inputSchema: {},
+      handlerBound: false,
       handler: protect(tool.name, () => notImplemented(tool.name, PLACEHOLDER_OWNER[tool.name])),
     });
   }

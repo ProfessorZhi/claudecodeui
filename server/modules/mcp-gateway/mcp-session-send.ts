@@ -33,7 +33,7 @@
 
 import { z } from 'zod';
 
-import type { LLMProvider, NormalizedMessage } from '@/shared/types.js';
+import type { ChatRunReadback, LLMProvider, NormalizedMessage } from '@/shared/types.js';
 
 import { MCP_ERROR_CODES, McpToolError } from './mcp-error-envelope.js';
 import type { McpPrincipal } from './mcp-gateway.auth.js';
@@ -60,7 +60,9 @@ export type McpControlRefusalCode =
   | 'SESSION_NOT_FOUND'
   | 'UNSUPPORTED_PROVIDER'
   | 'RUN_IN_PROGRESS'
-  | 'FORBIDDEN';
+  | 'FORBIDDEN'
+  | 'RUN_REGISTRATION_FAILED'
+  | 'QUEUE_ACCEPTANCE_UNKNOWN';
 
 /**
  * The control service result `session_send` reads, declared structurally.
@@ -73,7 +75,7 @@ export type McpControlRefusalCode =
  */
 export type McpControlSendResult =
   | { ok: true; runId: string; queued: boolean; queuedMessageUuid: string | null }
-  | { ok: false; code: McpControlRefusalCode; message: string };
+  | { ok: false; code: McpControlRefusalCode; message: string; details?: Record<string, unknown> };
 
 /** The one control verb `session_send` needs: opening a run. */
 export type McpControlSeam = {
@@ -103,6 +105,7 @@ export type McpSessionRunRecord = {
 /** The run reader `session_send` reads the current run and its origin from. */
 export type McpRunReader = {
   getRun(sessionId: string): McpSessionRunRecord | undefined;
+  getRunReadback?(runId: string): ChatRunReadback | null;
 };
 
 /**
@@ -188,6 +191,7 @@ export type SessionSendPayload = {
   queued: boolean;
   queuedMessageUuid: string | null;
   source: string;
+  durability: 'sqlite' | 'process_local';
   run?: RunGetPayload;
 };
 
@@ -317,7 +321,7 @@ export async function buildSessionSend(
         hint: RUN_IN_PROGRESS_HINT,
       });
     }
-    throw new McpToolError(result.code, result.message, true);
+    throw new McpToolError(result.code, result.message, false, result.details);
   }
 
   const source = deps.runs.getRun(input.session)?.source ?? 'mcp';
@@ -326,6 +330,7 @@ export async function buildSessionSend(
     queued: result.queued,
     queuedMessageUuid: result.queuedMessageUuid,
     source,
+    durability: deps.runs.getRunReadback?.(result.runId)?.durability ?? 'process_local',
   };
 
   const waitSeconds = effectiveWaitSeconds(input.waitSeconds);

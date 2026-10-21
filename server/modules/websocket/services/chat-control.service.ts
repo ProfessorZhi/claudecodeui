@@ -17,6 +17,7 @@ import type {
   MissingApprovalReason,
   ProviderPermissionDecision,
   RealtimeClientConnection,
+  ProviderRuntimeWriter,
 } from '@/shared/types.js';
 
 /**
@@ -140,8 +141,9 @@ type SendResult =
     }
   | {
       ok: false;
-      code: 'SESSION_NOT_FOUND' | 'UNSUPPORTED_PROVIDER' | 'RUN_IN_PROGRESS' | 'FORBIDDEN';
+      code: 'SESSION_NOT_FOUND' | 'UNSUPPORTED_PROVIDER' | 'RUN_IN_PROGRESS' | 'FORBIDDEN' | 'RUN_REGISTRATION_FAILED' | 'QUEUE_ACCEPTANCE_UNKNOWN';
       message: string;
+      details?: Record<string, unknown>;
     };
 
 /**
@@ -286,6 +288,7 @@ async function readQueuedMessageUuid(
   runtime: ProviderRuntimeGateway,
   provider: LLMProvider,
   sessionId: string,
+  writer?: ProviderRuntimeWriter,
 ): Promise<string | null> {
   const read = runtime.queuedInputUuid;
   if (typeof read !== 'function') {
@@ -298,7 +301,7 @@ async function readQueuedMessageUuid(
       timer = setTimeout(() => resolve(null), QUEUED_UUID_HANDOVER_TIMEOUT_MS);
       timer.unref?.();
     });
-    const uuid = await Promise.race([read.call(runtime, provider, sessionId), bound]);
+    const uuid = await Promise.race([read.call(runtime, provider, sessionId, writer), bound]);
     return typeof uuid === 'string' && uuid.length > 0 ? uuid : null;
   } catch {
     return null;
@@ -512,6 +515,7 @@ export function createChatControlService(deps: ChatControlDependencies) {
       resolveRunId = resolve;
     });
     let busyAccepted = false;
+    let admittedWriter: ProviderRuntimeWriter | undefined;
 
     const data: AnyRecord = {
       sessionId: input.sessionId,
@@ -538,6 +542,7 @@ export function createChatControlService(deps: ChatControlDependencies) {
       {},
       (run, info) => {
         busyAccepted = info.busyAccepted;
+        admittedWriter = run.writer;
         resolveRunId(run.runId);
       },
       input.connection ?? null,
@@ -567,8 +572,8 @@ export function createChatControlService(deps: ChatControlDependencies) {
     if (!outcome.registered) {
       return {
         ok: false,
-        code: 'RUN_IN_PROGRESS',
-        message: `Session "${input.sessionId}" already has a run in progress.`,
+        code: outcome.result.started ? 'RUN_REGISTRATION_FAILED' : 'RUN_IN_PROGRESS',
+        message: outcome.result.error ?? `Session "${input.sessionId}" already has a run in progress.`,
       };
     }
 
@@ -576,7 +581,14 @@ export function createChatControlService(deps: ChatControlDependencies) {
       // The message is in the provider's own queue now. The uuid it was stamped
       // with comes from the provider, never minted here, because only that uuid
       // can be withdrawn later; a gateway with no such seam degrades to `null`.
-      const queuedMessageUuid = await readQueuedMessageUuid(deps.runtime, provider, input.sessionId);
+      const queuedMessageUuid = await readQueuedMessageUuid(deps.runtime, provider, input.sessionId, admittedWriter);
+      chatRunRegistry.setRunQueuedInput(outcome.runId, queuedMessageUuid);
+      if (caller.via === 'mcp' && queuedMessageUuid === null) {
+        return { ok: false, code: 'QUEUE_ACCEPTANCE_UNKNOWN',
+          message: 'This run was registered but its provider queue acceptance could not be confirmed. Reconcile its runId before any resend.',
+          details: { runId: outcome.runId, sessionId: input.sessionId, queuedMessageUuid: null,
+            retrySafe: false, mayHaveExecuted: true, durability: chatRunRegistry.getRunReadback(outcome.runId)?.durability ?? 'process_local' } };
+      }
       return { ok: true, runId: outcome.runId, queued: true, queuedMessageUuid, completion: dispatchPromise };
     }
 

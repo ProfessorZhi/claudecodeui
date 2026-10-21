@@ -1,0 +1,28 @@
+# Plan 02: durable provider Run readback
+
+## Overview
+Branch from 639ded6, preserving project creation. All fixtures, databases, dependency/build products and logs use RUN-0050/cloudcli-run-readback-20261022. Do not finalize an artifact directory containing historical finalize evidence.
+
+## Phases
+
+### Phase 1: Red evidence
+Add tests for exact-run terminal text despite newer session history, immediate completed read, failed/aborted states, unknown IDs and session mismatch, original terminal state after five-minute memory eviction, real SQLite cross-process terminal reconstruction and unfinished-old-boot UNKNOWN, immutable receipt identity and no transcript body storage. Add concurrent writer-scoped queue UUID probes, exact-run eviction and standard handlerBound true/false discovery. Tests use real SQLite and local provider history parsers, loopback MCP and fixture runtime frames; no model calls.
+Acceptance: capture actual red failures before implementation. Review schema/API against actual source.
+
+### Phase 2: Existing owner persistence and queue mapping
+Implement the receipt schema/repository/migration in the existing database, registry write/readback/critical updates and strict pre-effect registration persistence, per-run eviction and finalization, writer-scoped queued UUID selection across existing gateway/provider seams. Reuse getConnection and native history interfaces.
+Acceptance: receipt identity/terminal monotonicity/queue mapping and cross-process tests pass; no full message body stored and no alternate scheduler/database. If post-effect SQLite writing fails, actual terminal stays readable in memory with explicit degraded durability.
+
+### Phase 3: MCP readback and discovery
+Implement typed readback/unknown reasons and exact result reference reading, mismatch refusal and no latest-answer attribution. Preserve explicit old bounded wait compatibility but add no polling paths. Add optional handlerBound registration metadata and mark all existing placeholder branches false/real overrides true.
+Acceptance: real MCP read-only scope and initialization/list/call paths pass; result and metadata report exact proof scope. Unknown/restarted never encourages replay.
+
+### Phase 4: Validation and reviewable delivery
+Run bounded relevant tests (new receipt/registry/control/provider gateway/MCP and previous project regressions), server noEmit/build and changed-file lint. Use actual separate processes with the same SQLite/history files to verify terminal readback; do not use a fake clock flip as restart proof. Compile exact revision and run loopback MCP SDK probe. Commit explicit files, provide base-pinned format-patch plus guarded apply/rollback package and hashes, retain worktrees and evidence; no deployment or model calls.
+Acceptance: all scoped tests and build pass, parent independent review can inspect exact SHA and limitations. No existing finalize evidence overwritten.
+
+## Bounded final-result amendment
+Add actual Codex parser tests showing live itemId is not a stable history id, and a real cross-process Codex writer snapshot readback after a later SDK assistant under the same reused item_0. Add 64KiB UTF-8 boundary/full-prefix hash checks, no older transcript text storage, immutable terminal snapshot and failed/aborted partial-result probes. Implement bounded snapshot only on the sole owner's first actual terminal event, return explicit terminal_result_snapshot attribution and metadata, and preserve native-reference precedence. No raw result/database/token enters source packages.
+
+## MCP queue receipt fence
+Use real loopback requests to prove per-run busy rejection creates no receipt/provider call, and direct real-control/MCP-adapter execution to prove an unconfirmed own queue UUID produces a non-retryable unknown error with its registered ticket. No automatic replay or fallback channel.
