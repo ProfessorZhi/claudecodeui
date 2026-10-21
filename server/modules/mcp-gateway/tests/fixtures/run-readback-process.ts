@@ -11,7 +11,7 @@ const { chatRunRegistry, BOOT_ID } = await import('@/modules/websocket/index.js'
 const { providerRegistry, sessionsService } = await import('@/modules/providers/index.js');
 const { buildRunGet } = await import('../../index.js');
 await db.initializeDatabase();
-const family = mode === 'codex-terminal' ? 'codex' : 'claude';
+const family = mode.startsWith('codex-') ? 'codex' : 'claude';
 const sessionId = `native-readback-${mode}`;
 const nativeId = `native-provider-${mode}`;
 if (phase === 'write') {
@@ -25,7 +25,9 @@ if (phase === 'write') {
   if (mode !== 'unfinished') {
     const normalized = providerRegistry.resolveProvider(family).sessions.normalizeMessage(family === 'claude' ? raw : { type: 'item', itemType: 'agent_message', itemId: 'item_0', message: { content: 'NATIVE EXACT RESULT' } }, nativeId);
     for (const message of normalized) run.writer.send(message);
-    run.writer.sendComplete({ exitCode: 0 });
+    if (mode === 'codex-provider-turn') {
+      for (const message of providerRegistry.resolveProvider(family).sessions.normalizeMessage({ type: 'turn_complete' }, nativeId)) run.writer.send(message);
+    } else run.writer.sendComplete({ exitCode: 0 });
     const later = { ...raw, uuid: 'later-unrelated-uuid', message: { role: 'assistant', content: [{ type: 'text', text: 'LATER DIFFERENT RESULT' }] } };
     await fs.appendFile(transcript, JSON.stringify(later)+'\n');
     const next = chatRunRegistry.startRun({ appSessionId: sessionId, provider: family, providerSessionId: nativeId, connection: null, userId: 1, source: 'mcp' })!;

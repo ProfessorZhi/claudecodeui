@@ -20,6 +20,7 @@ for (const resumed of [false, true]) {
           capturedPrompt = prompt;
           return { events: (async function* () {
             yield { type: 'thread.started', thread_id: 'native-thread' };
+            yield { type: 'turn.completed', usage: { input_tokens: 1, cached_input_tokens: 0, output_tokens: 1 } };
           })() };
         },
       } as unknown as Thread;
@@ -52,7 +53,7 @@ for (const resumed of [false, true]) {
       assert.equal(capturedPrompt, 'hey there');
       assert.equal(capturedOptions?.sandboxMode, permissionMode === 'bypassPermissions' ? 'danger-full-access' : 'workspace-write');
       assert.equal(capturedOptions?.approvalPolicy, permissionMode === 'acceptEdits' || permissionMode === 'bypassPermissions' ? 'never' : 'on-request');
-      assert.ok(messages.some((message: any) => message.kind === 'complete' && message.exitCode === 0));
+      assert.ok(messages.some((message: any) => message.kind === 'complete' && message.success === true && message.exitCode === null && message.completionSource === 'provider-turn-completed'));
       assert.ok(!messages.some((message: any) => message.kind === 'error'));
     });
   }

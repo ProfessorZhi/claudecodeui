@@ -104,7 +104,7 @@ test('same owner receipt repository prevents identity retarget and terminal down
 test('real separate processes reconstruct exact native output and keep unfinished previous boot UNKNOWN', () => {
   const fixture = fileURLToPath(new URL('./fixtures/run-readback-process.ts', import.meta.url));
   const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url));
-  for (const mode of ['terminal', 'codex-terminal', 'unfinished']) {
+  for (const mode of ['terminal', 'codex-terminal', 'codex-provider-turn', 'unfinished']) {
     const childRoot = path.join(scratch, `process-${mode}`); mkdirSync(childRoot);
     const run = (phase: string) => {
       const result = spawnSync(process.execPath, ['--import', 'tsx/esm', fixture, phase, childRoot, mode], {
@@ -122,6 +122,12 @@ test('real separate processes reconstruct exact native output and keep unfinishe
       assert.equal(second.result.runId, first.runId);
       assert.equal(second.result.lastAssistantMessage?.content, 'NATIVE EXACT RESULT');
       assert.equal(second.result.resultAttribution, mode === 'terminal' ? 'native_message_reference' : 'terminal_result_snapshot');
+      if (mode === 'codex-provider-turn') {
+        assert.equal(second.result.terminal.exitCode, null);
+        assert.equal(second.result.terminal.success, true);
+        assert.equal(second.result.terminal.completionSource, 'provider-turn-completed');
+        assert.equal(second.result.resultSnapshot.completeness, 'final');
+      }
     } else {
       assert.equal(second.error.code, 'RUN_NOT_FOUND'); assert.equal(second.error.details.reason, 'unknown_after_restart');
       assert.equal(second.error.details.retrySafe, false);

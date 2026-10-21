@@ -2290,6 +2290,10 @@ export class CodexSessionsProvider implements IProviderSessions {
         timestamp: ts,
         provider: PROVIDER,
         kind: 'complete',
+        success: true,
+        exitCode: null,
+        aborted: false,
+        completionSource: 'provider-turn-completed',
       })];
     }
     if (raw.type === 'turn_failed') {

@@ -1115,7 +1115,7 @@ const TOOL_BODIES = {
       outcome: z.enum(['settled', 'awaitingPermission', 'timeout']).optional(),
       lastAssistantMessage: z.unknown().nullable(), note: z.string().nullable(), explanation: z.null(),
       durability: z.enum(['sqlite', 'process_local']),
-      terminal: z.object({ exitCode: z.number().nullable(), success: z.boolean().nullable(), aborted: z.boolean() }).nullable(),
+      terminal: z.object({ exitCode: z.number().nullable(), success: z.boolean().nullable(), aborted: z.boolean(), completionSource: z.literal('provider-turn-completed').optional() }).nullable(),
       queue: z.object({ queued: z.boolean(), uuid: z.string().nullable(), state: z.enum(['queued', 'started', 'cancelled', 'completed']).nullable() }),
       resultAttribution: z.enum(['run_events', 'native_message_reference', 'terminal_result_snapshot', 'terminal_receipt', 'unavailable']),
       resultSnapshot: z.unknown().nullable(),
