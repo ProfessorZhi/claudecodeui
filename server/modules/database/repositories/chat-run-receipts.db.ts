@@ -64,6 +64,7 @@ export const chatRunReceiptsDb: ChatRunReceiptStore = {
         AND (chat_run_receipts.terminal=0 OR (excluded.terminal=1
           AND json_extract(chat_run_receipts.receipt_json,'$.terminal')=json_extract(excluded.receipt_json,'$.terminal')
           AND json_extract(chat_run_receipts.receipt_json,'$.completedAt')=json_extract(excluded.receipt_json,'$.completedAt')
+          AND json_extract(chat_run_receipts.receipt_json,'$.providerSessionId') IS json_extract(excluded.receipt_json,'$.providerSessionId')
           AND json_extract(chat_run_receipts.receipt_json,'$.resultSnapshot') IS json_extract(excluded.receipt_json,'$.resultSnapshot')))
     `).run(clean.runId,clean.sessionId,clean.bootId,clean.startedAt,clean.terminal === null ? 0 : 1,JSON.stringify(clean));
     if (result.changes !== 1) throw new Error('Run receipt identity conflict or terminal downgrade.');

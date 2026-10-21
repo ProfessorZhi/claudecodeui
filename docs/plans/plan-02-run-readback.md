@@ -26,3 +26,6 @@ Add actual Codex parser tests showing live itemId is not a stable history id, an
 
 ## MCP queue receipt fence
 Use real loopback requests to prove per-run busy rejection creates no receipt/provider call, and direct real-control/MCP-adapter execution to prove an unconfirmed own queue UUID produces a non-retryable unknown error with its registered ticket. No automatic replay or fallback channel.
+
+## Attribution review corrections
+Capture RED for cross-session/provider lifecycle reuse, cached late binding, terminal old-writer retarget, superseded mapping and native-reference context mismatch. Limit registry matching to emitter session/provider, guard terminal mapping and newer current identity, freeze terminal native ID in SQLite, and verify native history context before lookup. Preserve running initialization and same-session/provider cross-round positives. Run the focused readback suite and existing registry tests; freeze a separate reviewable fix commit.

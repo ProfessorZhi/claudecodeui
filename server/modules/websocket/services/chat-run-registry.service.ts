@@ -539,10 +539,11 @@ export function createChatRunRegistry(options?: {
       truncated: end < bytes.length, utf8Bytes: bytes.length, storedBytes: prefix.length,
       sha256: createHash('sha256').update(bytes).digest('hex'), storedSha256: createHash('sha256').update(prefix).digest('hex') };
   }
-  function queueLifecycle(message: NormalizedMessage): void {
+  function queueLifecycle(emitter: ChatRun, message: NormalizedMessage): void {
     if (message.kind !== 'command_lifecycle' || !message.commandUuid || !message.commandState) return;
     for (const candidate of runsById.values()) {
-      if (candidate.queuedMessageUuid === message.commandUuid) { candidate.queueState = message.commandState; persist(candidate); }
+      if (candidate.appSessionId === emitter.appSessionId && candidate.provider === emitter.provider
+        && candidate.queuedMessageUuid === message.commandUuid) { candidate.queueState = message.commandState; persist(candidate); }
     }
   }
 
@@ -622,7 +623,7 @@ export function createChatRunRegistry(options?: {
       run.assistantMessageId = typeof reference === 'string' && reference.length <= 1024 ? reference : null;
       persist(run);
     }
-    queueLifecycle(message);
+    queueLifecycle(run, message);
     if (message.kind === 'complete') persist(run);
     if (run.events.length > MAX_BUFFERED_EVENTS_PER_RUN) {
       run.events.splice(0, run.events.length - MAX_BUFFERED_EVENTS_PER_RUN);
@@ -659,7 +660,7 @@ export function createChatRunRegistry(options?: {
    * happens first wins; later calls with the same id are no-ops.
    */
   function recordProviderSessionId(run: ChatRun, providerSessionId: string): void {
-    if (!providerSessionId || run.providerSessionId === providerSessionId) {
+    if (run.status !== 'running' || !providerSessionId || run.providerSessionId === providerSessionId) {
       return;
     }
 
@@ -667,6 +668,9 @@ export function createChatRunRegistry(options?: {
     persist(run);
 
     try {
+      // A superseded writer still owns its receipt, but cannot retarget an
+      // already bound current session. An unbound session may initialize once.
+      if (runs.get(run.appSessionId) !== run && sessionsDb.getSessionById(run.appSessionId)?.provider_session_id) return;
       sessionsDb.assignProviderSessionId(run.appSessionId, providerSessionId);
       void broadcastSessionUpserted(run.appSessionId).catch((error) => {
         const message = error instanceof Error ? error.message : String(error);
@@ -1076,8 +1080,11 @@ export function createChatRunRegistry(options?: {
       run.queued = true; run.queuedMessageUuid = uuid; run.queueState = uuid ? 'queued' : null;
       // The CLI may have announced the lifecycle before the ACK handover. Read
       // that actual event instead of inventing a fresh queued state.
-      if (uuid) for (const owner of runsById.values()) for (const event of owner.events) {
+      if (uuid) for (const owner of runsById.values()) {
+        if (owner.appSessionId !== run.appSessionId || owner.provider !== run.provider) continue;
+        for (const event of owner.events) {
         if (event.kind === 'command_lifecycle' && event.commandUuid === uuid && event.commandState) run.queueState = event.commandState;
+        }
       }
       persist(run);
     },
