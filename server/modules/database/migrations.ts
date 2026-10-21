@@ -539,6 +539,9 @@ const addProviderSessionIdMapping = (db: Database): void => {
   const sessionsTableInfo = getTableInfo(db, 'sessions');
   const columnNames = sessionsTableInfo.map((column) => column.name);
 
+  // An existing NULL is an app-only session whose provider has not announced
+  // a native identity. Backfill only the legacy shape that predates this column.
+  if (columnNames.includes('provider_session_id')) return;
   addColumnToTableIfNotExists(db, 'sessions', columnNames, 'provider_session_id', 'TEXT');
   db.exec(`
     UPDATE sessions
