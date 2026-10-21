@@ -138,6 +138,7 @@ function declaredToolScopes(): Map<string, string> {
   scopes.set('ui_focus_turn', NAVIGATE_SCOPE);
   scopes.set('ui_show_diff', NAVIGATE_SCOPE);
   scopes.set('ui_open_task', NAVIGATE_SCOPE);
+  scopes.set('project_create', SESSION_CREATE_SCOPE);
   return scopes;
 }
 

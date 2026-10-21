@@ -65,6 +65,7 @@ import {
 } from './modules/oauth/index.js';
 import { createSystemModule, readBuildInfo } from './modules/system/index.js';
 import projectModuleRoutes from './modules/projects/projects.routes.js';
+import { createProjectWithinWorkspaceRoot } from './modules/projects/index.js';
 import notificationRoutes from './modules/notifications/notifications.routes.js';
 import { userRoutes } from './modules/user/index.js';
 import {
@@ -1776,6 +1777,9 @@ const mcpGateway = mountMcpGateway(
         // `runGet` reuses AC-248's deps so a `waitSeconds` send and a `run_get`
         // wait move through one clock.
         writeTools: {
+            projectCreate: {
+                createProject: (input) => createProjectWithinWorkspaceRoot(input, process.env.WORKSPACES_ROOT),
+            },
             // AC-249/AC-272's send deps, shared with the voice control plane so a
             // spoken instruction and an MCP call open their runs through one path.
             runGet: mcpSessionSendDeps.runGet,

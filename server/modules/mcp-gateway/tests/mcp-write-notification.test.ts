@@ -271,6 +271,7 @@ type Harness = {
 
 /** The write-tool call plan: one SUCCESSFUL call per write tool, with expected title. */
 const WRITE_CALLS: Array<{ tool: string; args: AnyRecord; sessionTitle: string | null }> = [
+  { tool: 'project_create', args: { projectPath: '/fixture-created' }, sessionTitle: null },
   { tool: 'session_send', args: { session: SEND_SESSION, message: LONG_MESSAGE }, sessionTitle: SEND_TITLE },
   { tool: 'session_create', args: { project: PROJECT_ID }, sessionTitle: null },
   { tool: 'session_interrupt', args: { session: TARGET }, sessionTitle: TARGET_TITLE },
@@ -421,6 +422,16 @@ async function withHarness(options: HarnessOptions, run: (harness: Harness) => P
           writeToolNames: MCP_STAGE4_WRITE_TOOLS.map((tool) => tool.name),
         },
         writeTools: {
+          projectCreate: {
+            createProject: async (input) => ({
+              outcome: 'created', freshDirectoryCreated: false,
+              project: {
+                projectId: 'notification-created', path: input.projectPath,
+                fullPath: input.projectPath, displayName: 'Created project', customName: null,
+                isArchived: false, isStarred: false, sessions: [], sessionMeta: { hasMore: false, total: 0 },
+              },
+            }),
+          },
           runGet: { deps: runGetDeps, build: buildRunGet },
           sessionCreate: {
             projects: { list: () => [{ id: PROJECT_ID, title: 'AC303 project', path: fixtureProject }] },

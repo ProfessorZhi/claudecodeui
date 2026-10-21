@@ -427,6 +427,7 @@ type ToolProbe = { probeClass: ProbeClass; args: AnyRecord; expect: string };
  * particular tool and argument are probed separately in {@link CLASS_PROBES}.
  */
 const PROBE_TABLE: Record<string, ToolProbe> = {
+  project_create: { probeClass: '参数缺失', args: {}, expect: 'INVALID_ARGUMENT' },
   overview: { probeClass: '参数类型错', args: { project: 5 }, expect: 'INVALID_ARGUMENT' },
   projects_list: { probeClass: '参数类型错', args: { includeArchived: 'yes' }, expect: 'INVALID_ARGUMENT' },
   sessions_list: { probeClass: '参数类型错', args: { state: 'bogus' }, expect: 'INVALID_ARGUMENT' },
@@ -685,10 +686,7 @@ test('(d) the probe table covers exactly the tools the registry lists', async ()
   const covered = [...Object.keys(PROBE_TABLE), ...Object.keys(EXEMPT_TOOLS)].sort();
 
   // Non-vacuity: the registry really answered, and answered with the full set —
-  // the read tools (including `changes`, the on-demand incremental read surface),
-  // the write tools, and the `ui_*` navigation tools. A mount that registered
-  // nothing would fail the equality below, not pass it.
-  assert.equal(registryNames.length, 28, `tools/list must return the full 28-tool set, got ${registryNames.join(', ')}`);
+  assert.equal(registryNames.length, 29, `tools/list must return the full 29-tool set, got ${registryNames.join(', ')}`);
   say(`(d) registry names: ${registryNames.join(', ')}`);
 
   assert.deepEqual(

@@ -625,6 +625,12 @@ function makeWriteTools(control: ReturnType<typeof makeControl>): McpWriteToolDe
     }),
   };
   return {
+    projectCreate: {
+      createProject: async () => ({
+        outcome: 'created', freshDirectoryCreated: false,
+        project: { projectId: 'proj-new', path: '/tmp/proj-new', displayName: 'New project', isArchived: false },
+      }),
+    },
     control,
     runs,
     runGet: { deps: runGetDeps, build: async () => ({ runId: 'run-1', status: 'unknown' }) },
@@ -907,6 +913,7 @@ async function call(client: Client, tool: string, args: AnyRecord): Promise<Call
  * payload (not an error).
  */
 const SUCCESS_TABLE: Record<string, AnyRecord> = {
+  project_create: { projectPath: '/tmp/proj-new' },
   overview: {},
   projects_list: {},
   sessions_list: {},
@@ -981,6 +988,7 @@ const SUCCESS_TABLE: Record<string, AnyRecord> = {
  * silent omission.
  */
 const FAILURE_TABLE: Record<string, { args: AnyRecord; expect: string }> = {
+  project_create: { args: {}, expect: 'INVALID_ARGUMENT' },
   overview: { args: { project: 5 }, expect: 'INVALID_ARGUMENT' },
   projects_list: { args: { includeArchived: 'yes' }, expect: 'INVALID_ARGUMENT' },
   sessions_list: { args: { state: 'bogus' }, expect: 'INVALID_ARGUMENT' },
@@ -1212,7 +1220,7 @@ test('(a) the success and failure tables cover exactly the tools the registry li
   const listed = await listClient.listTools();
   const registryNames = listed.tools.map((tool) => tool.name).sort();
 
-  assert.equal(registryNames.length, 28, `tools/list must return the full 28-tool set, got ${registryNames.join(', ')}`);
+  assert.equal(registryNames.length, 29, `tools/list must return the full 29-tool set, got ${registryNames.join(', ')}`);
   assert.deepEqual(
     Object.keys(SUCCESS_TABLE).sort(),
     registryNames,

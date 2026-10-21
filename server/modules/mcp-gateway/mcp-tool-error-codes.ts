@@ -130,6 +130,10 @@ export const MCP_TOOL_ERROR_CODES: Record<McpGatewayToolName, readonly McpErrorC
   // target code is added. Unwired, it keeps the body-table refusal.
   changes: [...WRAPPER_CODES, 'MCP_TOOL_NOT_IMPLEMENTED'],
 
+  // Project service codes (including PROJECT_ALREADY_EXISTS and INVALID_PROJECT_PATH)
+  // pass through unchanged, as the existing service-code contract specifies.
+  project_create: [...WRAPPER_CODES, 'MCP_TOOL_NOT_IMPLEMENTED'],
+
   // -- stage-4 write tools ---------------------------------------------------
   // `session_send` normalizes the control service's `RUN_IN_PROGRESS` to the
   // gateway's one "the session is busy" code.

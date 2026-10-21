@@ -259,6 +259,7 @@ test('(c) the read-only set is the seven read tools plus approvals_list and draf
     'approval_answer',
     'draft_set',
     'draft_submit',
+    'project_create',
   ];
   for (const name of writes) {
     assert.equal(
