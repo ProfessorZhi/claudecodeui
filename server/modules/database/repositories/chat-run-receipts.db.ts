@@ -34,6 +34,7 @@ export const chatRunReceiptsDb: ChatRunReceiptStore = {
       },
       terminal: receipt.terminal === null ? null : {
         exitCode: receipt.terminal.exitCode, success: receipt.terminal.success, aborted: receipt.terminal.aborted,
+        ...(receipt.terminal.completionSource === undefined ? {} : { completionSource: receipt.terminal.completionSource }),
       },
     };
     if (clean.terminal === null ? clean.status !== 'running' || clean.completedAt !== null
@@ -43,7 +44,8 @@ export const chatRunReceiptsDb: ChatRunReceiptStore = {
     if (clean.resultSnapshot) {
       const snapshot = clean.resultSnapshot;
       const length = Buffer.byteLength(snapshot.text, 'utf8');
-      const final = clean.terminal?.success === true && clean.terminal.exitCode === 0 && !clean.terminal.aborted;
+      const final = clean.terminal?.success === true && !clean.terminal.aborted
+        && (clean.terminal.exitCode === 0 || (clean.terminal.exitCode === null && clean.terminal.completionSource === 'provider-turn-completed'));
       if (!clean.terminal || length > 64 * 1024 || snapshot.storedBytes !== length || snapshot.utf8Bytes < length
         || snapshot.truncated !== (snapshot.utf8Bytes > length) || snapshot.source !== 'live-run-writer'
         || snapshot.completeness !== (final ? 'final' : 'partial')
@@ -51,6 +53,10 @@ export const chatRunReceiptsDb: ChatRunReceiptStore = {
         || (!snapshot.truncated && snapshot.sha256 !== snapshot.storedSha256)) {
         throw new Error('Run result snapshot bounds, ownership or hash is inconsistent.');
       }
+    }
+    if (clean.terminal?.completionSource !== undefined && (clean.terminal.completionSource !== 'provider-turn-completed'
+      || clean.terminal.success !== true || clean.terminal.aborted || clean.terminal.exitCode !== null)) {
+      throw new Error('Provider turn completion provenance is inconsistent.');
     }
     const result = connection().prepare(`
       INSERT INTO chat_run_receipts(run_id,session_id,boot_id,started_at,terminal,receipt_json)

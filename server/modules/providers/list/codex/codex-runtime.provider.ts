@@ -296,6 +296,7 @@ async function queryCodex(
   let capturedSessionId = providerSessionId;
   let sessionCreatedSent = false;
   let terminalFailure: { message: string } | null = null;
+  let turnCompleted = false;
   // Codex surfaces API failures as streamed error items/turn.failed events, and
   // then the SDK also throws "Codex Exec exited with code N: <stderr>" once the
   // process dies. Showing both means the rendered error is followed by a raw
@@ -399,6 +400,12 @@ async function queryCodex(
         continue;
       }
 
+      // A successful provider event is the proof, not assistant prose or EOF.
+      // A prior failed turn cannot be promoted by a contradictory later frame.
+      if (event.type === 'turn.completed') {
+        if (terminalFailure) continue;
+        turnCompleted = true;
+      }
       const transformed = transformCodexEvent(event);
       if (transformed.type === 'error' || transformed.itemType === 'error') {
         errorSurfaced = true;
@@ -437,13 +444,19 @@ async function queryCodex(
     const runSession = activeCodexSessions.get(sessionKey() || '');
     const runAborted = runSession?.status === 'aborted' || abortController.signal.aborted;
     if (!runAborted) {
-      sendMessage(ws, createCompleteMessage({
+      sendMessage(ws, terminalFailure ? createCompleteMessage({
         provider: 'codex',
         sessionId: capturedSessionId || sessionId || null,
         actualSessionId: capturedSessionId || thread.id || sessionId || null,
-        exitCode: terminalFailure ? 1 : 0,
+        exitCode: 1,
+      }) : createNormalizedMessage({
+        kind: 'complete', provider: 'codex',
+        sessionId: capturedSessionId || sessionId || null,
+        actualSessionId: capturedSessionId || thread.id || sessionId || null,
+        exitCode: null,
+        ...(turnCompleted ? { success: true, completionSource: 'provider-turn-completed' } : {}),
       }));
-      if (!terminalFailure) {
+      if (!terminalFailure && turnCompleted) {
         notifyRunStopped({
           userId: ws?.userId || null,
           provider: 'codex',

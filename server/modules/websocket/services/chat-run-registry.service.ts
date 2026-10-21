@@ -535,7 +535,8 @@ export function createChatRunRegistry(options?: {
     if (end < bytes.length) while (end > 0 && (bytes[end] & 0xc0) === 0x80) end--;
     const prefix = bytes.subarray(0, end);
     return { text: prefix.toString('utf8'), messageId: message.id, timestamp: message.timestamp,
-      source: 'live-run-writer', completeness: run.terminal?.success === true && run.terminal.exitCode === 0 && !run.terminal.aborted ? 'final' : 'partial',
+      source: 'live-run-writer', completeness: run.terminal?.success === true && !run.terminal.aborted
+        && (run.terminal.exitCode === 0 || (run.terminal.exitCode === null && run.terminal.completionSource === 'provider-turn-completed')) ? 'final' : 'partial',
       truncated: end < bytes.length, utf8Bytes: bytes.length, storedBytes: prefix.length,
       sha256: createHash('sha256').update(bytes).digest('hex'), storedSha256: createHash('sha256').update(prefix).digest('hex') };
   }
@@ -608,7 +609,8 @@ export function createChatRunRegistry(options?: {
       // rather than be flattened into a run that completed.
       run.status = message.aborted === true ? 'aborted' : 'completed';
       run.completedAt = now();
-      run.terminal = { exitCode: typeof message.exitCode === 'number' ? message.exitCode : null, success: typeof message.success === 'boolean' ? message.success : null, aborted: message.aborted === true };
+      run.terminal = { exitCode: typeof message.exitCode === 'number' ? message.exitCode : null, success: typeof message.success === 'boolean' ? message.success : null, aborted: message.aborted === true,
+        ...(message.completionSource === 'provider-turn-completed' ? { completionSource: message.completionSource } : {}) };
       run.resultSnapshot = finalResult(run);
       evictRunLater(run);
     }

@@ -795,6 +795,8 @@ export type NormalizedMessage = {
   timestamp: string;
   provider: LLMProvider;
   kind: MessageKind;
+  /** Explicit successful provider turn event; it does not assert an OS exit code. */
+  completionSource?: 'provider-turn-completed';
   /**
    * Monotonic per-run sequence number assigned by the chat run registry when a
    * live event is forwarded to the websocket. History messages loaded over
@@ -3864,7 +3866,13 @@ export type ChatRunReceipt = {
   queuedMessageUuid: string | null;
   queueState: CommandLifecycleState | null;
   assistantMessageId: string | null;
-  terminal: { exitCode: number | null; success: boolean | null; aborted: boolean } | null;
+  terminal: {
+    exitCode: number | null;
+    success: boolean | null;
+    aborted: boolean;
+    /** The SDK explicitly completed this turn even when process exit is unknown. */
+    completionSource?: 'provider-turn-completed';
+  } | null;
   resultSnapshot: ChatRunResultSnapshot | null;
 };
 
