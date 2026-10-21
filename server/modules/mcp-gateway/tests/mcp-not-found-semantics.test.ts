@@ -822,8 +822,9 @@ test('(c) run_get: expired, never-issued and restarted are RUN_NOT_FOUND errors 
     }
 
     assert.equal(expiredDetails.reason, 'expired', 'a run past retention reads expired');
-    assert.equal(neverDetails.reason, 'never_issued', 'an id never handed out reads never_issued');
-    assert.equal(restartedDetails.reason, 'expired', 'a run from a previous boot is no longer reachable — expired');
+    assert.equal(neverDetails.reason, 'unknown_in_current_process', 'an absent Run id cannot prove never issued');
+    assert.equal(neverDetails.retrySafe, false);
+    assert.equal(restartedDetails.reason, 'unknown_after_restart', 'a prior boot without terminal proof remains unknown');
     assert.equal(restartedDetails.bootId, BOOT_TWO, 'the restarted reading names the CURRENT boot');
 
     // The three sentences stay distinct: the restarted one really says the

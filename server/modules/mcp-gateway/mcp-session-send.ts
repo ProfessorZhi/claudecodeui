@@ -63,7 +63,7 @@
 
 import { z } from 'zod';
 
-import type { HostInputPriority, LLMProvider, NormalizedMessage } from '@/shared/types.js';
+import type { ChatRunReadback, HostInputPriority, LLMProvider, NormalizedMessage } from '@/shared/types.js';
 
 import { toPendingInteraction } from './mcp-approvals.js';
 import type { McpPendingInteraction } from './mcp-approvals.js';
@@ -98,7 +98,9 @@ export type McpControlRefusalCode =
   | 'SESSION_NOT_FOUND'
   | 'UNSUPPORTED_PROVIDER'
   | 'RUN_IN_PROGRESS'
-  | 'FORBIDDEN';
+  | 'FORBIDDEN'
+  | 'RUN_REGISTRATION_FAILED'
+  | 'QUEUE_ACCEPTANCE_UNKNOWN';
 
 /**
  * The control service result `session_send` reads, declared structurally.
@@ -134,7 +136,7 @@ export type McpControlSendResult =
       queued: boolean;
       queuedMessageUuid: string | null;
     }
-  | { ok: false; code: McpControlRefusalCode; message: string };
+  | { ok: false; code: McpControlRefusalCode; message: string; details?: Record<string, unknown> };
 
 /** The one control verb `session_send` needs: opening a run. */
 export type McpControlSeam = {
@@ -199,6 +201,13 @@ export type McpRunReader = {
    * {@link setRunCorrelationId} (and stamps nothing when that too is absent).
    */
   setDeliveryCorrelationId?(deliveryId: string, correlationId: string): void;
+  /**
+   * The durable receipt for a run, when one was persisted: its terminal state,
+   * the boot that wrote it and how long it survives. Absent on a mount that
+   * predates the receipt table, which `durability` then reports as
+   * `'process_local'` — the honest reading, not an optimistic one.
+   */
+  getRunReadback?(runId: string): ChatRunReadback | null;
 };
 
 /**
@@ -349,6 +358,7 @@ export type SessionSendPayload = {
   queuedMessageUuid: string | null;
   source: string;
   blockedBy: McpPendingInteraction | null;
+  durability: 'sqlite' | 'process_local';
   run?: RunGetPayload;
 };
 
@@ -547,7 +557,7 @@ export async function buildSessionSend(
         hint: RUN_IN_PROGRESS_HINT,
       });
     }
-    throw new McpToolError(result.code, result.message, true);
+    throw new McpToolError(result.code, result.message, false, result.details);
   }
 
   // AC-337 / SPEC §6.1: stamp the caller's opaque label onto the DELIVERY this
@@ -590,6 +600,12 @@ export async function buildSessionSend(
     queuedMessageUuid: result.queuedMessageUuid,
     source,
     blockedBy,
+    // A send that named no run id has nothing to look a receipt up by; the
+    // process-local reading is the only true one.
+    durability:
+      result.runId !== null
+        ? (deps.runs.getRunReadback?.(result.runId)?.durability ?? 'process_local')
+        : 'process_local',
   };
 
   const waitSeconds = effectiveWaitSeconds(input.waitSeconds);

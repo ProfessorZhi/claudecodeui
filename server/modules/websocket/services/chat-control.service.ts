@@ -20,6 +20,7 @@ import type {
   MissingApprovalReason,
   ProviderPermissionDecision,
   RealtimeClientConnection,
+  ProviderRuntimeWriter,
 } from '@/shared/types.js';
 import { residentRunIsTurn } from '@/shared/utils.js';
 
@@ -181,8 +182,9 @@ type SendResult =
     }
   | {
       ok: false;
-      code: 'SESSION_NOT_FOUND' | 'UNSUPPORTED_PROVIDER' | 'RUN_IN_PROGRESS' | 'FORBIDDEN';
+      code: 'SESSION_NOT_FOUND' | 'UNSUPPORTED_PROVIDER' | 'RUN_IN_PROGRESS' | 'FORBIDDEN' | 'RUN_REGISTRATION_FAILED' | 'QUEUE_ACCEPTANCE_UNKNOWN';
       message: string;
+      details?: Record<string, unknown>;
     };
 
 /**
@@ -344,6 +346,7 @@ async function readQueuedMessageUuid(
   runtime: ProviderRuntimeGateway,
   provider: LLMProvider,
   sessionId: string,
+  writer?: ProviderRuntimeWriter,
 ): Promise<string | null> {
   const read = runtime.queuedInputUuid;
   if (typeof read !== 'function') {
@@ -356,7 +359,7 @@ async function readQueuedMessageUuid(
       timer = setTimeout(() => resolve(null), QUEUED_UUID_HANDOVER_TIMEOUT_MS);
       timer.unref?.();
     });
-    const uuid = await Promise.race([read.call(runtime, provider, sessionId), bound]);
+    const uuid = await Promise.race([read.call(runtime, provider, sessionId, writer), bound]);
     return typeof uuid === 'string' && uuid.length > 0 ? uuid : null;
   } catch {
     return null;
@@ -639,6 +642,7 @@ export function createChatControlService(deps: ChatControlDependencies) {
       resolveRunId = resolve;
     });
     let busyAccepted = false;
+    let admittedWriter: ProviderRuntimeWriter | undefined;
 
     // What the delivery-shaped answer needs, read BEFORE the dispatch: run=turn
     // is the mode in which a send is a DELIVERY, and "would this session take a
@@ -678,6 +682,7 @@ export function createChatControlService(deps: ChatControlDependencies) {
       {},
       (run, info) => {
         busyAccepted = info.busyAccepted;
+        admittedWriter = run.writer;
         resolveRunId(run.runId);
       },
       input.connection ?? null,
@@ -707,8 +712,8 @@ export function createChatControlService(deps: ChatControlDependencies) {
     if (!outcome.registered) {
       return {
         ok: false,
-        code: 'RUN_IN_PROGRESS',
-        message: `Session "${input.sessionId}" already has a run in progress.`,
+        code: outcome.result.started ? 'RUN_REGISTRATION_FAILED' : 'RUN_IN_PROGRESS',
+        message: outcome.result.error ?? `Session "${input.sessionId}" already has a run in progress.`,
       };
     }
 
@@ -747,7 +752,30 @@ export function createChatControlService(deps: ChatControlDependencies) {
       // can be withdrawn later; a gateway with no such seam degrades to `null`.
       // SPEC §8.1 keeps this field as the delivery id's ALIAS, so when the queue
       // names it, that name is the delivery id — the two readings are one.
-      const queuedMessageUuid = await readQueuedMessageUuid(deps.runtime, provider, input.sessionId);
+      const queuedMessageUuid = await readQueuedMessageUuid(deps.runtime, provider, input.sessionId, admittedWriter);
+      // The queue's own name for the message is the run's queued input: recorded
+      // here because this is the only point where both ids are in hand, and a
+      // later withdraw reads it back from the run.
+      chatRunRegistry.setRunQueuedInput(outcome.runId, queuedMessageUuid);
+      if (caller.via === 'mcp' && queuedMessageUuid === null) {
+        // An MCP caller handed a message over and the queue could not name what
+        // it stamped: the send may or may not have been accepted, so answering
+        // `ok` with a null handle would invite a blind resend.
+        return {
+          ok: false,
+          code: 'QUEUE_ACCEPTANCE_UNKNOWN',
+          message:
+            'This run was registered but its provider queue acceptance could not be confirmed. Reconcile its runId before any resend.',
+          details: {
+            runId: outcome.runId,
+            sessionId: input.sessionId,
+            queuedMessageUuid: null,
+            retrySafe: false,
+            mayHaveExecuted: true,
+            durability: chatRunRegistry.getRunReadback(outcome.runId)?.durability ?? 'process_local',
+          },
+        };
+      }
       return {
         ok: true,
         deliveryId: queuedMessageUuid ?? deliveryId,

@@ -612,3 +612,17 @@ ${USER_VOICE_SETTINGS_TABLE_SCHEMA_SQL}
 
 ${VOICE_USER_IDENTIFIERS_TABLE_SCHEMA_SQL}
 `;
+
+
+/** chatRunRegistry's minimal durable receipt backing in the existing sessions DB. */
+export const CHAT_RUN_RECEIPTS_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS chat_run_receipts (
+  run_id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  boot_id TEXT NOT NULL,
+  started_at INTEGER NOT NULL,
+  terminal INTEGER NOT NULL DEFAULT 0,
+  receipt_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_chat_run_receipts_session ON chat_run_receipts(session_id, started_at);
+`;

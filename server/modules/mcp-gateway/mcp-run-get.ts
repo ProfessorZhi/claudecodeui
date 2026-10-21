@@ -22,7 +22,10 @@
  *    `{ idKind, runId, deliveryId, reason, bootId, fallback }`. `reason` is
  *    `'expired'` for a run that aged out of retention AND for `restarted` (a
  *    previous boot's run: the id no longer names anything this process has),
- *    `'never_issued'` for an id that was never handed out. The `fallback` read —
+ *    `'never_issued'` for an id that was never handed out. A run whose durable
+ *    terminal receipt was persisted is NOT a miss: the receipt outlives the
+ *    registry across restarts, so the read answers from it (its `durability`
+ *    says so) rather than reporting the id as unknown. The `fallback` read —
  *    the named session's recent messages, verbatim — rides in `details` so a
  *    caller still gets the context the old success-shaped miss carried.
  *  - a WAIT returns as soon as one of three things happens — the run reaches a
@@ -63,6 +66,7 @@
 import { z } from 'zod';
 
 import type {
+  ChatRunReadback,
   NormalizedMessage,
   ResidentDeliveryLookup,
   ResidentDeliveryLookupReason,
@@ -114,7 +118,7 @@ export type McpRunGetIdKind = 'run' | 'delivery';
  * `expired` covers both a run aged out of retention and a run belonging to a
  * previous boot; `never_issued` covers an id nothing ever handed out.
  */
-export type McpRunGetMissReason = 'expired' | 'never_issued';
+export type McpRunGetMissReason = 'expired' | 'unknown_in_current_process' | 'unknown_after_restart';
 
 /**
  * The INTERNAL cause of a miss, which picks the sentence.
@@ -172,12 +176,15 @@ export type McpRunGetDeps = {
     getRunById(runId: string): ChatRunLookupResult;
     /** The boot the run was created under, or `null` when the registry no longer holds it. */
     getRunBootId(runId: string): string | null;
+    /** Same owner, optionally backed by the existing sessions SQLite. */
+    getRunReadback?(runId: string): ChatRunReadback | null;
   };
   activity: {
     snapshot(sessionId: string): ActivityProtocolSnapshot | null;
   };
   sessions: {
     fetchHistory(sessionId: string, options: { limit: number }): Promise<{ messages: NormalizedMessage[] }>;
+    fetchWindowAround?(sessionId: string, options: { aroundId: string; before: number; after: number }): Promise<{ messages: NormalizedMessage[] }>;
   };
   /**
    * The ledger's by-id delivery reading (SPEC §8.2), when this mount has one.
@@ -205,6 +212,7 @@ export type McpRunGetFallback = {
   messages: NormalizedMessage[];
   /** Why there are no messages (no session named, or the read returned none). */
   note: string | null;
+  attribution: 'session_history_unverified';
 };
 
 /** A run summary, with the activity reading and (on settle) the closing message. */
@@ -221,7 +229,7 @@ export type McpRunGetHit = {
   deliveryId: string | null;
   sessionId: string;
   source: string;
-  status: 'running' | 'completed' | 'aborted' | 'cancelled';
+  status: 'running' | 'queued' | 'completed' | 'failed' | 'aborted' | 'cancelled' | 'unknown';
   /** The activity store's turn phase, or `null` when it has no snapshot. */
   phase: string | null;
   /** The pending tool's name, or `null`. */
@@ -242,6 +250,11 @@ export type McpRunGetHit = {
   note: string | null;
   /** Always `null` on a hit — the field exists so "no explanation" is a value, not a missing key. */
   explanation: null;
+  durability: 'sqlite' | 'process_local';
+  terminal: ChatRunReadback['terminal'];
+  queue: { queued: boolean; uuid: string | null; state: ChatRunReadback['queueState'] };
+  resultSnapshot: ChatRunReadback['resultSnapshot'];
+  resultAttribution: 'run_events' | 'native_message_reference' | 'terminal_result_snapshot' | 'terminal_receipt' | 'unavailable';
 };
 
 /**
@@ -264,6 +277,8 @@ export type McpRunGetMiss = {
   bootId: string;
   /** The fallback read: the named session and the messages it yielded, verbatim. */
   fallback: McpRunGetFallback;
+  retrySafe: false;
+  mayHaveExecuted: true;
 };
 
 /** The `run_get` tool's SUCCESS result — always a hit; a miss is thrown. */
@@ -352,17 +367,32 @@ async function buildHit(
   const snapshot = deps.activity.snapshot(summary.sessionId);
   const at = deps.now();
 
-  let lastAssistantMessage: NormalizedMessage | null = null;
-  let note: string | null = null;
-  if (outcome === 'settled') {
-    const history = await deps.sessions.fetchHistory(summary.sessionId, { limit: MCP_RUN_GET_HISTORY_LIMIT });
-    const assistant = [...history.messages].reverse().find((message) => message.role === 'assistant');
-    if (assistant === undefined) {
-      note = NO_ASSISTANT_MESSAGE_NOTE;
-    } else {
-      lastAssistantMessage = assistant;
-    }
+  const evidence = deps.runs.getRunReadback?.(runId) ?? null;
+  let lastAssistantMessage = summary.status === 'running' ? null : evidence?.lastAssistantMessage ?? null;
+  let attribution: McpRunGetHit['resultAttribution'] = lastAssistantMessage ? 'run_events' : evidence?.terminal ? 'terminal_receipt' : 'unavailable';
+  if (!lastAssistantMessage && evidence?.assistantMessageId && deps.sessions.fetchWindowAround) {
+    try {
+      const window = await deps.sessions.fetchWindowAround(summary.sessionId, { aroundId: evidence.assistantMessageId, before: 0, after: 0 });
+      lastAssistantMessage = window.messages.find(message => message.role === 'assistant' && (message.id === evidence.assistantMessageId || message.transcriptAnchorId === evidence.assistantMessageId)) ?? null;
+      if (lastAssistantMessage) attribution = 'native_message_reference';
+    } catch { /* Terminal proof survives an unavailable/missing exact native reference. */ }
   }
+  const snapshotResult = evidence?.resultSnapshot ?? null;
+  if (snapshotResult && (!lastAssistantMessage || (snapshotResult.truncated && attribution === 'run_events'))) {
+    lastAssistantMessage = {
+      id: snapshotResult.messageId, timestamp: snapshotResult.timestamp, runId,
+      sessionId: summary.sessionId, provider: evidence!.provider, kind: 'text', role: 'assistant', content: snapshotResult.text,
+    };
+    attribution = 'terminal_result_snapshot';
+  }
+  const terminal = evidence?.terminal ?? null;
+  const status: McpRunGetHit['status'] = terminal?.aborted ? 'aborted'
+    : terminal && (terminal.success === false || (terminal.exitCode !== null && terminal.exitCode !== 0)) ? 'failed'
+    : terminal && terminal.success === null && terminal.exitCode === null ? 'unknown'
+    : evidence?.queued && evidence.queueState === null && summary.status === 'running' ? 'unknown'
+    : evidence?.queueState === 'cancelled' && terminal === null ? 'cancelled'
+    : summary.status === 'running' && evidence?.queueState === 'queued' ? 'queued' : summary.status;
+  const note = summary.status !== 'running' && !lastAssistantMessage ? NO_ASSISTANT_MESSAGE_NOTE : null;
 
   return {
     idKind: 'run',
@@ -370,7 +400,7 @@ async function buildHit(
     deliveryId: null,
     sessionId: summary.sessionId,
     source: summary.source,
-    status: summary.status,
+    status,
     // `phase`/`toolName` come from the activity store and nowhere else; a store
     // that has never been told about the session says so in words rather than
     // by dropping the keys.
@@ -379,8 +409,8 @@ async function buildHit(
     activityNote: snapshot === null ? NO_ACTIVITY_NOTE : null,
     startedAt: formatMcpTime(summary.startedAt, deps.now),
     completedAt: summary.completedAt === null ? null : formatMcpTime(summary.completedAt, deps.now),
-    elapsedMs: Math.max(0, at - summary.startedAt),
-    bootId: deps.runs.getRunBootId(runId) ?? deps.bootId(),
+    elapsedMs: Math.max(0, (summary.completedAt ?? at) - summary.startedAt),
+    bootId: evidence?.bootId ?? deps.runs.getRunBootId(runId) ?? deps.bootId(),
     ...(outcome === undefined ? {} : { outcome }),
     reason: null,
     lastAssistantMessage,
@@ -442,6 +472,11 @@ async function buildDeliveryHit(
     lastAssistantMessage,
     note,
     explanation: null,
+    durability: evidence?.durability ?? 'process_local',
+    terminal,
+    queue: { queued: evidence?.queued ?? false, uuid: evidence?.queuedMessageUuid ?? null, state: evidence?.queueState ?? null },
+    resultAttribution: attribution,
+    resultSnapshot: snapshotResult,
   };
 }
 
@@ -476,8 +511,10 @@ async function buildMiss(
   if (target === null) {
     note = NO_FALLBACK_SESSION_NOTE;
   } else {
-    const history = await deps.sessions.fetchHistory(target, { limit: MCP_RUN_GET_HISTORY_LIMIT });
-    messages = history.messages;
+    try {
+      const history = await deps.sessions.fetchHistory(target, { limit: MCP_RUN_GET_HISTORY_LIMIT });
+      messages = history.messages;
+    } catch { note = 'Session history is unavailable; this does not prove whether the request executed.'; }
   }
 
   const details: McpRunGetMiss = {
@@ -486,7 +523,8 @@ async function buildMiss(
     deliveryId: input.deliveryId ?? null,
     reason: REASON_BY_CAUSE[cause],
     bootId: deps.bootId(),
-    fallback: { session: target, messages, note },
+    fallback: { session: target, messages, note, attribution: 'session_history_unverified' },
+    retrySafe: false, mayHaveExecuted: true,
   };
   throw new McpToolError(MCP_ERROR_CODES.RUN_NOT_FOUND, EXPLANATION_BY_CAUSE[cause], false, details);
 }
@@ -530,11 +568,27 @@ export async function buildRunGet(input: McpRunGetInput, deps: McpRunGetDeps): P
     });
   }
 
-  const initial = deps.runs.getRunById(runId);
-  if (initial.status === 'unknown') {
-    return buildMiss(input, deps, initial.reason);
+  let initial = deps.runs.getRunById(runId);
+  // The durable receipt beside the live index. It is what makes a terminal
+  // answerable after the event buffer aged out or the process restarted, and
+  // it is read only when the live lookup could not name the run — a live
+  // summary is always the fresher reading.
+  const evidence: ChatRunReadback | null = deps.runs.getRunReadback?.(runId) ?? null;
+  const knownSession = initial.status === 'unknown' ? evidence?.sessionId : initial.sessionId;
+  if (input.session && knownSession && input.session !== knownSession) {
+    throw new McpToolError(MCP_ERROR_CODES.INVALID_ARGUMENT, 'The run does not belong to the requested session.', false);
   }
-  if (isRestarted(runId, deps)) {
+  if (initial.status === 'unknown') {
+    if (evidence?.terminal && (evidence.bootId === deps.bootId() || evidence.durability === 'sqlite')) {
+      // The terminal is the existing owner's persisted fact, independent of
+      // event-buffer retention or a new boot. Never resume an unfinished run.
+      initial = { runId: evidence.runId, sessionId: evidence.sessionId, source: evidence.source,
+        status: evidence.status, startedAt: evidence.startedAt, completedAt: evidence.completedAt, lastSeq: evidence.lastSeq };
+      return buildHit(input.runId, deps, initial, readWaitSeconds(input.waitSeconds) > 0 ? 'settled' : undefined);
+    }
+    return buildMiss(input, deps, evidence && evidence.bootId !== deps.bootId() ? 'restarted' : initial.reason, evidence?.sessionId);
+  }
+  if (isRestarted(runId, deps) && !(evidence?.terminal && evidence.durability === 'sqlite')) {
     return buildMiss(input, deps, 'restarted', initial.sessionId);
   }
 
@@ -677,7 +731,7 @@ export function registerMcpRunGetTool(
     name: registration.name,
     description: registration.description,
     requiredScope: registration.requiredScope,
-    inputSchema: registration.inputSchema,
+    inputSchema: { runId: z.string().min(1), waitSeconds: z.number().optional(), session: z.string().optional() },
     outputSchema: registration.outputSchema,
     handler: (args) => handleRunGet(args, deps),
   });

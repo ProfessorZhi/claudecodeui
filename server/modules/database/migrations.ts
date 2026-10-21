@@ -5,6 +5,7 @@ import { Database } from 'better-sqlite3';
 import { isSelfAssignedSessionName, stripSelfAssignedSuffix } from '@/modules/database/repositories/sessions.db.js';
 import {
   ACCESS_TOKENS_TABLE_SCHEMA_SQL,
+  CHAT_RUN_RECEIPTS_TABLE_SCHEMA_SQL,
   APP_CONFIG_TABLE_SCHEMA_SQL,
   LAST_SCANNED_AT_SQL,
   MCP_AUDIT_LOG_TABLE_SCHEMA_SQL,
@@ -1091,6 +1092,7 @@ export const runMigrations = (db: Database) => {
     // `denied_scopes` (AC-286) and then the usage-stats telemetry tail
     // (gap-mcp-usage-stats) by the guarded migrations that follow.
     db.exec(MCP_AUDIT_LOG_TABLE_SCHEMA_SQL);
+    db.exec(CHAT_RUN_RECEIPTS_TABLE_SCHEMA_SQL);
     addMcpAuditLogDeniedScopesColumn(db);
     addMcpAuditLogTelemetryColumns(db);
     db.exec('CREATE INDEX IF NOT EXISTS idx_mcp_audit_log_at ON mcp_audit_log(at)');

@@ -3840,3 +3840,62 @@ export type ClaudeSessionOccupancy = {
  * criterion passes a counting one.
  */
 export type ClaudeSessionRegistryLister = (sessionsDirectory: string) => string[];
+
+
+//----------------- CHAT RUN OWNER RECEIPTS ------------
+/**
+ * Minimal native gateway Run evidence, persisted by chatRunRegistry in the same
+ * SQLite owner as sessions. Contains references/terminal facts, never transcript
+ * text. An unfinished receipt from an older boot does not prove a live process.
+ * Database, WebSocket registry and MCP readback consume this shared contract.
+ */
+export type ChatRunReceipt = {
+  runId: string;
+  sessionId: string;
+  provider: LLMProvider;
+  providerSessionId: string | null;
+  source: ChatRunSource;
+  bootId: string;
+  status: 'running' | 'completed' | 'aborted';
+  startedAt: number;
+  completedAt: number | null;
+  lastSeq: number;
+  queued: boolean;
+  queuedMessageUuid: string | null;
+  queueState: CommandLifecycleState | null;
+  assistantMessageId: string | null;
+  terminal: { exitCode: number | null; success: boolean | null; aborted: boolean } | null;
+  resultSnapshot: ChatRunResultSnapshot | null;
+};
+
+/** Registry backing seam: a projection in the existing sessions DB, not a scheduler. */
+export type ChatRunReceiptStore = {
+  write(receipt: ChatRunReceipt): void;
+  read(runId: string): ChatRunReceipt | null;
+};
+
+/** Own live events may supply text; reconstructed receipts only supply references. */
+export type ChatRunReadback = ChatRunReceipt & {
+  lastAssistantMessage: NormalizedMessage | null;
+  durability: 'sqlite' | 'process_local';
+};
+
+
+/**
+ * One bounded final/partial SDK assistant result from the Run's own writer.
+ * At most 64KiB UTF-8, not an event log or a transcript copy. sha256/utf8Bytes
+ * describe the original result; storedSha256/storedBytes describe the returned
+ * prefix. Failed/aborted results are explicitly partial, never proof of success.
+ */
+export type ChatRunResultSnapshot = {
+  text: string;
+  messageId: string;
+  timestamp: string;
+  source: 'live-run-writer';
+  completeness: 'final' | 'partial';
+  truncated: boolean;
+  utf8Bytes: number;
+  storedBytes: number;
+  sha256: string;
+  storedSha256: string;
+};

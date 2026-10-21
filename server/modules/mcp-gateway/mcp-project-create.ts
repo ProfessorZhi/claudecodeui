@@ -16,6 +16,7 @@ export type McpProjectCreateDeps = {
 export function registerMcpProjectCreateTool(seam: McpWriteToolSeam, deps?: McpProjectCreateDeps): void {
   seam({
     name: 'project_create',
+    handlerBound: deps !== undefined,
     description: 'Create a project under the device-configured root and return its real id. Set requireFresh to require an exclusively new directory and project row, confirmed by freshDirectoryCreated. Repeated active paths conflict. Reconcile lost responses; absence from projects_list does not prove no directory was created.',
     requiredScope: ACCESS_TOKEN_SCOPES[2],
     inputSchema: {

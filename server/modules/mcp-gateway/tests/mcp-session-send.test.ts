@@ -488,6 +488,8 @@ async function withHarness(options: HarnessOptions, run: (harness: Harness) => P
             if (options.settleAfterMs && options.settleAfterMs > 0) {
               const startedAt = chatRunRegistry.getRun(armed.sessionId)?.startedAt ?? clock.value;
               if (clock.value - startedAt >= options.settleAfterMs) {
+                const ownRun = chatRunRegistry.getRun(armed.sessionId);
+                if (ownRun?.status === 'running') ownRun.writer.send({ ...LAST_ASSISTANT, sessionId: armed.sessionId });
                 chatRunRegistry.completeRun(armed.sessionId, { exitCode: 0 });
               }
             }
@@ -738,10 +740,11 @@ test('(e) waitSeconds returns early with the closing assistant message', { concu
     assert.ok(realElapsedMs < 40_000, `the call must return well inside the budget, got realElapsedMs=${realElapsedMs}`);
     assert.equal(run.status, 'completed', 'the run settled');
     assert.equal(run.outcome, 'settled', 'the wait returned because the run settled');
+    assert.ok(Number.isInteger((run.lastAssistantMessage as AnyRecord).seq) && ((run.lastAssistantMessage as AnyRecord).seq as number) > 0, 'the result has a real run-local event sequence');
     assert.deepEqual(
       run.lastAssistantMessage,
-      LAST_ASSISTANT,
-      'the settled reading must attach the fixture last assistant message verbatim',
+      { ...LAST_ASSISTANT, sessionId, runId: payload.runId, seq: (run.lastAssistantMessage as AnyRecord).seq },
+      "the settled reading must attach this accepted run writer's own message",
     );
   });
 });

@@ -1360,7 +1360,7 @@ test('(a) the notable server-authored readings are the translated English senten
   const miss = missReading.structuredContent as AnyRecord;
   assert.equal(miss.code, 'RUN_NOT_FOUND', 'the unknown run id error carries RUN_NOT_FOUND');
   const missFallback = (miss.details as AnyRecord).fallback as AnyRecord;
-  assert.equal(miss.message, 'This runId was never issued.', 'an unknown run id carries the translated explanation');
+  assert.equal(miss.message, 'This process has no run evidence for this id; the request may have executed. Reconcile before any resend.', 'an unknown run id carries the precise uncertainty explanation');
   assert.equal(
     missFallback.note,
     'No session can be determined, so there is nothing to fall back to.',
