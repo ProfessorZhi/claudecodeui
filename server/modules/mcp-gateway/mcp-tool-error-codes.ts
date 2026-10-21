@@ -138,7 +138,7 @@ export const MCP_TOOL_ERROR_CODES: Record<McpGatewayToolName, readonly McpErrorC
   // `session_send` normalizes the control service's `RUN_IN_PROGRESS` to the
   // gateway's one "the session is busy" code.
   session_send: [...WRAPPER_CODES, ...SESSION_TARGET_CODES, 'SESSION_BUSY'],
-  session_create: [...WRAPPER_CODES, ...PROJECT_TARGET_CODES],
+  session_create: [...WRAPPER_CODES, ...PROJECT_TARGET_CODES, 'MCP_TOOL_NOT_IMPLEMENTED', 'UNSUPPORTED_PERMISSION_MODE', 'SESSION_CONFIGURATION_FAILED'],
   session_interrupt: [...WRAPPER_CODES, ...SESSION_TARGET_CODES],
   session_start: [...WRAPPER_CODES, ...SESSION_TARGET_CODES],
   session_close: [...WRAPPER_CODES, ...SESSION_TARGET_CODES],

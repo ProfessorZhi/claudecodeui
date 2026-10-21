@@ -136,6 +136,7 @@ const EXPECTED_ERROR_CODES: Readonly<Record<McpErrorCode, true>> = {
   QUEUED_MESSAGE_NOT_FOUND: true,
   RUN_NOT_FOUND: true,
   MCP_TOOL_NOT_IMPLEMENTED: true,
+  SESSION_CONFIGURATION_FAILED: true,
   TASK_NOT_FOUND: true,
   UNSUPPORTED_PERMISSION_MODE: true,
   FORBIDDEN: true,
@@ -161,6 +162,12 @@ const EXPECTED_ERROR_CODES: Readonly<Record<McpErrorCode, true>> = {
  * must declare the code, so the trigger doubles as extra (c) evidence.
  */
 const TRIGGER_PROBES: ReadonlyArray<{ tool: string; args: AnyRecord; expect: string; why: string }> = [
+  {
+    tool: 'session_create',
+    args: { project: 'proj-1', model: 'explicit-fixture' },
+    expect: 'SESSION_CONFIGURATION_FAILED',
+    why: 'the configured session model writer throws before any initial message can be sent',
+  },
   {
     tool: 'overview',
     args: { project: 'proj-1' },
@@ -352,10 +359,15 @@ const writeTools = {
   runs: { getRun: () => ({ runId: 'run-busy', source: 'mcp', status: 'running' }) },
   runGet: { deps: {}, build: async () => ({ outcome: 'timeout' }) },
   sessionCreate: {
-    projects: { list: () => [] },
+    projects: { list: () => [{ id: 'proj-1', path: '/fixture-project', title: 'Project one' }] },
     sessions: { create: () => ({ sessionId: 'created' }), switchLifecycle: () => undefined },
     control,
     providers: { capabilities: () => ({}) },
+    models: {
+      setSessionPermissionMode: () => null,
+      setSessionModel: () => { throw new Error('fixture configuration persistence failure'); },
+      resolveSessionModel: async () => { throw new Error('unreachable after failed write'); },
+    },
   },
   sessionInterrupt: { control },
   sessionHostControl: {

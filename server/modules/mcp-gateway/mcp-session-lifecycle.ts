@@ -436,7 +436,7 @@ export async function buildSessionCreate(
       }
     }
   } catch {
-    throw new McpToolError('SESSION_CONFIGURATION_FAILED', 'The session exists, but its requested configuration could not be confirmed; no initial message was sent.', false,
+    throw new McpToolError(MCP_ERROR_CODES.SESSION_CONFIGURATION_FAILED, 'The session exists, but its requested configuration could not be confirmed; no initial message was sent.', false,
       { sessionId: created.sessionId, mayHaveCreatedSession: true, retrySafe: false });
   }
 

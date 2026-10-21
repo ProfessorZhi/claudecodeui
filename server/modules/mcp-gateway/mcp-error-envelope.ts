@@ -156,6 +156,11 @@ export const MCP_ERROR_CODES = {
     message: 'The tool is registered but its behaviour is owned by a later task.',
     retryable: false,
   },
+  SESSION_CONFIGURATION_FAILED: {
+    code: 'SESSION_CONFIGURATION_FAILED',
+    message: 'The session exists, but its requested configuration could not be confirmed.',
+    retryable: false,
+  },
   TASK_NOT_FOUND: {
     code: 'TASK_NOT_FOUND',
     message: 'No background task or schedule in this session has the id the caller named.',
