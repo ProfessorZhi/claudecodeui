@@ -29,3 +29,6 @@ Use real loopback requests to prove per-run busy rejection creates no receipt/pr
 
 ## Attribution review corrections
 Capture RED for cross-session/provider lifecycle reuse, cached late binding, terminal old-writer retarget, superseded mapping and native-reference context mismatch. Limit registry matching to emitter session/provider, guard terminal mapping and newer current identity, freeze terminal native ID in SQLite, and verify native history context before lookup. Preserve running initialization and same-session/provider cross-round positives. Run the focused readback suite and existing registry tests; freeze a separate reviewable fix commit.
+
+## Explicit Session model correction
+Add isolated real SQLite focused tests for both provider families: no-message persistence, initial-send options after verified persistence, omitted model unchanged, missing owner/no row, echo without persistence, write failure and blank model refusal. Capture RED on the frozen source. Extend only lifecycle models contract and its production wiring to optional same-owner model setter/resolver; persist and verify before send, never use a requestedModel fallback as proof. Run lifecycle/wiring focused tests and server typecheck; deliver a separate commit.

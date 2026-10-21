@@ -94,8 +94,9 @@ export type McpSessionCreateWiring = {
    * `createAppSession`'s `selection`. Leaving the reader off this Pick would
    * describe a production wiring that skips the guard, which is not what
    * `server/index.ts` hands over (it passes the whole `providerModelsService`).
+   * The shape is stated ONCE, on the deps interface this builder feeds.
    */
-  models?: Pick<typeof providerModelsService, 'setSessionPermissionMode' | 'assertSelectableModel'>;
+  models?: McpSessionCreateDeps['models'];
 };
 
 /**
