@@ -1,0 +1,155 @@
+{
+  "note": "Confidence-flag parity fixture, AC2/AC3 of gap-voice-confidence-flag-shadow-stats. Every `text` is a NON-PRIVATE SYNTHETIC SENTENCE taken from experiments/voice-context-asr/pilot/cases.mjs (its NEUTRAL / TRAPS lists and its zh2/en templates) — no user-message original appears here. The per-token `text`/`confidence` pairs are constructed on top of those sentences in the local engine's own token shape (`▁` marks a word boundary, CJK runs are single-character tokens) so that concatenating the token texts with `▁` read as a space reproduces `text`; the confidences are fixture values chosen to place low runs where the criterion needs them (adjacent merges, separated runs, CJK-only runs, Latin/digit runs, a leading-boundary clamp). This fixture pins the ALGORITHM (how a low run is defined and merged), not an engine reading — the real engine reading belongs to the live criterion.",
+  "sources": "experiments/voice-context-asr/pilot/cases.mjs",
+  "thetas": [0.5, 0.6, 0.7, 0.8],
+  "records": [
+    {
+      "id": "en-ne3",
+      "source": "NEUTRAL ne3 (\"Please run the tests again and report the failures.\")",
+      "text": "Please run the tests again and report the failures.",
+      "tokens": [
+        { "text": "Please", "confidence": 0.95 },
+        { "text": "▁run", "confidence": 0.52 },
+        { "text": "▁the", "confidence": 0.58 },
+        { "text": "▁tests", "confidence": 0.93 },
+        { "text": "▁again", "confidence": 0.88 },
+        { "text": "▁and", "confidence": 0.95 },
+        { "text": "▁report", "confidence": 0.71 },
+        { "text": "▁the", "confidence": 0.9 },
+        { "text": "▁failures", "confidence": 0.49 },
+        { "text": ".", "confidence": 0.99 }
+      ]
+    },
+    {
+      "id": "en-tr5",
+      "source": "TRAPS tr5 (\"Rotate the API key before the release.\")",
+      "text": "Rotate the API key before the release.",
+      "tokens": [
+        { "text": "Rotate", "confidence": 0.94 },
+        { "text": "▁the", "confidence": 0.61 },
+        { "text": "▁API", "confidence": 0.55 },
+        { "text": "▁key", "confidence": 0.57 },
+        { "text": "▁before", "confidence": 0.9 },
+        { "text": "▁the", "confidence": 0.92 },
+        { "text": "▁release", "confidence": 0.88 },
+        { "text": ".", "confidence": 0.96 }
+      ]
+    },
+    {
+      "id": "zh-ne1",
+      "source": "NEUTRAL ne1 (\"同意。按你的建议执行。\")",
+      "text": "同意。按你的建议执行。",
+      "tokens": [
+        { "text": "同", "confidence": 0.93 },
+        { "text": "意", "confidence": 0.9 },
+        { "text": "。", "confidence": 0.99 },
+        { "text": "按", "confidence": 0.55 },
+        { "text": "你", "confidence": 0.58 },
+        { "text": "的", "confidence": 0.95 },
+        { "text": "建", "confidence": 0.88 },
+        { "text": "议", "confidence": 0.52 },
+        { "text": "执", "confidence": 0.9 },
+        { "text": "行", "confidence": 0.91 },
+        { "text": "。", "confidence": 0.99 }
+      ]
+    },
+    {
+      "id": "zh-ne4",
+      "source": "NEUTRAL ne4 (\"把服务重启一下，再用浏览器验证。\")",
+      "text": "把服务重启一下，再用浏览器验证。",
+      "tokens": [
+        { "text": "把", "confidence": 0.96 },
+        { "text": "服", "confidence": 0.94 },
+        { "text": "务", "confidence": 0.92 },
+        { "text": "重", "confidence": 0.88 },
+        { "text": "启", "confidence": 0.9 },
+        { "text": "一", "confidence": 0.56 },
+        { "text": "下", "confidence": 0.59 },
+        { "text": "，", "confidence": 0.99 },
+        { "text": "再", "confidence": 0.91 },
+        { "text": "用", "confidence": 0.89 },
+        { "text": "浏", "confidence": 0.87 },
+        { "text": "览", "confidence": 0.9 },
+        { "text": "器", "confidence": 0.86 },
+        { "text": "验", "confidence": 0.85 },
+        { "text": "证", "confidence": 0.88 },
+        { "text": "。", "confidence": 0.99 }
+      ]
+    },
+    {
+      "id": "mixed-tr2",
+      "source": "TRAPS tr2 (\"把 API key 放到环境变量里。\")",
+      "text": "把 API key 放到环境变量里。",
+      "tokens": [
+        { "text": "把", "confidence": 0.94 },
+        { "text": "▁API", "confidence": 0.53 },
+        { "text": "▁key", "confidence": 0.56 },
+        { "text": "▁放", "confidence": 0.91 },
+        { "text": "到", "confidence": 0.93 },
+        { "text": "环", "confidence": 0.89 },
+        { "text": "境", "confidence": 0.87 },
+        { "text": "变", "confidence": 0.55 },
+        { "text": "量", "confidence": 0.92 },
+        { "text": "里", "confidence": 0.9 },
+        { "text": "。", "confidence": 0.98 }
+      ]
+    },
+    {
+      "id": "en-ne5",
+      "source": "NEUTRAL ne5 (\"Open the settings page and show me the voice tab.\")",
+      "text": "Open the settings page and show me the voice tab.",
+      "tokens": [
+        { "text": "Open", "confidence": 0.95 },
+        { "text": "▁the", "confidence": 0.93 },
+        { "text": "▁settings", "confidence": 0.91 },
+        { "text": "▁page", "confidence": 0.9 },
+        { "text": "▁and", "confidence": 0.89 },
+        { "text": "▁show", "confidence": 0.88 },
+        { "text": "▁me", "confidence": 0.87 },
+        { "text": "▁the", "confidence": 0.86 },
+        { "text": "▁voice", "confidence": 0.51 },
+        { "text": "▁tab", "confidence": 0.99 },
+        { "text": ".", "confidence": 1.0 }
+      ]
+    },
+    {
+      "id": "mixed-zh2-quay",
+      "source": "TEMPLATES zh2 with the term quay (\"检查 quay 的状态，然后告诉我结果。\")",
+      "text": "检查 quay 的状态，然后告诉我结果。",
+      "tokens": [
+        { "text": "检", "confidence": 0.94 },
+        { "text": "查", "confidence": 0.92 },
+        { "text": "▁quay", "confidence": 0.57 },
+        { "text": "▁的", "confidence": 0.95 },
+        { "text": "状", "confidence": 0.9 },
+        { "text": "态", "confidence": 0.88 },
+        { "text": "，", "confidence": 0.99 },
+        { "text": "然", "confidence": 0.89 },
+        { "text": "后", "confidence": 0.91 },
+        { "text": "告", "confidence": 0.54 },
+        { "text": "诉", "confidence": 0.53 },
+        { "text": "我", "confidence": 0.94 },
+        { "text": "结", "confidence": 0.9 },
+        { "text": "果", "confidence": 0.92 },
+        { "text": "。", "confidence": 0.99 }
+      ]
+    },
+    {
+      "id": "zh-ne2-leading-boundary",
+      "source": "NEUTRAL ne2 (\"检查进展，然后继续。\") with a leading word-boundary marker on the first token, to exercise the leading-whitespace clamp",
+      "text": "检查进展，然后继续。",
+      "tokens": [
+        { "text": "▁检", "confidence": 0.55 },
+        { "text": "查", "confidence": 0.9 },
+        { "text": "进", "confidence": 0.89 },
+        { "text": "展", "confidence": 0.91 },
+        { "text": "，", "confidence": 0.99 },
+        { "text": "然", "confidence": 0.9 },
+        { "text": "后", "confidence": 0.88 },
+        { "text": "继", "confidence": 0.87 },
+        { "text": "续", "confidence": 0.92 },
+        { "text": "。", "confidence": 0.99 }
+      ]
+    }
+  ]
+}

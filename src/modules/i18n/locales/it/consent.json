@@ -1,0 +1,35 @@
+{
+  "title": "Autorizza accesso",
+  "loading": "Caricamento della richiesta di autorizzazione…",
+  "errorTitle": "Errore di autorizzazione",
+  "retry": "Riprova",
+  "unknownClient": "Applicazione sconosciuta",
+  "wantsAccess": "vuole accedere al tuo account CloudCLI.",
+  "callbackWarning": "Il tuo codice di autorizzazione sarà inviato a",
+  "signingInAs": "Accesso come {{username}}",
+  "scopesLabel": "Autorizzazioni",
+  "scopes": {
+    "read": "Leggere progetti, sessioni, esecuzioni e stato",
+    "sessionSend": "Inviare messaggi alle sessioni esistenti (la sessione esegue comandi)",
+    "sessionCreate": "Avviare nuove sessioni (la sessione esegue comandi)",
+    "sessionControl": "Interrompere le esecuzioni, avviare e chiudere sessioni, fermare le attività in background",
+    "approve": "Rispondere alle approvazioni degli strumenti in sospeso",
+    "navigate": "Aprire una sessione in uno dei tuoi browser",
+    "other": "Autorizzazione aggiuntiva richiesta da questa applicazione"
+  },
+  "writeWarning": "Questa applicazione potrà inviare, creare e controllare sessioni. Consentilo solo se ti fidi.",
+  "revokeHint": "Puoi revocare questo accesso in qualsiasi momento in Impostazioni → App connesse.",
+  "passwordLabel": "Conferma la tua password",
+  "passwordHint": "Reinserisci la password per confermare questa autorizzazione.",
+  "allow": "Consenti",
+  "deny": "Nega",
+  "submitting": "Autorizzazione in corso…",
+  "errors": {
+    "missingRequest": "Questo link non contiene i parametri richiesti. Riavvia la connessione dall'applicazione.",
+    "invalidRequest": "Questa richiesta di autorizzazione non è valida. Potrebbe essere scaduta o provenire da un'applicazione non registrata.",
+    "unauthorized": "La tua sessione è scaduta. Accedi di nuovo per continuare.",
+    "network": "Impossibile raggiungere il server. Controlla la connessione e riprova.",
+    "invalidCredentials": "Password errata. Riprova.",
+    "rateLimited": "Troppi tentativi di password. Attendi qualche minuto e riprova."
+  }
+}

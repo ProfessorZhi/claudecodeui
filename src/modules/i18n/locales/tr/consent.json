@@ -1,0 +1,35 @@
+{
+  "title": "Erişimi yetkilendir",
+  "loading": "Yetkilendirme isteği yükleniyor…",
+  "errorTitle": "Yetkilendirme hatası",
+  "retry": "Yeniden dene",
+  "unknownClient": "Bilinmeyen uygulama",
+  "wantsAccess": "CloudCLI hesabınıza erişmek istiyor.",
+  "callbackWarning": "Yetkilendirme kodunuz şuraya gönderilecek:",
+  "signingInAs": "{{username}} olarak oturum açıldı",
+  "scopesLabel": "İzinler",
+  "scopes": {
+    "read": "Projeleri, oturumları, çalıştırmaları ve durumu oku",
+    "sessionSend": "Mevcut oturumlara mesaj gönder (oturum komutları çalıştırır)",
+    "sessionCreate": "Yeni oturumlar başlat (oturum komutları çalıştırır)",
+    "sessionControl": "Çalıştırmaları kes, oturumları başlat ve kapat, arka plan görevlerini durdur",
+    "approve": "Bekleyen araç onaylarını yanıtla",
+    "navigate": "Tarayıcılarından birinde bir oturum aç",
+    "other": "Bu uygulamanın istediği ek izin"
+  },
+  "writeWarning": "Bu uygulama oturumları gönderebilecek, oluşturabilecek ve kontrol edebilecek. Yalnızca güveniyorsanız izin verin.",
+  "revokeHint": "Bu erişimi istediğiniz zaman Ayarlar → Bağlı Uygulamalar bölümünden iptal edebilirsiniz.",
+  "passwordLabel": "Parolanızı onaylayın",
+  "passwordHint": "Bu yetkilendirmeyi onaylamak için parolanızı yeniden girin.",
+  "allow": "İzin ver",
+  "deny": "Reddet",
+  "submitting": "Yetkilendiriliyor…",
+  "errors": {
+    "missingRequest": "Bu bağlantıda gerekli parametreler eksik. Bağlantıyı uygulamadan yeniden başlatın.",
+    "invalidRequest": "Bu yetkilendirme isteği geçerli değil. Süresi dolmuş veya kayıtsız bir uygulamadan gelmiş olabilir.",
+    "unauthorized": "Oturumunuzun süresi doldu. Devam etmek için yeniden oturum açın.",
+    "network": "Sunucuya ulaşılamadı. Bağlantınızı kontrol edip yeniden deneyin.",
+    "invalidCredentials": "Parola yanlış. Yeniden deneyin.",
+    "rateLimited": "Çok fazla parola denemesi. Birkaç dakika bekleyip yeniden deneyin."
+  }
+}

@@ -1,0 +1,337 @@
+/**
+ * The MCP gateway's `session_send` handler (AC-249).
+ *
+ * `session_send` opens a chat run through the SAME control service the
+ * WebSocket gateway and the scheduled-message timer use, and returns the run's
+ * id IMMEDIATELY — the run keeps going after the tool call resolves. That
+ * immediacy is structural, not a timeout: the wait loop lives only inside the
+ * `waitSeconds > 0` branch (routed through AC-248's `buildRunGet`), so a
+ * default-`waitSeconds` call has no `sleep` reachable from it at all.
+ *
+ * What this module owns is the ADAPTER half: the caller is the token's owner
+ * (`{ userId, via: 'mcp' }`), the control service's structured refusals are
+ * translated into {@link McpToolError}s the audit wrapper renders as the one
+ * failure envelope (AC-284; the control service's `RUN_IN_PROGRESS` becomes the
+ * gateway's `SESSION_BUSY`), and the two facts the control service cannot state — the run's
+ * recorded `source` and, on `RUN_IN_PROGRESS`, the id of the run that is still
+ * in flight — are read back from the run registry.
+ *
+ * Everything is injected ({@link McpSessionSendDeps}): the control seam, the run
+ * reader, and the `run_get` builder plus its deps. Production wires the process
+ * singletons (`server/index.ts`); the criterion wires the real control service
+ * over its own fixture and the real `buildRunGet` over a fake clock. The module
+ * holds no clock of its own — it never calls `Date.now()` or `setTimeout`, so
+ * the bounded wait moves only through the injected `now`/`sleep` inside
+ * `buildRunGet`.
+ *
+ * AC-272 adds the optional {@link McpSessionSendSelection}: when it is wired, an
+ * options-less send reads the session's recorded model/effort/permissionMode and
+ * puts them on the run, so a `session_reconfigure` a caller made is what the next
+ * `session_send` actually runs with. Absent, the send is byte-identical to
+ * AC-249's.
+ */
+
+import { z } from 'zod';
+
+import type { LLMProvider, NormalizedMessage } from '@/shared/types.js';
+
+import { MCP_ERROR_CODES, McpToolError } from './mcp-error-envelope.js';
+import type { McpPrincipal } from './mcp-gateway.auth.js';
+import { MCP_RUN_GET_MAX_WAIT_SECONDS } from './mcp-run-get.js';
+import type { McpRunGetDeps, RunGetPayload } from './mcp-run-get.js';
+
+// --------------------------- control-service vocabulary ---------------------------
+
+/**
+ * The caller `session_send` presents to the control service.
+ *
+ * `via: 'mcp'` is what makes the run this adapter opens record its origin as
+ * `mcp` (the control service's `SOURCE_BY_VIA`), and `userId` is the token's
+ * owner — never null, because the request reached the tool through the auth
+ * middleware that attached the principal.
+ */
+export type McpControlCaller = {
+  userId: string | number | null;
+  via: 'mcp';
+};
+
+/** The refusals `session_send` translates. The vocabulary is the control service's own. */
+export type McpControlRefusalCode =
+  | 'SESSION_NOT_FOUND'
+  | 'UNSUPPORTED_PROVIDER'
+  | 'RUN_IN_PROGRESS'
+  | 'FORBIDDEN';
+
+/**
+ * The control service result `session_send` reads, declared structurally.
+ *
+ * The control service's own `SendResult` is module-local, so the shape is
+ * restated here as the injection contract — deliberately narrower than the real
+ * one (it drops the `completion` promise), because the adapter must NOT await
+ * the run's outcome when no wait was asked for. That omission is the structural
+ * half of "immediate".
+ */
+export type McpControlSendResult =
+  | { ok: true; runId: string; queued: boolean; queuedMessageUuid: string | null }
+  | { ok: false; code: McpControlRefusalCode; message: string };
+
+/** The one control verb `session_send` needs: opening a run. */
+export type McpControlSeam = {
+  send(
+    caller: McpControlCaller,
+    input: { sessionId: string; content: string; options?: Record<string, unknown> },
+  ): Promise<McpControlSendResult>;
+};
+
+// --------------------------- run reading ---------------------------
+
+/**
+ * The slice of a run record `session_send` reads, declared structurally because
+ * the registry's internal `ChatRun` is not exported.
+ *
+ * `source` is the run's recorded origin (the `mcp` reading this tool reports);
+ * `writer.userId` is the authenticated owner the run was opened for, read back
+ * so a caller can see the run really belongs to the token's owner.
+ */
+export type McpSessionRunRecord = {
+  runId: string;
+  source: string;
+  status: string;
+  writer?: { userId?: string | number | null };
+};
+
+/** The run reader `session_send` reads the current run and its origin from. */
+export type McpRunReader = {
+  getRun(sessionId: string): McpSessionRunRecord | undefined;
+};
+
+/**
+ * The `run_get` seam the bounded-wait branch routes through.
+ *
+ * `build` is AC-248's `buildRunGet` and `deps` its injected services (registry,
+ * activity store, history reader, clock and sleeper). They are a seam rather
+ * than an import so the criterion supplies the real builder over a fake clock.
+ */
+export type McpSessionRunGetSeam = {
+  deps: McpRunGetDeps;
+  build(input: { runId: string; waitSeconds?: number }, deps: McpRunGetDeps): Promise<RunGetPayload>;
+};
+
+/**
+ * The two readers AC-272 uses to assemble an options-less send's run options.
+ *
+ * `session_send`'s input carries no model/effort/permissionMode (the SPEC's
+ * argument shape is `{session, message, waitSeconds?}`), so when a caller has
+ * just changed a session's stored selection with `session_reconfigure`, the
+ * values have to be read back off the session row and put on the RUN — not left
+ * to the provider runtime's own resume default, which covers the model only.
+ * `sessions` names which provider the row belongs to (the selection lookup is
+ * provider-scoped) and `models` reads the recorded model, effort and permission
+ * mode.
+ *
+ * Optional as a whole, and absent means "do not assemble": AC-249's criterion
+ * wires no selection reader, so its `session_send` keeps sending an options-less
+ * run exactly as before. Production (`server/index.ts`) and AC-272's own
+ * criterion wire the process singletons.
+ */
+export type McpSessionSendSelection = {
+  sessions: { getSessionById(sessionId: string): { provider: string } | null | undefined };
+  models: {
+    resolveSessionModel(
+      provider: LLMProvider,
+      options: { sessionId: string },
+    ): Promise<{ model: string | null; effort: string | null; permissionMode: string | null }>;
+  };
+};
+
+/** The services `session_send` answers from, all injected. */
+export type McpSessionSendDeps = {
+  control: McpControlSeam;
+  runs: McpRunReader;
+  runGet: McpSessionRunGetSeam;
+  /**
+   * The stored-selection reader AC-272 adds (see
+   * {@link McpSessionSendSelection}). Optional: absent keeps AC-249's
+   * options-less send verbatim.
+   */
+  selection?: McpSessionSendSelection;
+};
+
+// --------------------------- input and payload ---------------------------
+
+/** The `session_send` tool's typed input. */
+export type McpSessionSendInput = {
+  /** The session to send to; the transport's target gate resolves a name to an id first. */
+  session: string;
+  message: string;
+  /** A bounded wait for the run to settle, in seconds; absent or `0` returns immediately. */
+  waitSeconds?: number;
+};
+
+/** The `session_send` tool's Zod input shape, used for registration and validation. */
+export const SESSION_SEND_INPUT_SCHEMA = {
+  session: z.string(),
+  message: z.string(),
+  waitSeconds: z.number().optional(),
+} satisfies z.ZodRawShape;
+
+/**
+ * The `session_send` result.
+ *
+ * `source` is the run's recorded origin (`mcp` on every run this adapter opens).
+ * `run` is attached ONLY when the caller asked to wait, and is AC-248's own
+ * reading — its `outcome`, its `lastAssistantMessage` and its final summary, all
+ * merged under one key rather than restated here.
+ */
+export type SessionSendPayload = {
+  runId: string;
+  queued: boolean;
+  queuedMessageUuid: string | null;
+  source: string;
+  run?: RunGetPayload;
+};
+
+/** The hint a `SESSION_BUSY` refusal carries. `run_get` is load-bearing. */
+const RUN_IN_PROGRESS_HINT =
+  'This session already has a run in progress; use run_get to follow it, or retry later.';
+
+/** Reads and validates `session_send`'s arguments. */
+export function readSessionSendInput(args: Record<string, unknown>): McpSessionSendInput {
+  const session = args.session;
+  if (typeof session !== 'string' || session.trim().length === 0) {
+    throw new McpToolError(
+      MCP_ERROR_CODES.INVALID_ARGUMENT,
+      '"session" is required and must be a non-empty string.',
+    );
+  }
+  const message = args.message;
+  if (typeof message !== 'string' || message.length === 0) {
+    throw new McpToolError(
+      MCP_ERROR_CODES.INVALID_ARGUMENT,
+      '"message" is required and must be a non-empty string.',
+    );
+  }
+  const waitSeconds =
+    typeof args.waitSeconds === 'number' && Number.isFinite(args.waitSeconds) && args.waitSeconds > 0
+      ? args.waitSeconds
+      : undefined;
+  return { session, message, waitSeconds };
+}
+
+/** The effective wait, capped by AC-248's one literal: a positive request, else zero. */
+function effectiveWaitSeconds(waitSeconds: number | undefined): number {
+  if (waitSeconds === undefined) {
+    return 0;
+  }
+  return Math.min(waitSeconds, MCP_RUN_GET_MAX_WAIT_SECONDS);
+}
+
+/**
+ * Assembles the run options an options-less `session_send` should carry.
+ *
+ * Reads the session row's provider, then the model/effort/permissionMode
+ * `session_reconfigure` (or an ordinary UI send) last recorded for it, and
+ * returns them under the option names the dispatch path reads (`model`,
+ * `effort`, `permissionMode`). A field with no recorded value is omitted rather
+ * than sent as `null`, so a provider runtime's own default still applies to the
+ * fields nobody set.
+ *
+ * Returns `undefined` when no selection reader was wired, when the session row
+ * cannot be read, or when the row records none of the three values — in every
+ * case the send proceeds exactly as it did before AC-272, options-less.
+ */
+async function resolveSendOptions(
+  sessionId: string,
+  selection: McpSessionSendSelection | undefined,
+): Promise<Record<string, unknown> | undefined> {
+  if (!selection) {
+    return undefined;
+  }
+
+  const session = selection.sessions.getSessionById(sessionId);
+  if (!session || typeof session.provider !== 'string' || session.provider.length === 0) {
+    return undefined;
+  }
+
+  const recorded = await selection.models.resolveSessionModel(session.provider as LLMProvider, { sessionId });
+  const options: Record<string, unknown> = {};
+  if (typeof recorded.model === 'string' && recorded.model.length > 0) {
+    options.model = recorded.model;
+  }
+  if (typeof recorded.effort === 'string' && recorded.effort.length > 0) {
+    options.effort = recorded.effort;
+  }
+  if (typeof recorded.permissionMode === 'string' && recorded.permissionMode.length > 0) {
+    options.permissionMode = recorded.permissionMode;
+  }
+
+  return Object.keys(options).length > 0 ? options : undefined;
+}
+
+// --------------------------- buildSessionSend ---------------------------
+
+/**
+ * Opens a run for `input.session` and returns its id at once.
+ *
+ * The caller is the token's owner, and the control service is asked to send with
+ * it — so the run this opens is registered and dispatched through the identical
+ * path a WebSocket `chat.send` uses, with origin `mcp`. On success the payload
+ * is returned immediately; only a positive `waitSeconds` awaits AC-248's
+ * `buildRunGet` (capped at {@link MCP_RUN_GET_MAX_WAIT_SECONDS}) and merges its
+ * reading under `run`.
+ *
+ * A refusal is thrown as a {@link McpToolError}, which the audited seam renders
+ * as the one failure envelope. `SESSION_BUSY` (the gateway's code for the
+ * control service's `RUN_IN_PROGRESS`) is widened with the in-flight run's id
+ * (the control service's message does not carry one) and a hint naming
+ * `run_get` as the way to follow it.
+ *
+ * Consumers: `registerMcpWriteTools` (the registered handler) and this module's
+ * criterion, which drives it through the real mount.
+ */
+export async function buildSessionSend(
+  input: McpSessionSendInput,
+  ctx: { principal: McpPrincipal },
+  deps: McpSessionSendDeps,
+): Promise<SessionSendPayload> {
+  const caller: McpControlCaller = { userId: ctx.principal.userId, via: 'mcp' };
+  const options = await resolveSendOptions(input.session, deps.selection);
+  const result = await deps.control.send(caller, {
+    sessionId: input.session,
+    content: input.message,
+    ...(options ? { options } : {}),
+  });
+
+  if (!result.ok) {
+    if (result.code === 'RUN_IN_PROGRESS') {
+      // The current run's id is read from the registry: the control service's
+      // refusal message states the fact but not the id, and this is the one
+      // reading that tells the caller WHICH run to follow. The busier's
+      // vocabulary (`RUN_IN_PROGRESS`) is normalized to the gateway's one code
+      // for the class (`SESSION_BUSY`), so every tool naming "the session is
+      // busy" says the same thing (AC-284).
+      const current = deps.runs.getRun(input.session);
+      const message = result.message.trim().length > 0 ? result.message : RUN_IN_PROGRESS_HINT;
+      throw new McpToolError(MCP_ERROR_CODES.SESSION_BUSY, message, true, {
+        runId: current?.runId ?? null,
+        hint: RUN_IN_PROGRESS_HINT,
+      });
+    }
+    throw new McpToolError(result.code, result.message, true);
+  }
+
+  const source = deps.runs.getRun(input.session)?.source ?? 'mcp';
+  const payload: SessionSendPayload = {
+    runId: result.runId,
+    queued: result.queued,
+    queuedMessageUuid: result.queuedMessageUuid,
+    source,
+  };
+
+  const waitSeconds = effectiveWaitSeconds(input.waitSeconds);
+  if (waitSeconds > 0) {
+    payload.run = await deps.runGet.build({ runId: result.runId, waitSeconds }, deps.runGet.deps);
+  }
+
+  return payload;
+}

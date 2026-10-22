@@ -1,0 +1,411 @@
+{
+  "provenance": {
+    "generatedAt": "2026-09-24",
+    "runIds": [
+      "2026-09-24T08:01:20.915Z"
+    ],
+    "endpoints": {
+      "openai-compatible": "https://api.groq.com/openai/v1 (via the shipping 'openai-compatible' adapter)",
+      "dashscope-omni": "https://llm-szunnpxbx46k86c0.cn-beijing.maas.aliyuncs.com (via the shipping 'dashscope-omni' adapter)"
+    },
+    "request": "Every condition goes through the adapter the shipping registry resolves for its provider id, with the global fetch and the request body the adapter builds. The dashscope-omni adapter's prompt and task turn are its own frozen constants (honors is false on all three axes), so nothing about the request is this runner's.",
+    "throttle": "3200 ms minimum interval between calls, one call in flight (serial)",
+    "recipe": "For every clip × condition: decode the first experiment's fixtures/<clip> with the runner's decodeWav, encode the column with the runner's encodeWav (raw = encodeWav(decodeWav(file)); trimFrozen = trimVoiceAudio(samples, rate) — the shipping module; headFrozen = the first HEAD_SECONDS of the same samples — the negative control's deliberately damaged take), hand the buffer to the shipping adapter, keep the returned text verbatim. `--live` then `--freeze`; the cache is out/quality-cache.json.",
+    "corpus": "Reused, not copied: the eight Chinese clips at o65 occupancy (d01..d08-o65) live in ../voice-provider-paired-quality/fixtures/ — **TTS 合成** (tools/dictation-corpus.mjs SCRIPTS), a contiguous prefix of the out-of-tree dictation corpus. Same eight clips as the two sibling records, so their numbers and these are on one corpus.",
+    "referenceSource": "Read from ../voice-provider-paired-quality/fixtures/paired.json — the authored scripts from the out-of-tree corpus generator, verbatim, so the reference is ground truth by construction.",
+    "judge": "Semantic verdicts come from /data/home/yale/work/claudecodeui/.claude/worktrees/gap-asr-omni-paired-quality-record/experiments/voice-omni-written/raw/judge.mts#judge, imported, not copied. Its CLI-only transitive import (written.mts → omni.mts) eagerly reads eight webm from a sibling experiment's gitignored upload cache; this runner materialises those files (copy from the main checkout, else the repository's ffmpeg recipe) so that import resolves, and the rubric never reads them.",
+    "conditions": [
+      {
+        "key": "turbo|raw|none",
+        "providerId": "openai-compatible",
+        "model": "whisper-large-v3-turbo",
+        "trim": "raw",
+        "note": "出货 openai-compatible 上的 whisper 基线（前两份记录的参照条件）；本轮同样由出货适配器发出，供同批并列"
+      },
+      {
+        "key": "omni|raw|none",
+        "providerId": "dashscope-omni",
+        "model": "qwen3.8-omni-flash",
+        "trim": "raw",
+        "note": "出货 dashscope-omni 适配器 + 它的 DEFAULT_MODEL，不裁剪 —— 负对照的参照条件"
+      },
+      {
+        "key": "omni|trim|none",
+        "providerId": "dashscope-omni",
+        "model": "qwen3.8-omni-flash",
+        "trim": "trimFrozen",
+        "note": "pauseCues 轴：出货 trimVoiceAudio 之后再送（裁掉停顿对这条服务是伤害还是帮助）"
+      },
+      {
+        "key": "omni|head|none",
+        "providerId": "dashscope-omni",
+        "model": "qwen3.8-omni-flash",
+        "trim": "headFrozen",
+        "note": "**负对照**：同一条音的前 2.0 秒，provider/模型/线协议/提示词/MIME 全部不变",
+        "control": {
+          "axis": "ok",
+          "vs": "omni|raw|none",
+          "direction": "down",
+          "prediction": "judge.mts 的满分判词要求事实在位（d01 要 server 与 30、d05 要 15 与 50、d07 要 server/voice/call/测试），而这些事实分布在整句里；只剩开头 2 秒的音装不下句尾的文件名与数字，满分只可能少、不可能多。没按这个方向移动就是量具坏了（对音频损伤不敏感，或读数没走服务），不是「负对照碰巧没动」。"
+        }
+      }
+    ],
+    "control": {
+      "key": "omni|head|none",
+      "vs": "omni|raw|none",
+      "axis": "ok",
+      "direction": "down",
+      "prediction": "judge.mts 的满分判词要求事实在位（d01 要 server 与 30、d05 要 15 与 50、d07 要 server/voice/call/测试），而这些事实分布在整句里；只剩开头 2 秒的音装不下句尾的文件名与数字，满分只可能少、不可能多。没按这个方向移动就是量具坏了（对音频损伤不敏感，或读数没走服务），不是「负对照碰巧没动」。",
+      "singleVariable": "provider, model, wire, prompt and MIME are identical; the only thing that differs is the audio handed to the service",
+      "registeredBefore": "the prediction above is a constant of run.mjs, written before any reading was taken",
+      "headSeconds": 2
+    },
+    "knownGaps": "Token usage is not readable through the shipping adapters: `AsrSuccess.meta.usage` exists in the contract but none of the three adapters populates it, so this record reports the axis as n/a rather than substituting a number from elsewhere. Verbatim CER is deliberately absent: this service is `style: 'written'` — its answer is a rewrite, not a dictation, so character error rate is not a meaningful instrument for it."
+  },
+  "entries": [
+    {
+      "clip": "d01-o65.wav",
+      "language": "zh",
+      "reference": "把 server 里的 voice.service.ts 的超时改成三十秒",
+      "audio": {
+        "baselineSec": 15.544625,
+        "rawSha256": "2c52b72bef21b81e51722c47bf549f027cbf52bba2817cf153663c9b66435f39",
+        "trimFrozenSha256": "a73d14695e59bd86abc9d5857966a38961a421423a266f9eb346bca33a00278a",
+        "trimFrozenSavedRatio": 0.2569778942882186,
+        "headFrozenSha256": "2af1646247465c2df899699862c3e77fa827d2209cc3e2097239596bccf5f6f1",
+        "headSec": 2
+      },
+      "transcripts": {
+        "turbo|raw|none": "把Server里的voice.seluis.ts的超时改成30秒",
+        "omni|raw|none": "把 `server` 里 `voice.services` 的超时改成 30 秒。",
+        "omni|trim|none": "把 `server` 里 `voice.service.ts` 的超时改成 30 秒。",
+        "omni|head|none": "把 `server`"
+      },
+      "styles": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|trim|none": "2026-09-24T08:01:20.915Z",
+        "omni|head|none": "2026-09-24T08:01:20.915Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 2087,
+        "omni|raw|none": 10555,
+        "omni|trim|none": 11301,
+        "omni|head|none": 2878
+      },
+      "declared": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      }
+    },
+    {
+      "clip": "d02-o65.wav",
+      "language": "zh",
+      "reference": "改一下 voice.service.ts，嗯不对，应该是 voice.routes.ts",
+      "audio": {
+        "baselineSec": 20.16,
+        "rawSha256": "340ba7e323ae1a4d6871afb1fdbac8f8bd04662ca66dec4ac7c3453f53d989e3",
+        "trimFrozenSha256": "8c870c011bd3e08fe560139fd5b960adc61bec55c8b44dbab701757040f90ab3",
+        "trimFrozenSavedRatio": 0.23859126984126988,
+        "headFrozenSha256": "359d7b3f7432e63940f7d0b5ed3fb82f1bdd314832253d4247711c12051c4cba",
+        "headSec": 2
+      },
+      "transcripts": {
+        "turbo|raw|none": "改一下。voice.seLuis.ts嗯不对。应该是。voice.roUts.ts",
+        "omni|raw|none": "修改 `voice.routes.ts`。",
+        "omni|trim|none": "改一下 `voice.ro.u.ts`。",
+        "omni|head|none": "改一下。"
+      },
+      "styles": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|trim|none": "2026-09-24T08:01:20.915Z",
+        "omni|head|none": "2026-09-24T08:01:20.915Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 2703,
+        "omni|raw|none": 25165,
+        "omni|trim|none": 14600,
+        "omni|head|none": 3282
+      },
+      "declared": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      }
+    },
+    {
+      "clip": "d03-o65.wav",
+      "language": "zh",
+      "reference": "看一下 useVoiceInput 这个 hook 是怎么处理 recording 的",
+      "audio": {
+        "baselineSec": 20.16,
+        "rawSha256": "85e9bfa10e7791dcb473f64eed868c54841484d99f7f318b3ce0f54c71da2aeb",
+        "trimFrozenSha256": "4e1368f5d7f47ef2ccd10b6e7bda10449740135d59c6180aae6ce568cd03ef68",
+        "trimFrozenSavedRatio": 0.2366071428571428,
+        "headFrozenSha256": "76d85f234f0d41d85ed3b0dcce09520c9521eb9ea033e7ceee3f0275a3d9f031",
+        "headSec": 2
+      },
+      "transcripts": {
+        "turbo|raw|none": "看一下。Use voiceInput这个。Hook是怎么处理。RecordingG的。",
+        "omni|raw|none": "看一下 `useVoiceInput` 这个 hook 是怎么处理 `recording` 的。",
+        "omni|trim|none": "看一下 `useVoiceInput` 这个 hook 是怎么处理 `recording` 的。",
+        "omni|head|none": "看一下。"
+      },
+      "styles": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|trim|none": "2026-09-24T08:01:20.915Z",
+        "omni|head|none": "2026-09-24T08:01:20.915Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 1766,
+        "omni|raw|none": 6462,
+        "omni|trim|none": 2855,
+        "omni|head|none": 1485
+      },
+      "declared": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      }
+    },
+    {
+      "clip": "d04-o65.wav",
+      "language": "zh",
+      "reference": "不要动 voice.service.ts，只改 voice.module.ts",
+      "audio": {
+        "baselineSec": 14.51075,
+        "rawSha256": "0e0492eafb583ab5b5473c234cf70f4c4db19b78e662bdeb53f30815c3f97895",
+        "trimFrozenSha256": "c8ddf6aa4cf73f0d4555951731c85be0eb491965e2f549c98c96a5638cb6e26d",
+        "trimFrozenSavedRatio": 0.21506469341694945,
+        "headFrozenSha256": "e9993f8111d2df93d0eec992de171c2599e4ebb2c8acd1e04929b8dc825a5c01",
+        "headSec": 2
+      },
+      "transcripts": {
+        "turbo|raw|none": "不要动voice.seLuis TS直改voicemodule TS",
+        "omni|raw|none": "不要动 `voice.se.ts`，只改 `voice.module.ts`。",
+        "omni|trim|none": "不要动 `voice.ts`，只改 `voice.module.ts`。",
+        "omni|head|none": "不要动。"
+      },
+      "styles": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|trim|none": "2026-09-24T08:01:20.915Z",
+        "omni|head|none": "2026-09-24T08:01:20.915Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 655,
+        "omni|raw|none": 22583,
+        "omni|trim|none": 11811,
+        "omni|head|none": 3386
+      },
+      "declared": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      }
+    },
+    {
+      "clip": "d05-o65.wav",
+      "language": "zh",
+      "reference": "把超时从十五秒改成五十秒，不是五秒",
+      "audio": {
+        "baselineSec": 9.895375,
+        "rawSha256": "969865aa6f445bec12574f90c5707ff5c07359116b1793afda349d9a3c699ef5",
+        "trimFrozenSha256": "d6d84475cda5560fdaa5a69984dae51c2e07522bd1a6011a24cdd4199c2ed933",
+        "trimFrozenSavedRatio": 0.28956709573917105,
+        "headFrozenSha256": "aeeae2be61c2602fde1a46df45b145a045eedc29f6b27671f2faad8d8275d160",
+        "headSec": 2
+      },
+      "transcripts": {
+        "turbo|raw|none": "把超时从15秒改成。50秒?不是5秒。",
+        "omni|raw|none": "把超时从 15 秒改成 50 秒。",
+        "omni|trim|none": "把超时从 15 秒改成 50 秒。",
+        "omni|head|none": "把超时从 15 秒改成……（录音未说完，缺少目标值）"
+      },
+      "styles": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|trim|none": "2026-09-24T08:01:20.915Z",
+        "omni|head|none": "2026-09-24T08:01:20.915Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 4248,
+        "omni|raw|none": 9988,
+        "omni|trim|none": 13230,
+        "omni|head|none": 7607
+      },
+      "declared": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      }
+    },
+    {
+      "clip": "d06-o65.wav",
+      "language": "zh",
+      "reference": "嗯…那个…就是这个 composer 的按钮，嗯…再加个快捷键",
+      "audio": {
+        "baselineSec": 13.6615,
+        "rawSha256": "b325ac5de252365885cd8f7ae8bc76d8db05f4f8594d4259fe65f4f1e14ec14e",
+        "trimFrozenSha256": "24ae9eed471beace70020b1c74f08bb454f5becc14d54e5f43185c5e45851c58",
+        "trimFrozenSavedRatio": 0.27313984555136706,
+        "headFrozenSha256": "c005844d39f3fb642db1348abd08ba291e3a47de69f093e3ab5f01eb1f251f15",
+        "headSec": 2
+      },
+      "transcripts": {
+        "turbo|raw|none": "嗯,那个,就是这个Composer的按钮嗯,再加个快捷键",
+        "omni|raw|none": "给 `composer` 的按钮加个快捷键。",
+        "omni|trim|none": "给 `composer` 的按钮加个快捷键。",
+        "omni|head|none": "嗯，那个，就是这个"
+      },
+      "styles": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "verbatim"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|trim|none": "2026-09-24T08:01:20.915Z",
+        "omni|head|none": "2026-09-24T08:01:20.915Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 6424,
+        "omni|raw|none": 41623,
+        "omni|trim|none": 23895,
+        "omni|head|none": 5498
+      },
+      "declared": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      }
+    },
+    {
+      "clip": "d07-o65.wav",
+      "language": "zh",
+      "reference": "server 模块下的 voice 目录里加一个 call 的测试",
+      "audio": {
+        "baselineSec": 14.4,
+        "rawSha256": "ba1ce9cd005435b163ca71010fff1fa4efc002e0864eccd0e0721b68a8d6ba46",
+        "trimFrozenSha256": "aadbe64472cd7b1d62dedf49a7d18c870f4150c537c92b331fe51699f26167bb",
+        "trimFrozenSavedRatio": 0.24236111111111114,
+        "headFrozenSha256": "85e45c9fbad287ccd41b1d97006cc7f5e047206951573b05f8b2bdab66ca75c9",
+        "headSec": 2
+      },
+      "transcripts": {
+        "turbo|raw|none": "Server模块下的Voice目录里加一个Code测试",
+        "omni|raw|none": "在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。",
+        "omni|trim|none": "在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。",
+        "omni|head|none": "`server`"
+      },
+      "styles": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|trim|none": "2026-09-24T08:01:20.915Z",
+        "omni|head|none": "2026-09-24T08:01:20.915Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 1475,
+        "omni|raw|none": 28169,
+        "omni|trim|none": 16882,
+        "omni|head|none": 6027
+      },
+      "declared": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      }
+    },
+    {
+      "clip": "d08-o65.wav",
+      "language": "zh",
+      "reference": "把默认模型换成 whisper large，啊不，是 whisper turbo",
+      "audio": {
+        "baselineSec": 17.8338125,
+        "rawSha256": "9fa1a8980719db8e0c243aa740fabbc9538e56d2eca646468f005e5657d8605f",
+        "trimFrozenSha256": "03c3651750eeb421d9e5af07b5a33e8329e5c01e4d47b328b74200706db3fd3f",
+        "trimFrozenSavedRatio": 0.24581465684917347,
+        "headFrozenSha256": "f831736071dfa6e92c34f8c8ae626a9b608c2ea824943043622c5ca5d35db6bf",
+        "headSec": 2
+      },
+      "transcripts": {
+        "turbo|raw|none": "把默认模型换成WhisperLargeAbu是WhisperTurbo",
+        "omni|raw|none": "把默认模型换成 `Whisper Turbo`。",
+        "omni|trim|none": "把默认模型换成 `Whisper turbo`。",
+        "omni|head|none": "把默认模型换成。"
+      },
+      "styles": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|raw|none": "2026-09-24T08:01:20.915Z",
+        "omni|trim|none": "2026-09-24T08:01:20.915Z",
+        "omni|head|none": "2026-09-24T08:01:20.915Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 3322,
+        "omni|raw|none": 28764,
+        "omni|trim|none": 25706,
+        "omni|head|none": 5186
+      },
+      "declared": {
+        "turbo|raw|none": "verbatim",
+        "omni|raw|none": "written",
+        "omni|trim|none": "written",
+        "omni|head|none": "written"
+      }
+    }
+  ]
+}

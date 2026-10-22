@@ -1,0 +1,35 @@
+{
+  "title": "授權存取",
+  "loading": "正在載入授權請求…",
+  "errorTitle": "授權錯誤",
+  "retry": "重試",
+  "unknownClient": "未知應用程式",
+  "wantsAccess": "想要存取你的 CloudCLI 帳戶。",
+  "callbackWarning": "你的授權碼將傳送至",
+  "signingInAs": "目前登入身分：{{username}}",
+  "scopesLabel": "權限",
+  "scopes": {
+    "read": "讀取專案、工作階段、執行與狀態",
+    "sessionSend": "向現有工作階段傳送訊息（工作階段會執行指令）",
+    "sessionCreate": "啟動新的工作階段（工作階段會執行指令）",
+    "sessionControl": "中斷執行、啟動與關閉工作階段、停止背景工作",
+    "approve": "回覆待處理的工具授權",
+    "navigate": "在你的其中一個瀏覽器中開啟工作階段",
+    "other": "此應用程式要求的額外權限"
+  },
+  "writeWarning": "此應用程式將能夠傳送、建立與控制工作階段。只有信任它時才允許。",
+  "revokeHint": "你可以隨時在「設定 → 已連接的應用程式」中撤銷此存取權。",
+  "passwordLabel": "確認密碼",
+  "passwordHint": "請再次輸入密碼以確認此授權。",
+  "allow": "允許",
+  "deny": "拒絕",
+  "submitting": "正在授權…",
+  "errors": {
+    "missingRequest": "此連結缺少必要參數。請從應用程式重新發起連線。",
+    "invalidRequest": "此授權請求無效。它可能已過期，或來自未註冊的應用程式。",
+    "unauthorized": "你的工作階段已過期。請重新登入後繼續。",
+    "network": "無法連線至伺服器。請檢查網路後重試。",
+    "invalidCredentials": "密碼不正確，請重試。",
+    "rateLimited": "密碼嘗試次數過多。請稍後再試。"
+  }
+}

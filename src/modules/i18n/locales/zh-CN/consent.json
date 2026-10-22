@@ -1,0 +1,35 @@
+{
+  "title": "授权访问",
+  "loading": "正在加载授权请求…",
+  "errorTitle": "授权错误",
+  "retry": "重试",
+  "unknownClient": "未知应用",
+  "wantsAccess": "想要访问你的 CloudCLI 账户。",
+  "callbackWarning": "你的授权码将发送至",
+  "signingInAs": "当前登录身份：{{username}}",
+  "scopesLabel": "权限",
+  "scopes": {
+    "read": "读取项目、会话、运行与状态",
+    "sessionSend": "向已有会话发送消息（会话会执行命令）",
+    "sessionCreate": "启动新会话（会话会执行命令）",
+    "sessionControl": "中断运行、启动与关闭会话、停止后台任务",
+    "approve": "回答待处理的工具授权",
+    "navigate": "在你的某个浏览器中打开会话",
+    "other": "此应用请求的额外权限"
+  },
+  "writeWarning": "此应用将能够发送、创建和控制会话。只有信任它时才允许。",
+  "revokeHint": "你可以随时在「设置 → 已连接的应用」中吊销此访问权限。",
+  "passwordLabel": "确认密码",
+  "passwordHint": "请再次输入密码以确认此授权。",
+  "allow": "允许",
+  "deny": "拒绝",
+  "submitting": "正在授权…",
+  "errors": {
+    "missingRequest": "此链接缺少必需参数。请从应用中重新发起连接。",
+    "invalidRequest": "此授权请求无效。它可能已过期，或来自未注册的应用。",
+    "unauthorized": "你的会话已过期。请重新登录后继续。",
+    "network": "无法连接到服务器。请检查网络后重试。",
+    "invalidCredentials": "密码不正确，请重试。",
+    "rateLimited": "密码尝试次数过多。请稍后再试。"
+  }
+}

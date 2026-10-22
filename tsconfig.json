@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "baseUrl": ".",
+    "paths": {
+      // The frontend keeps "@" mapped to /src.
+      // The backend gets its own "@" mapping in server/tsconfig.json so both sides can use
+      // the same alias name without sharing one compiler configuration.
+      "@/*": ["src/*"],
+      // The repository-root `shared/` tree is the one home for modules BOTH compiler
+      // configurations compile (ADR-004 decision 2). A frontend module cannot reach it by a
+      // relative import — the frontend override below bans those — so the tree needs an
+      // alias of its own. Registered in four places, all four required and none covering
+      // another: here (typecheck), vite.config.js (the bundle), vitest.config.ts (the
+      // unit-test transform, which does not read vite.config.js) and .oxlintrc.json (the
+      // resolver + boundaries). The probe reports all four — see
+      // scripts/asr-single-implementation-check.mjs --landing.
+      "@shared/*": ["shared/*"]
+    },
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    // "checkJs": true, 
+    "types": ["vite/client"],
+    "ignoreDeprecations": "5.0"
+  },
+  "include": ["src", "shared", "vite.config.js"]
+}

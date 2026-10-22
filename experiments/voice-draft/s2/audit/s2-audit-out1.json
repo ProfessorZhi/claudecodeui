@@ -1,0 +1,12 @@
+[
+{"k":10,"items":{"I1":"满足","I2":"满足","I3":"未满足","I4":"未满足","I5":"满足","I6":"满足","I7":"满足","I8":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现"},"invented":["useChatConPostRest8.ts"],"note":"文件名识别错误（useChatComposerState.ts 被写成 useChatConPostRest8.ts）；「先查状态、不先看渲染」整条丢失。"},
+{"k":11,"items":{"I1":"满足","I2":"满足","I3":"满足","I4":"满足","I5":"未满足","I6":"满足","I7":"满足","I8":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现"},"invented":["dist-cli"],"note":"产物目录写成 dist-cli，应为 dist-client（识别错误）；命令写成 vite build watch，丢了 -- 但意思可辨。"},
+{"k":12,"items":{"I1":"满足","I2":"满足","I3":"满足","I4":"满足","I5":"满足","I6":"满足","I7":"满足","I8":"满足","I9":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现"},"invented":[],"note":"全部要点齐全，无编造。"},
+{"k":13,"items":{"I1":"满足","I2":"满足","I3":"满足","I4":"满足","I5":"满足","I6":"满足","I7":"满足","I8":"未满足","I9":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现"},"invented":[],"note":"丢了「现有删旧标题逻辑保持原样」这一条（I8）；其余齐全。"},
+{"k":14,"items":{"I1":"满足","I2":"满足","I3":"满足","I4":"未满足","I5":"满足","I6":"满足","I7":"满足","I8":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现"},"invented":[],"note":"「活动坞」被识别成「活动物」；未提 useActivityFreshness 这一文件。"},
+{"k":15,"items":{"I1":"满足","I2":"满足","I3":"未满足","I4":"部分","I5":"满足","I6":"满足","I7":"满足","I8":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现"},"invented":["活动物（ActivityIndicator）","ActivityIndicator 不加动画","当状态为空闲时隐藏 ActivityIndicator"],"note":"把显示本身当成 ActivityIndicator，与说话人「不是 ActivityIndicator」相反，虽然也写了 useActivityFreshness；「结束时更新逻辑保留当兜底」丢失；「活动坞」识别成「活动物」。"},
+{"k":16,"items":{"I1":"满足","I2":"满足","I3":"部分","I4":"满足","I5":"满足","I6":"满足","I7":"满足","I8":"满足","I9":"满足","I10":"满足","I11":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现","F4":"未出现"},"invented":["transcribeBeVoice"],"note":"现有函数名识别错成 transcribeBeVoice（应为 transcribeVoice）。"},
+{"k":17,"items":{"I1":"满足","I2":"满足","I3":"满足","I4":"满足","I5":"未满足","I6":"满足","I7":"满足","I8":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现"},"invented":["dist-cli"],"note":"产物目录写成 dist-cli，应为 dist-client。"},
+{"k":18,"items":{"I1":"满足","I2":"未满足","I3":"未满足","I4":"满足","I5":"未满足","I6":"满足","I7":"满足","I8":"满足"},"forbidden":{"F1":"未出现","F2":"未出现","F3":"未出现"},"invented":["dist-cli","作为当前 dev server 的补充选项"],"note":"启动命令和 3002 端口都丢了；产物目录写成 dist-cli（应为 dist-client）。"},
+{"k":19,"items":{"I1":"满足","I2":"满足","I3":"满足","I4":"部分","I5":"满足","I6":"满足","I7":"满足","I8":"满足"},"forbidden":{"F1":"未出现","F2":"被排除形式","F3":"未出现"},"invented":["chat message agent pane"],"note":"ChatMessagesPane 被识别成「chat message agent pane」，「先查状态、不看渲染」的意思在但对象名错。"}
+]

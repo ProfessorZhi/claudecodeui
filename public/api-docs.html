@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudCLI - API Documentation</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gray-50: #f9fafb;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-900);
+            background: var(--gray-50);
+        }
+
+        header {
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+            padding: 1.5rem 0;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+        }
+
+        .brand-text h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .brand-text .subtitle {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            background: var(--primary-dark);
+        }
+
+        .back-link svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        main {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 2.5rem 0 0.75rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--gray-600);
+        }
+
+        code {
+            background: rgba(37, 99, 235, 0.08);
+            padding: 0.1875rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.875em;
+            color: var(--primary-dark);
+        }
+
+        .note {
+            padding: 1.25rem;
+            background: rgba(37, 99, 235, 0.05);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>CloudCLI</h1>
+                    <div class="subtitle">API Documentation</div>
+                </div>
+            </div>
+            <a href="/" class="back-link">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to App
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <h2>API Documentation</h2>
+        <p>
+            CloudCLI runs a local HTTP server that serves its web interface. This page
+            is the place for documentation of the HTTP API that server exposes.
+        </p>
+
+        <h3>Authentication</h3>
+        <p>
+            Programmatic requests authenticate with an access token created in the
+            application's settings. Send the token with each request, and revoke it from
+            the same place when it is no longer needed.
+        </p>
+        <p>
+            Tokens are stored as hashes: the server keeps only a hash and a short prefix,
+            so a token is treated as a secret that is displayed when it is issued and
+            never stored in the clear.
+        </p>
+
+        <h3>Retired surfaces</h3>
+        <p>
+            The legacy programmatic agent endpoint and the plaintext key mechanism it used
+            have been retired. The server no longer mounts them, and this page no longer
+            documents them; the sections and examples that described them have been
+            removed rather than kept around.
+        </p>
+
+        <div class="note">
+            The retired surface is gone from the running server: its routes are not
+            registered, so a request to them is answered by the same static-asset fallback
+            as any other unknown path.
+        </div>
+    </main>
+</body>
+</html>

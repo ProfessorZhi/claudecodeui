@@ -1,0 +1,35 @@
+{
+  "title": "Authorize access",
+  "loading": "Loading authorization request…",
+  "errorTitle": "Authorization error",
+  "retry": "Try again",
+  "unknownClient": "Unknown application",
+  "wantsAccess": "wants to access your CloudCLI account.",
+  "callbackWarning": "Your authorization code will be sent to",
+  "signingInAs": "Signed in as {{username}}",
+  "scopesLabel": "Permissions",
+  "scopes": {
+    "read": "Read projects, sessions, runs and status",
+    "sessionSend": "Send messages to existing sessions (the session runs commands)",
+    "sessionCreate": "Start new sessions (the session runs commands)",
+    "sessionControl": "Interrupt runs, start and close sessions, stop background tasks",
+    "approve": "Answer pending tool approvals",
+    "navigate": "Open a session in one of your browsers",
+    "other": "Additional permission requested by this application"
+  },
+  "writeWarning": "This application will be able to send, create and control sessions. Only allow it if you trust it.",
+  "revokeHint": "You can revoke this access at any time in Settings → Connected Apps.",
+  "passwordLabel": "Confirm your password",
+  "passwordHint": "Re-enter your password to confirm this authorization.",
+  "allow": "Allow",
+  "deny": "Deny",
+  "submitting": "Authorizing…",
+  "errors": {
+    "missingRequest": "This link is missing required parameters. Start the connection again from the application.",
+    "invalidRequest": "This authorization request is not valid. It may have expired or come from an unregistered application.",
+    "unauthorized": "Your session has expired. Sign in again to continue.",
+    "network": "The server could not be reached. Check your connection and try again.",
+    "invalidCredentials": "Incorrect password. Try again.",
+    "rateLimited": "Too many password attempts. Wait a few minutes and try again."
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    // baseUrl is the project root (one level above this config file) so that tsc-alias
+    // resolves @/ imports relative to the compiled output structure in dist-server/server/.
+    // With rootDir ".." tsc emits server files under dist-server/server/, so paths must
+    // include the "server/" prefix to match that layout.
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["server/*"]
+    },
+    // The backend is still mostly JavaScript today, so allowJs lets us add a real
+    // TypeScript build without forcing a large rename before the tooling is usable.
+    "allowJs": true,
+    // Keep the migration incremental: existing JS keeps building, while any new TS files
+    // still go through the normal TypeScript pipeline and strict checks.
+    "checkJs": false,
+    "strict": true,
+    "noEmitOnError": true,
+    // The backend build emits both /server and /shared into dist-server, so rootDir must
+    // stay one level above this file even though the config itself now lives in /server.
+    "rootDir": "..",
+    // The build stages into dist-server.next; scripts/promote-dist-server.mjs
+    // (postbuild:server) swaps it into dist-server once tsc and tsc-alias have
+    // both finished. Never emit into the live dist-server: an interrupted build
+    // must not be able to destroy the build the server is running from.
+    "outDir": "../dist-server.next",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["./**/*.js", "./**/*.ts", "../shared/**/*.js", "../shared/**/*.ts"],
+  // ./modules/voice/tmp holds no source: it is the git-ignored scratch directory the voice criteria's
+  // positive controls plant transient probe files in (e.g. voice-dashscope-settings AC4(b)'s
+  // `__stray-shipping-probe-<pid>.ts`). Those probes are written and removed inside one test case, while
+  // the suite runs `npm run typecheck` concurrently — tsc's directory walk would collect a probe and
+  // then fail to read it, reporting `TS6053: File ... not found` against an unrelated task's worktree.
+  // Excluding it only removes the directory from the tsc program: the criteria's scanners walk the
+  // filesystem directly (readdir), so the positive controls still find their probe.
+  //
+  // ./**/__criterion-falsify-* is the same hazard in the two sites `./modules/voice/tmp` does NOT
+  // cover, and it is excluded by NAME rather than by directory because those copies have to sit
+  // beside the module they copy (their imports are relative, so a copy anywhere else would not
+  // resolve). `server/modules/voice/` is real source, so no directory-level exclude can reach them:
+  //
+  //   · voice-dashscope-settings AC4(b) churns `__criterion-falsify-ac8probe-<i>.ts` in that
+  //     directory twenty times, writing and removing each one inside a single test case;
+  //   · the four `voice-*.false-forms.test.ts` criteria each write a mutated copy of a shipping
+  //     module there as `__criterion-falsify-<mutation>-{base,mut}-<pid>.ts` while the suite runs.
+  //
+  // A file collected into the program and then removed before tsc reads it is `TS6053: File ...
+  // not found`; a leftover one that fails to typecheck is `TS2322` with no race involved at all.
+  // Both reds land on whichever task's `npm run typecheck` is running, which is a task that never
+  // wrote the file. Name-level exclusion removes both without touching the copies: the criteria
+  // build and delete their own copies, and their scanners read the filesystem rather than tsconfig.
+  "exclude": [
+    "../dist",
+    "../dist-server",
+    "../dist-server.next",
+    "../dist-server.old",
+    "../node_modules",
+    "../src",
+    "./modules/voice/tmp",
+    "./**/__criterion-falsify-*"
+  ]
+}

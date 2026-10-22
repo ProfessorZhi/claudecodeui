@@ -1,0 +1,30 @@
+// E-C2 分析。  npx tsx experiments/voice-draft/ec2/an.mts [sample]
+import { readFileSync, writeFileSync } from 'node:fs';
+import { CHAINS } from '../ec/scripts.mts';
+import { LOCAL, readJsonl } from '../ec/common.mts';
+const gold = JSON.parse(readFileSync(new URL('./gold.json', import.meta.url), 'utf8')); const rows = readJsonl(`${LOCAL}/compose2.jsonl`); const SC = Object.fromEntries(CHAINS.map((c) => [c.id, c]));
+const parse = (t: string) => { const m = t.match(/\{[\s\S]*\}/); try { return JSON.parse(m ? m[0] : t); } catch { return null; } };
+const TYPES = ['事实', '问题', '探路', '假设', '决定', '约束']; const mean = (x: number[]) => (x.length ? x.reduce((a, b) => a + b, 0) / x.length : NaN); const f = (x: number) => (Number.isNaN(x) ? '—' : (100 * x).toFixed(1) + '%'); const q = (xs: number[], p: number) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor(p * (s.length - 1))] : NaN; };
+const out = (r: any) => (r.status === 200 ? parse(r.text) : null);
+function typeAgree(r: any, relaxed: boolean) {
+  const o = out(r); if (!o || !Array.isArray(o.items)) return null; const g: Record<string, string[]> = gold.chains[r.chain]; const norm = (t: string) => (relaxed && (t === '探路' || t === '问题') ? '问题' : t); let ok = 0, tot = 0;
+  for (const [u, types] of Object.entries(g)) for (const t of types) { tot++; if (o.items.some((it: any) => Array.isArray(it.units) && it.units.map(Number).includes(Number(u)) && norm(String(it.type)) === norm(t))) ok++; }
+  return ok / tot;
+}
+function selfAns(r: any) { if (r.chain !== 'EC1') return null; const o = out(r); if (!o) return null; const gq = gold.selfAnswered.find((x: any) => x.chain === 'EC1'); const items: any[] = o.items ?? []; return (o.self_answered ?? []).some((s: any) => { const qi = items[Number(s.question) - 1], ai = items[Number(s.answer) - 1]; return qi && ai && (qi.units ?? []).map(Number).includes(gq.question) && (ai.units ?? []).map(Number).includes(gq.answer); }) ? 1 : 0; }
+const validUnits = (r: any) => { const o = out(r); if (!o || !Array.isArray(o.items)) return null; const n = SC[r.chain].units.length; return o.items.every((it: any) => Array.isArray(it.units) && it.units.every((u: any) => Number(u) >= 1 && Number(u) <= n) && TYPES.includes(it.type)) ? 1 : 0; };
+if (process.argv[2] !== 'sample') {
+  console.log('臂   n   可解析  类型一致(严格)  (宽松)  自问自答(EC1)  单元引用有效  建议条数  items条数  p50/p90 ms');
+  for (const a of ['A', 'B', 'C', 'W', 'G']) { const rs = rows.filter((r) => r.arm === a); const ok = rs.filter((r) => out(r)?.prompt);
+    console.log(`${a.padEnd(3)} ${String(rs.length).padStart(3)}  ${f(ok.length / rs.length).padStart(6)}   ${f(mean(rs.map((r) => typeAgree(r, false)).filter((x): x is number => x !== null))).padStart(8)}      ${f(mean(rs.map((r) => typeAgree(r, true)).filter((x): x is number => x !== null))).padStart(6)}   ${f(mean(rs.map(selfAns).filter((x): x is number => x !== null))).padStart(8)}      ${f(mean(rs.map(validUnits).filter((x): x is number => x !== null))).padStart(8)}    ${mean(ok.map((r) => (out(r).suggestions ?? []).length)).toFixed(1).padStart(4)}     ${mean(ok.map((r) => (out(r).items ?? []).length)).toFixed(1).padStart(5)}    ${q(rs.map((r) => r.ms), 0.5)}/${q(rs.map((r) => r.ms), 0.9)}`); }
+  console.log('\n按链（严格类型一致，A/B/C/W 各取平均）:'); for (const id of Object.keys(gold.chains)) console.log(`  ${id}: ` + ['A', 'B', 'C', 'W', 'G'].map((a) => `${a} ${f(mean(rows.filter((r) => r.arm === a && r.chain === id).map((r) => typeAgree(r, false)).filter((x): x is number => x !== null)))}`).join('  '));
+  const conf: Record<string, Record<string, number>> = {}; for (const r of rows.filter((x) => x.arm === 'B')) { const o = out(r); if (!o?.items) continue; for (const [u, types] of Object.entries(gold.chains[r.chain] as Record<string, string[]>)) { const got = new Set(o.items.filter((it: any) => (it.units ?? []).map(Number).includes(Number(u))).map((it: any) => it.type)); for (const t of types) { (conf[t] ??= {})[got.has(t) ? '命中' : '未命中'] = ((conf[t] ??= {})[got.has(t) ? '命中' : '未命中'] ?? 0) + 1; } } }
+  console.log('\nB 臂按标准类型的命中:'); for (const [t, c] of Object.entries(conf)) console.log(`  ${t}: 命中 ${c['命中'] ?? 0} / 未命中 ${c['未命中'] ?? 0}  (${f((c['命中'] ?? 0) / ((c['命中'] ?? 0) + (c['未命中'] ?? 0)))})`);
+} else {
+  const pick: any[] = []; for (const c of CHAINS) { for (const voice of ['zh-CN-XiaoxiaoNeural', 'zh-CN-YunxiNeural']) for (const arm of ['A', 'B', 'C', 'W']) { const r = rows.find((x) => x.arm === arm && x.voice === voice && x.chain === c.id && x.rep === 0); if (r && out(r)?.prompt) pick.push({ arm, voice, chain: c.id, o: out(r) }); } const g = rows.find((x) => x.arm === 'G' && x.chain === c.id && x.rep === 0); if (g && out(g)?.prompt) pick.push({ arm: 'G', voice: 'gold', chain: c.id, o: out(g) }); }
+  let seed = 20261009; const rnd = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 2 ** 32); for (let i = pick.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pick[i], pick[j]] = [pick[j], pick[i]]; } pick.forEach((p, k) => (p.k = k));
+  writeFileSync('/tmp/ec2-audit-key.json', JSON.stringify(pick.map(({ k, arm, voice, chain }) => ({ k, arm, voice, chain }))));
+  const ofType = (chain: string, t: string) => Object.entries(gold.chains[chain] as Record<string, string[]>).filter(([, ts]) => ts.includes(t)).map(([u]) => Number(u));
+  const blind = pick.map((p) => ({ k: p.k, chain: p.chain, spoken_units: SC[p.chain].units.map((u) => `[段${u.n}] ${u.text}`), gold_types: Object.fromEntries(Object.entries(gold.chains[p.chain] as Record<string, string[]>).map(([u, t]) => [`段${u}`, t])), hyp_units: ofType(p.chain, '假设'), ask_units: ofType(p.chain, '问题'), fact_units: ofType(p.chain, '事实'), dc_units: [...ofType(p.chain, '决定'), ...ofType(p.chain, '约束')], reask_units: p.chain === 'EC1' ? [7] : p.chain === 'EC6' ? [2, 4, 6] : [], system_output: { prompt: p.o.prompt, suggestions: p.o.suggestions, items: p.o.items } }));
+  const per = Math.ceil(blind.length / 4); for (let i = 0; i < 4; i++) writeFileSync(`/tmp/ec2-audit-part${i}.json`, JSON.stringify(blind.slice(i * per, (i + 1) * per), null, 1)); console.log('wrote', blind.length, '每份', per);
+}

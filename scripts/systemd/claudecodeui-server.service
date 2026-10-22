@@ -1,0 +1,28 @@
+# claudecodeui-server.service — the :3001 server as a fixed systemd USER unit.
+#
+# Installed by scripts/install-server-unit.sh, which also writes the per-host drop-in
+# (~/.config/systemd/user/claudecodeui-server.service.d/10-paths.conf) carrying the two things a unit file
+# cannot expand: WorkingDirectory= and the server.log path.
+#
+# Deliberately NO PATH= / --setenv=PATH here. node and claude come from the user manager's own
+# environment, which ~/.config/environment.d/995-nvm-node.conf sets (user scope, not this repo). A
+# PATH copied in from whatever shell started the unit froze old plugin bin dirs (quay 0.11.0,
+# archguard 0.1.33) into the server and every session under it.
+#
+# Deliberately NO MemoryMax=: a cgroup cap would make the server the OOM victim instead of a
+# bystander (docs/operations/process-isolation-and-memory-caps.md). The V8 heap ceiling below is a
+# process limit that only the server can trip; Restart= then brings it back.
+[Unit]
+Description=claudecodeui server
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# `env` resolves node from the PATH above (the manager's), not from systemd's own search path.
+ExecStart=/usr/bin/env node dist-server/server/index.js
+Environment=HOST=0.0.0.0
+Environment=SERVER_PORT=3001
+Environment=NODE_OPTIONS=--max-old-space-size=2048
+Restart=on-failure
+RestartSec=5

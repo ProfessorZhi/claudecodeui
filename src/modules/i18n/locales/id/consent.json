@@ -1,0 +1,35 @@
+{
+  "title": "Izinkan akses",
+  "loading": "Memuat permintaan otorisasi…",
+  "errorTitle": "Kesalahan otorisasi",
+  "retry": "Coba lagi",
+  "unknownClient": "Aplikasi tidak dikenal",
+  "wantsAccess": "ingin mengakses akun CloudCLI Anda.",
+  "callbackWarning": "Kode otorisasi Anda akan dikirim ke",
+  "signingInAs": "Masuk sebagai {{username}}",
+  "scopesLabel": "Izin",
+  "scopes": {
+    "read": "Membaca proyek, sesi, proses, dan status",
+    "sessionSend": "Mengirim pesan ke sesi yang ada (sesi menjalankan perintah)",
+    "sessionCreate": "Memulai sesi baru (sesi menjalankan perintah)",
+    "sessionControl": "Menghentikan proses, memulai dan menutup sesi, menghentikan tugas latar belakang",
+    "approve": "Menjawab persetujuan alat yang tertunda",
+    "navigate": "Membuka sesi di salah satu browser Anda",
+    "other": "Izin tambahan yang diminta aplikasi ini"
+  },
+  "writeWarning": "Aplikasi ini dapat mengirim, membuat, dan mengendalikan sesi. Izinkan hanya jika Anda memercayainya.",
+  "revokeHint": "Anda dapat mencabut akses ini kapan saja di Pengaturan → Aplikasi Terhubung.",
+  "passwordLabel": "Konfirmasi kata sandi Anda",
+  "passwordHint": "Masukkan kembali kata sandi Anda untuk mengonfirmasi otorisasi ini.",
+  "allow": "Izinkan",
+  "deny": "Tolak",
+  "submitting": "Mengotorisasi…",
+  "errors": {
+    "missingRequest": "Tautan ini kehilangan parameter yang diperlukan. Mulai ulang koneksi dari aplikasi.",
+    "invalidRequest": "Permintaan otorisasi ini tidak valid. Mungkin sudah kedaluwarsa atau berasal dari aplikasi yang tidak terdaftar.",
+    "unauthorized": "Sesi Anda telah berakhir. Masuk lagi untuk melanjutkan.",
+    "network": "Server tidak dapat dijangkau. Periksa koneksi Anda dan coba lagi.",
+    "invalidCredentials": "Kata sandi salah. Coba lagi.",
+    "rateLimited": "Terlalu banyak percobaan kata sandi. Tunggu beberapa menit lalu coba lagi."
+  }
+}

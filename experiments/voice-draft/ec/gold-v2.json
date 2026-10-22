@@ -1,0 +1,163 @@
+{
+ "note": "第二版：加入独立标注员（只看证据包、不看作者版）的标注及一致性判断。评分用 core（链内可推出的、被后续动作确认的诉求）；far_core 记录更远的后续走向，不要求口述里推出。",
+ "agreement": "EC2/EC3/EC4/EC5/EC6 与独立标注一致；EC1 视野不同：作者版取紧接着的下一步，独立版取更远的走向，两者都被后续动作支持，评分取作者版并记录独立版为 far_core。EC5 的独立版与作者版一致，但作者版 core 改为链内的最终询问（见下）。",
+ "chains": [
+  {
+   "id": "EC1",
+   "chain": "1dc1a198@2026-09-21T13:51",
+   "turns": "1-7",
+   "core": "质疑「识别时用上下文」与「VAD」被否决/划掉的依据：认为真正的原因是样本质量不好，而不是证据不足；要求列出已经用过的语音样本，由他检查并评价，据此重新判断优先级。",
+   "must_keep": [
+    "「识别时用上下文」在 proposal 和 goal 里都不做，理由都是 n=7 证据不足",
+    "VAD 要分两种：降噪的不需要；压缩的在 proposal 里待命、在 goal 里被划掉",
+    "用户的判断：这些结论是样本质量不好造成的"
+   ],
+   "scaffolding": [
+    "如何在浏览器 console 观察 VAD/上下文是否生效",
+    "逐条核对 goal 与 proposal 是否一致"
+   ],
+   "evidence": [
+    "14:40 补充：prompt 偏置不用修带点路径；VAD 是为缩短 ASR 时长省费用",
+    "14:43/14:47 你已经用过的语音样本有哪些？我可以检查并评价",
+    "15:05 提供两份带停顿语料",
+    "15:12 优先做 VAD，压缩晚些做"
+   ],
+   "independent_core": "弄清 GOAL-005/proposal 为何没覆盖「VAD」与「识别时用上下文」，并据此让 VAD（为缩短 ASR 语音时长、省费用的压缩型 VAD）成为优先实施项，同时把识别上下文偏置做成真正有效的功能（上下文取自此前会话 assistant 的干净文本末尾）。需要据此改 proposal/goal/AC/tasks，并支持语音文件上传与 console 可观测开关以便自测。",
+   "independent_must_keep": [
+    "VAD 的目的是缩短 ASR 处理的语音时长以节省费用（不是降噪）",
+    "「识别时用上下文」不做的理由「n=7 证据不足」，用户认为真因是样本质量差，现有样本可用，不必纠结录音样本",
+    "除麦克风外须支持语音文件上传触发识别，浏览器 console log 提供观测信息（仅开发模式或 URL 参数开关）",
+    "偏置应是会话上下文（前文末尾，assistant 干净文本为来源），不是带点路径的 prompt 偏置"
+   ],
+   "far_core": "弄清 GOAL-005/proposal 为何没覆盖「VAD」与「识别时用上下文」，并据此让 VAD（为缩短 ASR 语音时长、省费用的压缩型 VAD）成为优先实施项，同时把识别上下文偏置做成真正有效的功能（上下文取自此前会话 assistant 的干净文本末尾）。需要据此改 proposal/goal/AC/tasks，并支持语音文件上传与 console 可观测开关以便自测。"
+  },
+  {
+   "id": "EC2",
+   "chain": "05b66a9f@2026-09-23T03:32",
+   "turns": "1-4",
+   "core": "去掉移动端那条 `Tap ➤ to send • Return adds a line` 提示，使手机上的 hint 行恢复成不占高度的形态（2026-09-01 重构之前的样子）；接受手机上不显示这段文字。",
+   "must_keep": [
+    "输入为空时才显示的提示文本都可以并入 placeholder",
+    "真正需要提示的事件（如排队）放在输入框上方",
+    "把 hint 放回按钮行在手机宽度上放不下"
+   ],
+   "scaffolding": [
+    "逐情形的显示/不显示表格"
+   ],
+   "evidence": [
+    "03:46 为上述完整方案创建一条 quay task",
+    "04:48 更新 locale 并提交"
+   ],
+   "independent_core": "去掉移动端输入框 footer 里独占一行（20px）的 hintText 行，恢复到 2025-11-06 之后、2026-09-22 之前那种移动端零高度（不显示）的状态，接受不再显示 `Tap ➤ to send • Return adds a line`。",
+   "independent_must_keep": [
+    "接受移动端不显示「Tap ➤ to send • Return adds a line」",
+    "目标状态是 2025-11-06→2026-09-22 的「不存在、高度 0」形态",
+    "输入空时显示的文本可并入 placeholder，真正的事件提示放输入框上方"
+   ]
+  },
+  {
+   "id": "EC3",
+   "chain": "016f1328@2026-09-21T03:47",
+   "turns": "1-5",
+   "core": "确立 Settings 的存储原则：权限模式是会话的属性，客户端不应保存（只有消息实际发送到服务端后才在服务端保存）；Voice 设置目前只在浏览器 localStorage、且 Base URL 字段并不是死的，要说明/修正；并为 Voice 与权限模式的修改分别创建 quay task。",
+   "must_keep": [
+    "Voice 设置在 localStorage，不在服务端，而 Base URL 字段其实有效（用户已设置 Groq URL 与 key 且可用）",
+    "通知提示音先不动",
+    "权限模式应看作会话属性，客户端为什么、何时才需要保存它"
+   ],
+   "scaffolding": [
+    "列出每个 Settings 项存在服务端还是 localStorage"
+   ],
+   "evidence": [
+    "04:03 客户端不要存权限模式；为 Voice 和权限模式分别创建 quay task",
+    "04:07 同意 voice 保持直连；既然直连，key 就不应加密"
+   ],
+   "independent_core": "Settle where each Settings-dialog item should live (server vs localStorage), centred on Voice settings and permission mode. Voice stays a direct-to-provider config with an unencrypted key. Permission mode is treated as a session attribute that the client does not store. Then file two separate quay tasks, one for the Voice change and one for the permission-mode change.",
+   "independent_must_keep": [
+    "权限模式是会话的属性；客户端不要存权限模式，客户端的权限模式变更只有在消息实际发送到服务端后才在服务端保存",
+    "Voice 和权限模式的修改要分别创建 quay task（两条）",
+    "Voice 选择保持直连，因此 key 不应加密（用户同意助手关于 voice 的选择）",
+    "不动通知提示音"
+   ]
+  },
+  {
+   "id": "EC4",
+   "chain": "af690528@2026-09-21T02:18",
+   "turns": "1-4",
+   "core": "以生产形态运行 CloudCLI（构建加持续构建、后端热重载），在项目有变更时自动应用新版本（可以接受白屏），取代现在的开发服务器，以改善慢链路上的体验；同时检查页面被整页自动刷新、白屏几秒的问题。",
+   "must_keep": [
+    "dev server 的目标是本机最小重建延迟：不打包、不缓存、秒级 HMR",
+    "慢链路（经 zrok）上的体验是更广泛的应用场景",
+    "页面整页自动刷新、几秒白屏需要一并检查"
+   ],
+   "scaffolding": [
+    "429 限流与诊断细节"
+   ],
+   "evidence": [
+    "03:32 把启动命令换成生产形态：vite build --watch",
+    "03:35 不用管 zrok，执行重启并验证",
+    "04:09 验证新的 zrok 连接是否比原开发服务快"
+   ],
+   "independent_core": "Replace the slow dev-server (vite dev) setup behind the slow zrok tunnel with a production-style CloudCLI run on port 3001. The server watches and restarts, and the client is rebuilt by vite build --watch, so project changes are picked up quickly (a white screen on update is acceptable). Then verify that it is actually faster than the old dev service and that it fixes the random full-page white-screen reloads.",
+   "independent_must_keep": [
+    "目标是以生产形态（打包、哈希缓存）运行 CloudCLI 以代替现在的开发服务器，改动后能及时应用新版本，可接受白屏",
+    "dev server 的优化目标是 localhost 上最小重建延迟（不打包、不缓存、秒级 HMR），不适合慢链路",
+    "一并检查页面被全面自动刷新、内容全部消失、全白几秒后恢复的问题",
+    "要实际验证（zrok 上是否比原开发服务更快）；zrok 由用户自己手动处理，可换域名，不要用 socat"
+   ]
+  },
+  {
+   "id": "EC5",
+   "chain": "fff32ef8@2026-09-25T04:46",
+   "turns": "4-9",
+   "core": "弄清 CloudCLI 网页托管会话（每轮换一个进程）与 claude CLI 会话在进程形态上的差异之后，询问能否用 claude --bg 这种较长寿命的后台会话机制来启动和管理 CloudCLI 会话，从而兼容 SendMessage 寻址。",
+   "must_keep": [
+    "CloudCLI 网页托管会话与 claude CLI 会话的进程形态不同（网页托管是每轮换一个进程）",
+    "claude --bg 启动的会话可有较长寿命但会被自动停掉",
+    "用户在输出完成后通常要等几秒到几十分钟才有下一次输入，所以跨轮常驻方案不可靠"
+   ],
+   "scaffolding": [
+    "某个标题的会话 ID 发生过多少次变化",
+    "标题与会话 ID 的对应关系"
+   ],
+   "evidence": [
+    "06:38 引用 heldPrompt 机制并要求具体说明",
+    "06:54 在用户间隔很长的典型情况下分析常驻方案是否还有用；寻找短生命周期下可用的跨会话通信机制",
+    "07:08 不依赖未实现的新机制，仅靠当前机制，如何让一个会话主动驱动另一个会话；先不做 SendMessage，靠两个会话互相推动"
+   ],
+   "independent_core": "弄清 CloudCLI 托管会话（每次 chat.send 起一个短命 claude 子进程）与 claude CLI/--bg 长驻会话的形态差异后，找到一种在 CloudCLI 现有短生命周期模式下可行的跨会话通信机制，使一个 CloudCLI 托管会话能主动驱动另一个 CloudCLI 托管会话，实现会话间协作（SendMessage 式寻址的替代）。",
+   "independent_must_keep": [
+    "目标是让 CloudCLI 网页托管的会话兼容/替代 SendMessage 式会话间寻址与通信",
+    "用户在输出完成后可能等待几秒到几十分钟才有下一段输入，跨轮长驻进程方案因此不可靠",
+    "不依赖尚未实现的新机制，仅靠当前机制；可先不实现 SendMessage，而靠两个会话互相推动协作",
+    "需要从标题到会话 ID 的可寻址性（CloudCLI 显示标题、应用会话 ID 与 provider 会话 ID 的对应）"
+   ],
+   "far_core": "在当前「每轮一个短寿命进程」的 CloudCLI 托管会话模式下，不依赖常驻进程，找到让一个 CloudCLI 托管会话能主动驱动另一个会话的协作机制；可以先不做 SendMessage 式的会话间通信，改为让两个会话互相推动。"
+  },
+  {
+   "id": "EC6",
+   "chain": "671cee8f@2026-09-20T09:03",
+   "turns": "1-4",
+   "core": "先实现方案 B（在模型上挂环境变量表）作为能用的机制，再做更复杂的 UI；Model library 提到 Settings 作为一等公民；密钥保留在 config_json 里（可用性比保护更重要）；并据此取代旧决定、重排 goal、撤回旧任务。",
+   "must_keep": [
+    "可用性比密钥保护更重要，密钥保留在 config_json",
+    "unset 行作为显式行类型，而不是「网关类默认清除」的启发式",
+    "B 下同一 model id 不能在两个端点并存（UNIQUE(provider, model_id)），接受",
+    "第一版包含「LLM 网关」模板"
+   ],
+   "scaffolding": [],
+   "evidence": [
+    "09:31 把重复任务和不再需要的任务撤掉",
+    "ADR-002 取代 ADR-001，GOAL-001 按 B 重排，六个新任务建好",
+    "10:05 在 Settings-Agents-Models 里验证 Environment variables 与 LLM gateway template"
+   ],
+   "independent_core": "采用方案 B（模型上的 env 表）作为最小可用机制，先让 CloudCLI 的多端点模型配置能用，并把 Model library 提到 Settings 作为一等公民；同时用新 ADR 取代旧 profile 设计，撤回并重排旧任务，交给 quay driver 实现。",
+   "independent_must_keep": [
+    "先实现 B（模型上的 env 表），再做更复杂的 UI；至少先有个能用的机制",
+    "密钥保留在 config_json 中，可用性比隐藏密钥更重要",
+    "unset 行作为显式行类型，而非按网关类默认清除的启发式",
+    "UNIQUE(provider, model_id) 下同一 model id 不能在两个端点并存，予以接受；第一版包含 LLM 网关模板；撤回旧任务"
+   ]
+  }
+ ]
+}

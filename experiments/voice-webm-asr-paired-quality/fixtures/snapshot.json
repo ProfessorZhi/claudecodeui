@@ -1,0 +1,957 @@
+{
+  "provenance": {
+    "generatedAt": "2026-09-23",
+    "runIds": [
+      "2026-09-23T15:47:30.000Z"
+    ],
+    "samples": "ONE run, ONE time window — no cross-window sampling (2026-09-23 human ruling). There is no noise ruler here: a per-clip displacement that would be sampling noise in the sibling records has nowhere to show up, so latency readings describe this window only.",
+    "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers (/usr/bin/ffmpeg)",
+    "endpoints": {
+      "openrouter": "https://openrouter.ai/api/v1",
+      "groq": "https://api.groq.com/openai/v1",
+      "dashscope": "https://llm-szunnpxbx46k86c0.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+    },
+    "wireByCondition": {
+      "or-turbo": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts",
+      "groq-turbo": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts",
+      "or-qwen17": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts",
+      "or-qwen06": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts",
+      "or-qwenflash": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts",
+      "or-nemotron": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts",
+      "ds-flash": "runner-local wire (no shipped adapter)",
+      "or-qwen17|trim": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts",
+      "ds-flash|trim": "runner-local wire (no shipped adapter)",
+      "ds-flash|punct": "runner-local wire (no shipped adapter)",
+      "ds-flash|flat": "runner-local wire (no shipped adapter)",
+      "or-qwenflash|punct": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts",
+      "or-qwenflash|flat": "shipped 'openai-compatible' adapter, resolved from shared/asr/asrRegistry.ts"
+    },
+    "request": "Every OpenRouter/Groq condition goes through the adapter the shipping registry resolves for openai-compatible, with the global fetch and the request body the adapter builds; the adapter declares honors.context: false, so its context arms carry a byte-identical multipart body. The DashScope rows are NOT shipped code: there is no DashScope adapter, and this runner builds that request itself (see wireByCondition).",
+    "throttle": "6000 ms minimum interval between calls, one call in flight (serial)",
+    "upload": "Every upload is audio/webm (libopus 64k, 48 kHz, mono) encoded from the shipping module's samples by the host ffmpeg with -fflags +bitexact -flags +bitexact. No condition uploads wav.",
+    "recipe": "For every clip × column: decode the sibling experiment's fixtures/<clip> with the runner's decodeWav, encode the column with the runner's encodeWav (raw = encodeWav(decodeWav(file)); trim = trimVoiceAudio(samples, rate) — the shipping module), hand the wav to ffmpeg, hand the webm bytes to the condition, keep the returned text verbatim. Arithmetic note: ffmpeg's opus output does not carry the same encoder parameters as Chrome MediaRecorder's, so \"the product container\" is the container, not the encoder.",
+    "corpus": "Reused, not copied: the eight Chinese clips at o65 occupancy (d01..d08-o65) live in ../voice-provider-paired-quality/fixtures/ — a contiguous prefix of the out-of-tree dictation corpus, **TTS 合成** (tools/dictation-corpus.mjs SCRIPTS). Same eight clips as the previous two records, so the three records' numbers are on the same corpus.",
+    "referenceSource": "Read from ../voice-provider-paired-quality/fixtures/paired.json — the authored scripts from the out-of-tree corpus generator, verbatim, so the reference is ground truth by construction.",
+    "conditions": [
+      {
+        "key": "or-turbo",
+        "gateway": "openrouter",
+        "model": "openai/whisper-large-v3-turbo",
+        "column": "raw",
+        "context": "none",
+        "note": "网关轴的一半：whisper-large-v3-turbo 经 OpenRouter（前两份记录的基线模型，换网关）"
+      },
+      {
+        "key": "groq-turbo",
+        "gateway": "groq",
+        "model": "whisper-large-v3-turbo",
+        "column": "raw",
+        "context": "none",
+        "note": "网关轴的另一半：同一族模型经 Groq —— 与 `or-turbo` 只差网关这一个变量"
+      },
+      {
+        "key": "or-qwen17",
+        "gateway": "openrouter",
+        "model": "qwen/qwen3-asr-1.7b",
+        "column": "raw",
+        "context": "none",
+        "note": "Qwen3-ASR 1.7B（探测里 CER 最低的两个之一）"
+      },
+      {
+        "key": "or-qwen06",
+        "gateway": "openrouter",
+        "model": "qwen/qwen3-asr-0.6b",
+        "column": "raw",
+        "context": "none",
+        "note": "Qwen3-ASR 0.6B（同一条线上更小的那一个）"
+      },
+      {
+        "key": "or-qwenflash",
+        "gateway": "openrouter",
+        "model": "qwen/qwen3-asr-flash-2026-02-10",
+        "column": "raw",
+        "context": "none",
+        "note": "Qwen3-ASR Flash —— 上下文臂在这一列上做（`prompt` 表单字段）"
+      },
+      {
+        "key": "or-nemotron",
+        "gateway": "openrouter",
+        "model": "nvidia/nemotron-3.5-asr-streaming-multilingual-0.6b",
+        "column": "raw",
+        "context": "none",
+        "note": "Nemotron 多语种 0.6B（探测里 CER 最高、唯一漏句的那一个，作为下限参照）"
+      },
+      {
+        "key": "ds-flash",
+        "gateway": "dashscope",
+        "model": "qwen-audio-3.1-asr-flash",
+        "column": "raw",
+        "context": "none",
+        "note": "DashScope `qwen-audio-3.1-asr-flash`，**没有出货适配器**（runner-local wire）；上下文臂的参照条件，也是负对照的参照"
+      },
+      {
+        "key": "or-qwen17|trim",
+        "gateway": "openrouter",
+        "model": "qwen/qwen3-asr-1.7b",
+        "column": "trim",
+        "context": "none",
+        "note": "裁剪轴：出货 `trimVoiceAudio` 之后再编码为 webm"
+      },
+      {
+        "key": "ds-flash|trim",
+        "gateway": "dashscope",
+        "model": "qwen-audio-3.1-asr-flash",
+        "column": "trim",
+        "context": "none",
+        "note": "裁剪轴的另一家：裁掉停顿对 DashScope 是伤害还是帮助"
+      },
+      {
+        "key": "ds-flash|punct",
+        "gateway": "dashscope",
+        "model": "qwen-audio-3.1-asr-flash",
+        "column": "raw",
+        "context": "punct",
+        "note": "带句末标点的 system 消息（runner-local wire 真的把它放上线）"
+      },
+      {
+        "key": "ds-flash|flat",
+        "gateway": "dashscope",
+        "model": "qwen-audio-3.1-asr-flash",
+        "column": "raw",
+        "context": "flat",
+        "note": "**负对照**：同一个 system 消息，只去掉句末标点"
+      },
+      {
+        "key": "or-qwenflash|punct",
+        "gateway": "openrouter",
+        "model": "qwen/qwen3-asr-flash-2026-02-10",
+        "column": "raw",
+        "context": "punct",
+        "note": "上下文臂的另一家：`prompt` 表单字段（出货适配器声明 `honors.context: false` ⇒ 这一条不上线）"
+      },
+      {
+        "key": "or-qwenflash|flat",
+        "gateway": "openrouter",
+        "model": "qwen/qwen3-asr-flash-2026-02-10",
+        "column": "raw",
+        "context": "flat",
+        "note": "同上，去句末标点 —— 与 `or-qwenflash|punct` 的请求逐字节相同"
+      }
+    ],
+    "prompts": {
+      "punct": "把 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+      "flat": "把 voice.service.ts 的超时改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+    },
+    "knownGaps": "Usage is readable only on the DashScope rows (the service returns it); the shipping adapters do not populate `AsrSuccess.meta.usage`, so their usage column is null. CER is computed against the authored script, which carries no sentence-final punctuation, so no punctuation-accuracy number exists here (protocol rule 5)."
+  },
+  "entries": [
+    {
+      "clip": "d01-o65.wav",
+      "language": "zh",
+      "reference": "把 server 里的 voice.service.ts 的超时改成三十秒",
+      "audio": {
+        "baselineSec": 15.544625,
+        "raw": {
+          "mimeType": "audio/webm",
+          "wavSha256": "2c52b72bef21b81e51722c47bf549f027cbf52bba2817cf153663c9b66435f39",
+          "webmSha256": "a455d97a7b71ce7545c844359ff41d072f70e82aa87b6f95de7415ec4d8d9cc0",
+          "webmBytes": 90238
+        },
+        "trim": {
+          "mimeType": "audio/webm",
+          "wavSha256": "a73d14695e59bd86abc9d5857966a38961a421423a266f9eb346bca33a00278a",
+          "webmSha256": "29cba58b698579ba1ca4365001acf6df16cd12dba45381cb96f331b8541aeadc",
+          "webmBytes": 86896,
+          "savedRatio": 0.2569778942882186
+        }
+      },
+      "transcripts": {
+        "or-turbo": "把server李的voice.seLuis TS的超时改成30秒",
+        "groq-turbo": "把server里的voice.seluis.ts的超时改成30秒",
+        "or-qwen17": "把server里的voice点se_rists的超时改成三十秒。",
+        "or-qwen06": "把server里的race点se race.ts的超时改成三十秒。",
+        "or-qwenflash": "把server里的voice点se、rests的超时改成30s。",
+        "or-nemotron": "理的 wos de SETS 的超时改成三十秒。",
+        "ds-flash": "把server里的voice.se-voice-tts的超时改成30秒。",
+        "or-qwen17|trim": "把server里的voice点se_rests的超时改成三十秒。",
+        "ds-flash|trim": "把server里的Voice点SEVoiceTS的超时改成30秒。",
+        "ds-flash|punct": "把server里的voice.se-voice-tts的超时改成30秒。",
+        "ds-flash|flat": "把server里的voice.se-voice-tts的超时改成30秒。",
+        "or-qwenflash|punct": "把server里的voice点se、rests的超时改成30s。",
+        "or-qwenflash|flat": "把server里的voice点se、rests的超时改成30s。"
+      },
+      "runs": {
+        "or-turbo": "2026-09-23T15:47:30.000Z",
+        "groq-turbo": "2026-09-23T15:47:30.000Z",
+        "or-qwen17": "2026-09-23T15:47:30.000Z",
+        "or-qwen06": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash": "2026-09-23T15:47:30.000Z",
+        "or-nemotron": "2026-09-23T15:47:30.000Z",
+        "ds-flash": "2026-09-23T15:47:30.000Z",
+        "or-qwen17|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|punct": "2026-09-23T15:47:30.000Z",
+        "ds-flash|flat": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|punct": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|flat": "2026-09-23T15:47:30.000Z"
+      },
+      "latencyMs": {
+        "or-turbo": 2084,
+        "groq-turbo": 2868,
+        "or-qwen17": 3198,
+        "or-qwen06": 46911,
+        "or-qwenflash": 1158,
+        "or-nemotron": 2289,
+        "ds-flash": 7621,
+        "or-qwen17|trim": 1193,
+        "ds-flash|trim": 755,
+        "ds-flash|punct": 4380,
+        "ds-flash|flat": 9807,
+        "or-qwenflash|punct": 1694,
+        "or-qwenflash|flat": 3367
+      },
+      "usage": {
+        "or-turbo": null,
+        "groq-turbo": null,
+        "or-qwen17": null,
+        "or-qwen06": null,
+        "or-qwenflash": null,
+        "or-nemotron": null,
+        "ds-flash": {
+          "duration": 16,
+          "input_tokens": 252,
+          "output_tokens": 16,
+          "total_tokens": 268
+        },
+        "or-qwen17|trim": null,
+        "ds-flash|trim": {
+          "duration": 12,
+          "input_tokens": 202,
+          "output_tokens": 15,
+          "total_tokens": 217
+        },
+        "ds-flash|punct": {
+          "duration": 16,
+          "input_tokens": 252,
+          "output_tokens": 16,
+          "total_tokens": 268
+        },
+        "ds-flash|flat": {
+          "duration": 16,
+          "input_tokens": 252,
+          "output_tokens": 16,
+          "total_tokens": 268
+        },
+        "or-qwenflash|punct": null,
+        "or-qwenflash|flat": null
+      }
+    },
+    {
+      "clip": "d02-o65.wav",
+      "language": "zh",
+      "reference": "改一下 voice.service.ts，嗯不对，应该是 voice.routes.ts",
+      "audio": {
+        "baselineSec": 20.16,
+        "raw": {
+          "mimeType": "audio/webm",
+          "wavSha256": "340ba7e323ae1a4d6871afb1fdbac8f8bd04662ca66dec4ac7c3453f53d989e3",
+          "webmSha256": "f49a6ad70a478e4792f1b0672ca55dd6d19871d8b695ece147664b80d7a69c05",
+          "webmBytes": 120088
+        },
+        "trim": {
+          "mimeType": "audio/webm",
+          "wavSha256": "8c870c011bd3e08fe560139fd5b960adc61bec55c8b44dbab701757040f90ab3",
+          "webmSha256": "546da81d1fd2c25ffeb2c0501ab5117a6f470efed744fb78de01316568d43544",
+          "webmBytes": 117370,
+          "savedRatio": 0.23859126984126988
+        }
+      },
+      "transcripts": {
+        "or-turbo": "改一下。voice.seLuis Ts嗯不对。应该是。Voice.roUTS",
+        "groq-turbo": "改一下。voice.seluis.ts嗯,不对。应该是。voice.roUts.ts",
+        "or-qwen17": "改一下，voice点s e，voice t s，嗯，不对，应该是voice点r o，u s t s。",
+        "or-qwen06": "改一下，Voice点SE，VoiceTS。嗯，不对，应该是Voice点RO，UseTS。",
+        "or-qwenflash": "改一下。voice点se。voice点ts。嗯不对。应该是。voice点ro。use点ts。",
+        "or-nemotron": "改一下 WSD SETS 嗯, 不对, 应该是 WSDROCTS。",
+        "ds-flash": "改一下，voice.se voice.ts 嗯，不对，应该是 voice.ro uds.ts。",
+        "or-qwen17|trim": "改一下，voice点se，voice ts，嗯，不对，应该是voice点ro，voice ts。",
+        "ds-flash|trim": "改一下，Voice.se，Voice ts，嗯，不对，应该是Voice.ro，Youth ts。",
+        "ds-flash|punct": "改一下，voice.se，voice.ts，嗯不对，应该是voice.ro，use.ts。",
+        "ds-flash|flat": "改一下，voice.se，voice.ts，嗯不对，应该是voice.ro，utils.ts。",
+        "or-qwenflash|punct": "改一下。voice点se。voice点ts。嗯不对。应该是。voice点ro。use点ts。",
+        "or-qwenflash|flat": "改一下。voice点se。voice点ts。嗯不对。应该是。voice点ro。use点ts。"
+      },
+      "runs": {
+        "or-turbo": "2026-09-23T15:47:30.000Z",
+        "groq-turbo": "2026-09-23T15:47:30.000Z",
+        "or-qwen17": "2026-09-23T15:47:30.000Z",
+        "or-qwen06": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash": "2026-09-23T15:47:30.000Z",
+        "or-nemotron": "2026-09-23T15:47:30.000Z",
+        "ds-flash": "2026-09-23T15:47:30.000Z",
+        "or-qwen17|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|punct": "2026-09-23T15:47:30.000Z",
+        "ds-flash|flat": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|punct": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|flat": "2026-09-23T15:47:30.000Z"
+      },
+      "latencyMs": {
+        "or-turbo": 4337,
+        "groq-turbo": 1267,
+        "or-qwen17": 1467,
+        "or-qwen06": 107443,
+        "or-qwenflash": 1403,
+        "or-nemotron": 6006,
+        "ds-flash": 2662,
+        "or-qwen17|trim": 1678,
+        "ds-flash|trim": 1734,
+        "ds-flash|punct": 19662,
+        "ds-flash|flat": 13308,
+        "or-qwenflash|punct": 1940,
+        "or-qwenflash|flat": 1931
+      },
+      "usage": {
+        "or-turbo": null,
+        "groq-turbo": null,
+        "or-qwen17": null,
+        "or-qwen06": null,
+        "or-qwenflash": null,
+        "or-nemotron": null,
+        "ds-flash": {
+          "duration": 20,
+          "input_tokens": 309,
+          "output_tokens": 19,
+          "total_tokens": 328
+        },
+        "or-qwen17|trim": null,
+        "ds-flash|trim": {
+          "duration": 15,
+          "input_tokens": 249,
+          "output_tokens": 21,
+          "total_tokens": 270
+        },
+        "ds-flash|punct": {
+          "duration": 20,
+          "input_tokens": 309,
+          "output_tokens": 19,
+          "total_tokens": 328
+        },
+        "ds-flash|flat": {
+          "duration": 20,
+          "input_tokens": 309,
+          "output_tokens": 19,
+          "total_tokens": 328
+        },
+        "or-qwenflash|punct": null,
+        "or-qwenflash|flat": null
+      }
+    },
+    {
+      "clip": "d03-o65.wav",
+      "language": "zh",
+      "reference": "看一下 useVoiceInput 这个 hook 是怎么处理 recording 的",
+      "audio": {
+        "baselineSec": 20.16,
+        "raw": {
+          "mimeType": "audio/webm",
+          "wavSha256": "85e9bfa10e7791dcb473f64eed868c54841484d99f7f318b3ce0f54c71da2aeb",
+          "webmSha256": "1591b39d237c617976b6f435ac5348bf699bdb002506afc0cb6271c8f406b9d9",
+          "webmBytes": 111500
+        },
+        "trim": {
+          "mimeType": "audio/webm",
+          "wavSha256": "4e1368f5d7f47ef2ccd10b6e7bda10449740135d59c6180aae6ce568cd03ef68",
+          "webmSha256": "f39fbbeaaac4ff8466f90337516dc6bc30e6ff99ac0ad9fe229032d36cc2e368",
+          "webmBytes": 107871,
+          "savedRatio": 0.2366071428571428
+        }
+      },
+      "transcripts": {
+        "or-turbo": "看一下。Yous VoiceInput JiggerFolk是怎么处理?Recordant.Gida",
+        "groq-turbo": "看一下。Use voiceInput这个。Hook是怎么处理。RecordingG的。",
+        "or-qwen17": "看一下，usefuls input这个hook是怎么处理？recording记得。",
+        "or-qwen06": "看一下，use voice input这个hook是怎么处理。recorden记得。",
+        "or-qwenflash": "看一下。useless input这个hook是怎么处理recorded g的。",
+        "or-nemotron": "看一下 Input这个是怎么处理 recorden G 的。",
+        "ds-flash": "看一下 useVoiceInput 这个 hook 是怎么处理 Recorder 的。",
+        "or-qwen17|trim": "看一下，usefuls input这个hook是怎么处理recording G的。",
+        "ds-flash|trim": "看一下 useVoiceInput 这个 Hook 是怎么处理 Recorder API 的。",
+        "ds-flash|punct": "看一下。 useVoiceInput这个。 hook。 是怎么处理？ recording。 g的。",
+        "ds-flash|flat": "看一下。 useVoiceInput这个。 hook。 是怎么处理？ recording。 的。",
+        "or-qwenflash|punct": "看一下。useless input这个hook是怎么处理recorded g的。",
+        "or-qwenflash|flat": "看一下。useless input这个hook是怎么处理recorded g的。"
+      },
+      "runs": {
+        "or-turbo": "2026-09-23T15:47:30.000Z",
+        "groq-turbo": "2026-09-23T15:47:30.000Z",
+        "or-qwen17": "2026-09-23T15:47:30.000Z",
+        "or-qwen06": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash": "2026-09-23T15:47:30.000Z",
+        "or-nemotron": "2026-09-23T15:47:30.000Z",
+        "ds-flash": "2026-09-23T15:47:30.000Z",
+        "or-qwen17|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|punct": "2026-09-23T15:47:30.000Z",
+        "ds-flash|flat": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|punct": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|flat": "2026-09-23T15:47:30.000Z"
+      },
+      "latencyMs": {
+        "or-turbo": 2081,
+        "groq-turbo": 1411,
+        "or-qwen17": 5466,
+        "or-qwen06": 1146,
+        "or-qwenflash": 1778,
+        "or-nemotron": 2798,
+        "ds-flash": 1806,
+        "or-qwen17|trim": 1041,
+        "ds-flash|trim": 1684,
+        "ds-flash|punct": 3869,
+        "ds-flash|flat": 1438,
+        "or-qwenflash|punct": 1065,
+        "or-qwenflash|flat": 773
+      },
+      "usage": {
+        "or-turbo": null,
+        "groq-turbo": null,
+        "or-qwen17": null,
+        "or-qwen06": null,
+        "or-qwenflash": null,
+        "or-nemotron": null,
+        "ds-flash": {
+          "duration": 20,
+          "input_tokens": 309,
+          "output_tokens": 14,
+          "total_tokens": 323
+        },
+        "or-qwen17|trim": null,
+        "ds-flash|trim": {
+          "duration": 15,
+          "input_tokens": 250,
+          "output_tokens": 15,
+          "total_tokens": 265
+        },
+        "ds-flash|punct": {
+          "duration": 20,
+          "input_tokens": 309,
+          "output_tokens": 18,
+          "total_tokens": 327
+        },
+        "ds-flash|flat": {
+          "duration": 20,
+          "input_tokens": 309,
+          "output_tokens": 18,
+          "total_tokens": 327
+        },
+        "or-qwenflash|punct": null,
+        "or-qwenflash|flat": null
+      }
+    },
+    {
+      "clip": "d04-o65.wav",
+      "language": "zh",
+      "reference": "不要动 voice.service.ts，只改 voice.module.ts",
+      "audio": {
+        "baselineSec": 14.51075,
+        "raw": {
+          "mimeType": "audio/webm",
+          "wavSha256": "0e0492eafb583ab5b5473c234cf70f4c4db19b78e662bdeb53f30815c3f97895",
+          "webmSha256": "8f01503501dee7c07c149480ee21360d45c70a524555a2287ed4f7d166896038",
+          "webmBytes": 86247
+        },
+        "trim": {
+          "mimeType": "audio/webm",
+          "wavSha256": "c8ddf6aa4cf73f0d4555951731c85be0eb491965e2f549c98c96a5638cb6e26d",
+          "webmSha256": "fccd4565c151ad3211e2bbde5893351b766ee0519c2b9ee3fa9757efade1303f",
+          "webmBytes": 84654,
+          "savedRatio": 0.21506469341694945
+        }
+      },
+      "transcripts": {
+        "or-turbo": "不要动!voice.seLuis Ts直改Wars。Module - TS",
+        "groq-turbo": "不要动voice.seLuis TS直改voicemodule TS",
+        "or-qwen17": "不要动。voice点se，voice ts，只改voice，module ts。",
+        "or-qwen06": "不要动。Voice点S E。Voice T S。只改Voice。Module T S。",
+        "or-qwenflash": "不要动。voice点se。voice点ts。只改voice。module点ts。",
+        "or-nemotron": "不要动 wos de SETS 指改 WS ma Johns.",
+        "ds-flash": "不要动voice.se，voice.ts只改voice.module.ts。",
+        "or-qwen17|trim": "不要动。voice点se，voice ts，只改voice module ts。",
+        "ds-flash|trim": "不要动voice.se，voice.ts只改voice.module.ts。",
+        "ds-flash|punct": "不要动voice.se，voice.ts只改voice.module.ts。",
+        "ds-flash|flat": "不要动voice.se，voice.ts只改voice.module.ts。",
+        "or-qwenflash|punct": "不要动。voice点se。voice点ts。只改voice。module点ts。",
+        "or-qwenflash|flat": "不要动。voice点se。voice点ts。只改voice。module点ts。"
+      },
+      "runs": {
+        "or-turbo": "2026-09-23T15:47:30.000Z",
+        "groq-turbo": "2026-09-23T15:47:30.000Z",
+        "or-qwen17": "2026-09-23T15:47:30.000Z",
+        "or-qwen06": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash": "2026-09-23T15:47:30.000Z",
+        "or-nemotron": "2026-09-23T15:47:30.000Z",
+        "ds-flash": "2026-09-23T15:47:30.000Z",
+        "or-qwen17|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|punct": "2026-09-23T15:47:30.000Z",
+        "ds-flash|flat": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|punct": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|flat": "2026-09-23T15:47:30.000Z"
+      },
+      "latencyMs": {
+        "or-turbo": 1796,
+        "groq-turbo": 371,
+        "or-qwen17": 2889,
+        "or-qwen06": 795,
+        "or-qwenflash": 992,
+        "or-nemotron": 2246,
+        "ds-flash": 3340,
+        "or-qwen17|trim": 1228,
+        "ds-flash|trim": 695,
+        "ds-flash|punct": 8213,
+        "ds-flash|flat": 11475,
+        "or-qwenflash|punct": 1227,
+        "or-qwenflash|flat": 651
+      },
+      "usage": {
+        "or-turbo": null,
+        "groq-turbo": null,
+        "or-qwen17": null,
+        "or-qwen06": null,
+        "or-qwenflash": null,
+        "or-nemotron": null,
+        "ds-flash": {
+          "duration": 15,
+          "input_tokens": 239,
+          "output_tokens": 13,
+          "total_tokens": 252
+        },
+        "or-qwen17|trim": null,
+        "ds-flash|trim": {
+          "duration": 11,
+          "input_tokens": 200,
+          "output_tokens": 13,
+          "total_tokens": 213
+        },
+        "ds-flash|punct": {
+          "duration": 15,
+          "input_tokens": 239,
+          "output_tokens": 13,
+          "total_tokens": 252
+        },
+        "ds-flash|flat": {
+          "duration": 15,
+          "input_tokens": 239,
+          "output_tokens": 13,
+          "total_tokens": 252
+        },
+        "or-qwenflash|punct": null,
+        "or-qwenflash|flat": null
+      }
+    },
+    {
+      "clip": "d05-o65.wav",
+      "language": "zh",
+      "reference": "把超时从十五秒改成五十秒，不是五秒",
+      "audio": {
+        "baselineSec": 9.895375,
+        "raw": {
+          "mimeType": "audio/webm",
+          "wavSha256": "969865aa6f445bec12574f90c5707ff5c07359116b1793afda349d9a3c699ef5",
+          "webmSha256": "f0c6d58607e22723da22268b190fdde787ed7dd2d795d53015f717b279aa556a",
+          "webmBytes": 56322
+        },
+        "trim": {
+          "mimeType": "audio/webm",
+          "wavSha256": "d6d84475cda5560fdaa5a69984dae51c2e07522bd1a6011a24cdd4199c2ed933",
+          "webmSha256": "d894887d93941a9bf453045c5abf31f7a31c2d33728f4e20c0ab952f317946db",
+          "webmBytes": 53990,
+          "savedRatio": 0.28956709573917105
+        }
+      },
+      "transcripts": {
+        "or-turbo": "把超时从15秒改成50秒不是5秒。",
+        "groq-turbo": "把超时从15秒改成。50秒?不是5秒。",
+        "or-qwen17": "把超时从十五秒改成五十秒，不是五秒。",
+        "or-qwen06": "把超时从十五秒改成五十秒。不是五秒。",
+        "or-qwenflash": "把超时从15s改成50s，不是五秒。",
+        "or-nemotron": "把超时从十五秒改成五十秒不是五秒。",
+        "ds-flash": "把超时从15秒改成50秒，不是5秒。",
+        "or-qwen17|trim": "把超时从十五秒改成五十秒，不是五秒。",
+        "ds-flash|trim": "把超时从15秒改成50秒，不是5秒。",
+        "ds-flash|punct": "把超时从15秒改成50秒，不是5秒。",
+        "ds-flash|flat": "把超时从15秒改成50秒，不是5秒。",
+        "or-qwenflash|punct": "把超时从15s改成50s，不是五秒。",
+        "or-qwenflash|flat": "把超时从15s改成50s，不是五秒。"
+      },
+      "runs": {
+        "or-turbo": "2026-09-23T15:47:30.000Z",
+        "groq-turbo": "2026-09-23T15:47:30.000Z",
+        "or-qwen17": "2026-09-23T15:47:30.000Z",
+        "or-qwen06": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash": "2026-09-23T15:47:30.000Z",
+        "or-nemotron": "2026-09-23T15:47:30.000Z",
+        "ds-flash": "2026-09-23T15:47:30.000Z",
+        "or-qwen17|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|punct": "2026-09-23T15:47:30.000Z",
+        "ds-flash|flat": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|punct": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|flat": "2026-09-23T15:47:30.000Z"
+      },
+      "latencyMs": {
+        "or-turbo": 2005,
+        "groq-turbo": 273,
+        "or-qwen17": 6618,
+        "or-qwen06": 469,
+        "or-qwenflash": 1369,
+        "or-nemotron": 1680,
+        "ds-flash": 1952,
+        "or-qwen17|trim": 549,
+        "ds-flash|trim": 2343,
+        "ds-flash|punct": 500,
+        "ds-flash|flat": 2629,
+        "or-qwenflash|punct": 576,
+        "or-qwenflash|flat": 684
+      },
+      "usage": {
+        "or-turbo": null,
+        "groq-turbo": null,
+        "or-qwen17": null,
+        "or-qwen06": null,
+        "or-qwenflash": null,
+        "or-nemotron": null,
+        "ds-flash": {
+          "duration": 10,
+          "input_tokens": 181,
+          "output_tokens": 15,
+          "total_tokens": 196
+        },
+        "or-qwen17|trim": null,
+        "ds-flash|trim": {
+          "duration": 7,
+          "input_tokens": 145,
+          "output_tokens": 15,
+          "total_tokens": 160
+        },
+        "ds-flash|punct": {
+          "duration": 10,
+          "input_tokens": 181,
+          "output_tokens": 15,
+          "total_tokens": 196
+        },
+        "ds-flash|flat": {
+          "duration": 10,
+          "input_tokens": 181,
+          "output_tokens": 15,
+          "total_tokens": 196
+        },
+        "or-qwenflash|punct": null,
+        "or-qwenflash|flat": null
+      }
+    },
+    {
+      "clip": "d06-o65.wav",
+      "language": "zh",
+      "reference": "嗯…那个…就是这个 composer 的按钮，嗯…再加个快捷键",
+      "audio": {
+        "baselineSec": 13.6615,
+        "raw": {
+          "mimeType": "audio/webm",
+          "wavSha256": "b325ac5de252365885cd8f7ae8bc76d8db05f4f8594d4259fe65f4f1e14ec14e",
+          "webmSha256": "4b2f0a1df400065c733da40f38834e6de82f655a8f685c597bb7aa6d2447cb7b",
+          "webmBytes": 75786
+        },
+        "trim": {
+          "mimeType": "audio/webm",
+          "wavSha256": "24ae9eed471beace70020b1c74f08bb454f5becc14d54e5f43185c5e45851c58",
+          "webmSha256": "39ec8cdea2bf0cd982a19b3d93bc312eb2a9ab242ddeb966892b80731773e6e6",
+          "webmBytes": 72099,
+          "savedRatio": 0.27313984555136706
+        }
+      },
+      "transcripts": {
+        "or-turbo": "嗯,那个,就是这个Composer的安妞。嗯,在家的快捷键",
+        "groq-turbo": "嗯,那个,就是这个Composer的按钮嗯,再加个快捷键",
+        "or-qwen17": "嗯，那个就是这个 composer 的按钮。嗯，再加个快捷键。",
+        "or-qwen06": "嗯，那个就是这个 Composer 的按钮。嗯，再加个快捷键。",
+        "or-qwenflash": "嗯，那个，就是这个。composer。的按钮。嗯，再加个快捷键。",
+        "or-nemotron": "嗯, 那个就是这个 composer按钮。 嗯, 再加个快捷键。",
+        "ds-flash": "嗯，那个，就是这个，Composer 的按钮，嗯，再加个快捷键。",
+        "or-qwen17|trim": "嗯，那个就是这个 composer 的按钮。嗯，再加个快捷键。",
+        "ds-flash|trim": "嗯，那个就是这个，Composer 的按钮，嗯，再加个快捷键。",
+        "ds-flash|punct": "嗯，那个，就是这个，Composer 的按钮，嗯，再加个快捷键。",
+        "ds-flash|flat": "嗯，那个，就是这个，Composer 的按钮，嗯，再加个快捷键。",
+        "or-qwenflash|punct": "嗯，那个，就是这个。composer。的按钮。嗯，再加个快捷键。",
+        "or-qwenflash|flat": "嗯，那个，就是这个。composer。的按钮。嗯，再加个快捷键。"
+      },
+      "runs": {
+        "or-turbo": "2026-09-23T15:47:30.000Z",
+        "groq-turbo": "2026-09-23T15:47:30.000Z",
+        "or-qwen17": "2026-09-23T15:47:30.000Z",
+        "or-qwen06": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash": "2026-09-23T15:47:30.000Z",
+        "or-nemotron": "2026-09-23T15:47:30.000Z",
+        "ds-flash": "2026-09-23T15:47:30.000Z",
+        "or-qwen17|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|punct": "2026-09-23T15:47:30.000Z",
+        "ds-flash|flat": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|punct": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|flat": "2026-09-23T15:47:30.000Z"
+      },
+      "latencyMs": {
+        "or-turbo": 1767,
+        "groq-turbo": 392,
+        "or-qwen17": 1013,
+        "or-qwen06": 981,
+        "or-qwenflash": 674,
+        "or-nemotron": 2264,
+        "ds-flash": 1363,
+        "or-qwen17|trim": 2292,
+        "ds-flash|trim": 1459,
+        "ds-flash|punct": 1265,
+        "ds-flash|flat": 4469,
+        "or-qwenflash|punct": 650,
+        "or-qwenflash|flat": 1169
+      },
+      "usage": {
+        "or-turbo": null,
+        "groq-turbo": null,
+        "or-qwen17": null,
+        "or-qwen06": null,
+        "or-qwenflash": null,
+        "or-nemotron": null,
+        "ds-flash": {
+          "duration": 14,
+          "input_tokens": 228,
+          "output_tokens": 17,
+          "total_tokens": 245
+        },
+        "or-qwen17|trim": null,
+        "ds-flash|trim": {
+          "duration": 10,
+          "input_tokens": 182,
+          "output_tokens": 16,
+          "total_tokens": 198
+        },
+        "ds-flash|punct": {
+          "duration": 14,
+          "input_tokens": 228,
+          "output_tokens": 17,
+          "total_tokens": 245
+        },
+        "ds-flash|flat": {
+          "duration": 14,
+          "input_tokens": 228,
+          "output_tokens": 17,
+          "total_tokens": 245
+        },
+        "or-qwenflash|punct": null,
+        "or-qwenflash|flat": null
+      }
+    },
+    {
+      "clip": "d07-o65.wav",
+      "language": "zh",
+      "reference": "server 模块下的 voice 目录里加一个 call 的测试",
+      "audio": {
+        "baselineSec": 14.4,
+        "raw": {
+          "mimeType": "audio/webm",
+          "wavSha256": "ba1ce9cd005435b163ca71010fff1fa4efc002e0864eccd0e0721b68a8d6ba46",
+          "webmSha256": "997f352ed2eb00b5efff902a1143cad11d314b5d7621517681a0d66a66c16bff",
+          "webmBytes": 82113
+        },
+        "trim": {
+          "mimeType": "audio/webm",
+          "wavSha256": "aadbe64472cd7b1d62dedf49a7d18c870f4150c537c92b331fe51699f26167bb",
+          "webmSha256": "822e0964c8938bb0fab1c60dc0328813448db610d95988dc4782ecc1555a9be9",
+          "webmBytes": 79688,
+          "savedRatio": 0.24236111111111114
+        }
+      },
+      "transcripts": {
+        "or-turbo": " Server.  模块下的。  Voice.  目录里加一个。  CODE 測試.",
+        "groq-turbo": "Server模块下的Voice目录里加一个Code测试",
+        "or-qwen17": "Server 模块下的 Voice 目录里加一个 Call 的测试。",
+        "or-qwen06": "Server模块下的Voice目录里加一个Code测试。",
+        "or-qwenflash": "server模块下的voice目录里加一个call的测试。",
+        "or-nemotron": "魔快下的目录里加一个靠的测试。",
+        "ds-flash": "server模块下的voice目录里加一个call的测试。",
+        "or-qwen17|trim": "server 模块下的 voice 目录里加一个 call 的测试。",
+        "ds-flash|trim": "server模块下的voice目录里加一个call的测试。",
+        "ds-flash|punct": "server模块下的voice目录里加一个call的测试。",
+        "ds-flash|flat": "server模块下的voice目录里加一个call的测试。",
+        "or-qwenflash|punct": "server模块下的voice目录里加一个call的测试。",
+        "or-qwenflash|flat": "server模块下的voice目录里加一个call的测试。"
+      },
+      "runs": {
+        "or-turbo": "2026-09-23T15:47:30.000Z",
+        "groq-turbo": "2026-09-23T15:47:30.000Z",
+        "or-qwen17": "2026-09-23T15:47:30.000Z",
+        "or-qwen06": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash": "2026-09-23T15:47:30.000Z",
+        "or-nemotron": "2026-09-23T15:47:30.000Z",
+        "ds-flash": "2026-09-23T15:47:30.000Z",
+        "or-qwen17|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|punct": "2026-09-23T15:47:30.000Z",
+        "ds-flash|flat": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|punct": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|flat": "2026-09-23T15:47:30.000Z"
+      },
+      "latencyMs": {
+        "or-turbo": 651,
+        "groq-turbo": 591,
+        "or-qwen17": 1033,
+        "or-qwen06": 985,
+        "or-qwenflash": 779,
+        "or-nemotron": 1866,
+        "ds-flash": 1801,
+        "or-qwen17|trim": 1835,
+        "ds-flash|trim": 1224,
+        "ds-flash|punct": 5751,
+        "ds-flash|flat": 10232,
+        "or-qwenflash|punct": 960,
+        "or-qwenflash|flat": 643
+      },
+      "usage": {
+        "or-turbo": null,
+        "groq-turbo": null,
+        "or-qwen17": null,
+        "or-qwen06": null,
+        "or-qwenflash": null,
+        "or-nemotron": null,
+        "ds-flash": {
+          "duration": 14,
+          "input_tokens": 237,
+          "output_tokens": 12,
+          "total_tokens": 249
+        },
+        "or-qwen17|trim": null,
+        "ds-flash|trim": {
+          "duration": 11,
+          "input_tokens": 194,
+          "output_tokens": 12,
+          "total_tokens": 206
+        },
+        "ds-flash|punct": {
+          "duration": 14,
+          "input_tokens": 237,
+          "output_tokens": 12,
+          "total_tokens": 249
+        },
+        "ds-flash|flat": {
+          "duration": 14,
+          "input_tokens": 237,
+          "output_tokens": 12,
+          "total_tokens": 249
+        },
+        "or-qwenflash|punct": null,
+        "or-qwenflash|flat": null
+      }
+    },
+    {
+      "clip": "d08-o65.wav",
+      "language": "zh",
+      "reference": "把默认模型换成 whisper large，啊不，是 whisper turbo",
+      "audio": {
+        "baselineSec": 17.8338125,
+        "raw": {
+          "mimeType": "audio/webm",
+          "wavSha256": "9fa1a8980719db8e0c243aa740fabbc9538e56d2eca646468f005e5657d8605f",
+          "webmSha256": "7e7cbb662c8dd6e1f4ff394c373f0cdf34bdac3ec3746dc9f783510b669880b1",
+          "webmBytes": 96145
+        },
+        "trim": {
+          "mimeType": "audio/webm",
+          "wavSha256": "03c3651750eeb421d9e5af07b5a33e8329e5c01e4d47b328b74200706db3fd3f",
+          "webmSha256": "3024cd0c3309b5f1ff5122ee3c58b2c79d632c5ae7bc1f63d237360ce2a7f880",
+          "webmBytes": 91331,
+          "savedRatio": 0.24581465684917347
+        }
+      },
+      "transcripts": {
+        "or-turbo": "把默认模型换成。WhisperLarge阿波是Whisper。特勃",
+        "groq-turbo": "把默认模型换成WhisperLargeAbu是WhisperTurbo",
+        "or-qwen17": "把默认模型换成 Whisper Large。啊，不是 Whisper Turbo。",
+        "or-qwen06": "把默认模型换成 Whisper Large。阿布是 Whisper Turbo。",
+        "or-qwenflash": "把默认模型换成。Whisper。Large。不。是Whisper。Turbo。",
+        "or-nemotron": "把默认模型换成 Wisper Large Rhisper Turbo",
+        "ds-flash": "把默认模型换成Whisper Large？啊不，是Whisper Turbo。",
+        "or-qwen17|trim": "把默认模型换成Whisper Large。啊，不是Whisper Turbo。",
+        "ds-flash|trim": "把默认模型换成Whisper Large？啊不，是Whisper Turbo。",
+        "ds-flash|punct": "把默认模型换成Whisper Large啊，不是Whisper Turbo。",
+        "ds-flash|flat": "把默认模型换成Whisper Large啊，不是Whisper Turbo。",
+        "or-qwenflash|punct": "把默认模型换成。Whisper。Large。不。是Whisper。Turbo。",
+        "or-qwenflash|flat": "把默认模型换成。Whisper。Large。不。是Whisper。Turbo。"
+      },
+      "runs": {
+        "or-turbo": "2026-09-23T15:47:30.000Z",
+        "groq-turbo": "2026-09-23T15:47:30.000Z",
+        "or-qwen17": "2026-09-23T15:47:30.000Z",
+        "or-qwen06": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash": "2026-09-23T15:47:30.000Z",
+        "or-nemotron": "2026-09-23T15:47:30.000Z",
+        "ds-flash": "2026-09-23T15:47:30.000Z",
+        "or-qwen17|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|trim": "2026-09-23T15:47:30.000Z",
+        "ds-flash|punct": "2026-09-23T15:47:30.000Z",
+        "ds-flash|flat": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|punct": "2026-09-23T15:47:30.000Z",
+        "or-qwenflash|flat": "2026-09-23T15:47:30.000Z"
+      },
+      "latencyMs": {
+        "or-turbo": 7733,
+        "groq-turbo": 331,
+        "or-qwen17": 47689,
+        "or-qwen06": 542,
+        "or-qwenflash": 1266,
+        "or-nemotron": 1145,
+        "ds-flash": 9596,
+        "or-qwen17|trim": 952,
+        "ds-flash|trim": 1654,
+        "ds-flash|punct": 1432,
+        "ds-flash|flat": 2143,
+        "or-qwenflash|punct": 1010,
+        "or-qwenflash|flat": 687
+      },
+      "usage": {
+        "or-turbo": null,
+        "groq-turbo": null,
+        "or-qwen17": null,
+        "or-qwen06": null,
+        "or-qwenflash": null,
+        "or-nemotron": null,
+        "ds-flash": {
+          "duration": 17,
+          "input_tokens": 280,
+          "output_tokens": 16,
+          "total_tokens": 296
+        },
+        "or-qwen17|trim": null,
+        "ds-flash|trim": {
+          "duration": 13,
+          "input_tokens": 226,
+          "output_tokens": 16,
+          "total_tokens": 242
+        },
+        "ds-flash|punct": {
+          "duration": 17,
+          "input_tokens": 280,
+          "output_tokens": 14,
+          "total_tokens": 294
+        },
+        "ds-flash|flat": {
+          "duration": 17,
+          "input_tokens": 280,
+          "output_tokens": 14,
+          "total_tokens": 294
+        },
+        "or-qwenflash|punct": null,
+        "or-qwenflash|flat": null
+      }
+    }
+  ]
+}

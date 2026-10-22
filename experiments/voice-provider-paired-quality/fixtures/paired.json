@@ -1,0 +1,263 @@
+{
+  "provenance": {
+    "generatedAt": "2026-09-22",
+    "runIds": [
+      "2026-09-22T15:35:41.828Z"
+    ],
+    "endpoint": "https://api.groq.com/openai/v1/audio/transcriptions",
+    "request": "POST /audio/transcriptions, response_format=json, no language parameter, prompt only for the context conditions",
+    "throttle": "3200 ms minimum interval between calls, one call in flight (serial)",
+    "recipe": "For every clip × condition: decode fixtures/<clip> with the runner's decodeWav, encode the column with the runner's encodeWav (raw = encodeWav(decodeWav(file)); trimFrozen = trimVoiceAudio(samples, rate) — the shipping module), post the encoded buffer to the recogniser, keep the returned text verbatim. `--live` then `--freeze`; the cache is out/quality-cache.json.",
+    "corpus": "Eight Chinese clips at o65 occupancy (d01..d08-o65) — a contiguous prefix of the out-of-tree dictation corpus's o65 tier (tools/dictation-corpus.mjs SCRIPTS). The corpus itself does not enter the repo (a standing decision); these eight audio files do, so the correspondence check below can be recomputed offline.",
+    "referenceSource": "Authored scripts from the out-of-tree corpus generator (SCRIPTS), verbatim — the text the TTS was given, so the reference is ground truth by construction.",
+    "conditions": [
+      {
+        "key": "turbo|raw|none",
+        "provider": "whisper-large-v3-turbo",
+        "model": "whisper-large-v3-turbo",
+        "trim": "raw",
+        "context": "none",
+        "note": "今天的产品行为：不裁剪、无 prompt —— 参照条件"
+      },
+      {
+        "key": "turbo|raw|punct",
+        "provider": "whisper-large-v3-turbo",
+        "model": "whisper-large-v3-turbo",
+        "trim": "raw",
+        "context": "punct",
+        "note": "加带标点的 prompt"
+      },
+      {
+        "key": "turbo|raw|flat",
+        "provider": "whisper-large-v3-turbo",
+        "model": "whisper-large-v3-turbo",
+        "trim": "raw",
+        "context": "flat",
+        "note": "同一个 prompt 去掉句末标点 —— 负对照"
+      },
+      {
+        "key": "turbo|trim|none",
+        "provider": "whisper-large-v3-turbo",
+        "model": "whisper-large-v3-turbo",
+        "trim": "trimFrozen",
+        "context": "none",
+        "note": "出货停顿表裁剪、无 prompt"
+      },
+      {
+        "key": "v3|raw|none",
+        "provider": "whisper-large-v3",
+        "model": "whisper-large-v3",
+        "trim": "raw",
+        "context": "none",
+        "note": "换识别模型（provider 轴）"
+      }
+    ],
+    "prompts": {
+      "punct": "把 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+      "flat": "把 voice.service.ts 的超时改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+    },
+    "publishedReference": "The 16-clip o65 reading in docs/experiments/2026-09-22-voice-punctuation.md: marks/clip 1.13 (none) / 0.00 (punct) / 0.06 (flat). Different n, same 口径."
+  },
+  "entries": [
+    {
+      "clip": "d01-o65.wav",
+      "language": "zh",
+      "reference": "把 server 里的 voice.service.ts 的超时改成三十秒",
+      "audio": {
+        "baselineSec": 15.544625,
+        "rawSha256": "2c52b72bef21b81e51722c47bf549f027cbf52bba2817cf153663c9b66435f39",
+        "trimFrozenSha256": "a73d14695e59bd86abc9d5857966a38961a421423a266f9eb346bca33a00278a",
+        "trimFrozenSavedRatio": 0.2569778942882186
+      },
+      "transcripts": {
+        "turbo|raw|none": "把Server里的voice.seluis.ts的超时改成30秒",
+        "turbo|raw|punct": "把 server 里的 voice.se 的超时改成三十秒。",
+        "turbo|raw|flat": "把 server 里的 voice.se 的超时改成三十秒",
+        "turbo|trim|none": "把Server里的voice.se的超时改成30秒",
+        "v3|raw|none": "把Server里的voice.se.ruists的超时改成30秒。"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|punct": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|flat": "2026-09-22T15:35:41.828Z",
+        "turbo|trim|none": "2026-09-22T15:35:41.828Z",
+        "v3|raw|none": "2026-09-22T15:35:41.828Z"
+      }
+    },
+    {
+      "clip": "d02-o65.wav",
+      "language": "zh",
+      "reference": "改一下 voice.service.ts，嗯不对，应该是 voice.routes.ts",
+      "audio": {
+        "baselineSec": 20.16,
+        "rawSha256": "340ba7e323ae1a4d6871afb1fdbac8f8bd04662ca66dec4ac7c3453f53d989e3",
+        "trimFrozenSha256": "8c870c011bd3e08fe560139fd5b960adc61bec55c8b44dbab701757040f90ab3",
+        "trimFrozenSavedRatio": 0.23859126984126988
+      },
+      "transcripts": {
+        "turbo|raw|none": "改一下。voice.seLuis.ts嗯不对。应该是。voice.roUts.ts",
+        "turbo|raw|punct": "改一下。 voice.se.luis.ts。嗯不对。应该是。 voice.ro.utes.ts。",
+        "turbo|raw|flat": "改一下 voice.seLuis.ts 嗯不对应该是voice.ro use.ts",
+        "turbo|trim|none": "改一下voice.sereasts嗯不对应该是voice.rouse.ts",
+        "v3|raw|none": "改一下voice.seLuis TS嗯,不对应该是voice.royouts TS应该是voice.royouts TS"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|punct": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|flat": "2026-09-22T15:35:41.828Z",
+        "turbo|trim|none": "2026-09-22T15:35:41.828Z",
+        "v3|raw|none": "2026-09-22T15:35:41.828Z"
+      }
+    },
+    {
+      "clip": "d03-o65.wav",
+      "language": "zh",
+      "reference": "看一下 useVoiceInput 这个 hook 是怎么处理 recording 的",
+      "audio": {
+        "baselineSec": 20.16,
+        "rawSha256": "85e9bfa10e7791dcb473f64eed868c54841484d99f7f318b3ce0f54c71da2aeb",
+        "trimFrozenSha256": "4e1368f5d7f47ef2ccd10b6e7bda10449740135d59c6180aae6ce568cd03ef68",
+        "trimFrozenSavedRatio": 0.2366071428571428
+      },
+      "transcripts": {
+        "turbo|raw|none": "看一下。Use voiceInput这个。Hook是怎么处理。RecordingG的。",
+        "turbo|raw|punct": "看一下。useVoiceInput 这个hook是怎么处理recordingg的",
+        "turbo|raw|flat": "看一下 useVoice Input 这个 hook 是怎么处理 recording G 的",
+        "turbo|trim|none": "看一下Use voiceInput这个Hook是怎么处理RecordingG的",
+        "v3|raw|none": "看一下Use voiceinput这个hook是怎么处理recordingg的"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|punct": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|flat": "2026-09-22T15:35:41.828Z",
+        "turbo|trim|none": "2026-09-22T15:35:41.828Z",
+        "v3|raw|none": "2026-09-22T15:35:41.828Z"
+      }
+    },
+    {
+      "clip": "d04-o65.wav",
+      "language": "zh",
+      "reference": "不要动 voice.service.ts，只改 voice.module.ts",
+      "audio": {
+        "baselineSec": 14.51075,
+        "rawSha256": "0e0492eafb583ab5b5473c234cf70f4c4db19b78e662bdeb53f30815c3f97895",
+        "trimFrozenSha256": "c8ddf6aa4cf73f0d4555951731c85be0eb491965e2f549c98c96a5638cb6e26d",
+        "trimFrozenSavedRatio": 0.21506469341694945
+      },
+      "transcripts": {
+        "turbo|raw|none": "不要动voice.seLuis TS直改voicemodule TS",
+        "turbo|raw|punct": "不要动。 voice.se.luis.ts。直改 voice。module.ts。",
+        "turbo|raw|flat": "不要动 voice.seLuis.ts 只改 voice.module.ts",
+        "turbo|trim|none": "不要动voice.seLouis TS直改voicemodule TS",
+        "v3|raw|none": "不要动voice.seLuiz TS只改voicemodule TS"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|punct": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|flat": "2026-09-22T15:35:41.828Z",
+        "turbo|trim|none": "2026-09-22T15:35:41.828Z",
+        "v3|raw|none": "2026-09-22T15:35:41.828Z"
+      }
+    },
+    {
+      "clip": "d05-o65.wav",
+      "language": "zh",
+      "reference": "把超时从十五秒改成五十秒，不是五秒",
+      "audio": {
+        "baselineSec": 9.895375,
+        "rawSha256": "969865aa6f445bec12574f90c5707ff5c07359116b1793afda349d9a3c699ef5",
+        "trimFrozenSha256": "d6d84475cda5560fdaa5a69984dae51c2e07522bd1a6011a24cdd4199c2ed933",
+        "trimFrozenSavedRatio": 0.28956709573917105
+      },
+      "transcripts": {
+        "turbo|raw|none": "把超时从15秒改成。50秒?不是5秒。",
+        "turbo|raw|punct": "把超时从十五秒改成。五十秒?不是五秒。",
+        "turbo|raw|flat": "把超时从 15秒改成。50秒?不是5秒。",
+        "turbo|trim|none": "把超时从15秒改成50秒不是5秒",
+        "v3|raw|none": "把超时从15秒改成50秒,不是5秒。"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|punct": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|flat": "2026-09-22T15:35:41.828Z",
+        "turbo|trim|none": "2026-09-22T15:35:41.828Z",
+        "v3|raw|none": "2026-09-22T15:35:41.828Z"
+      }
+    },
+    {
+      "clip": "d06-o65.wav",
+      "language": "zh",
+      "reference": "嗯…那个…就是这个 composer 的按钮，嗯…再加个快捷键",
+      "audio": {
+        "baselineSec": 13.6615,
+        "rawSha256": "b325ac5de252365885cd8f7ae8bc76d8db05f4f8594d4259fe65f4f1e14ec14e",
+        "trimFrozenSha256": "24ae9eed471beace70020b1c74f08bb454f5becc14d54e5f43185c5e45851c58",
+        "trimFrozenSavedRatio": 0.27313984555136706
+      },
+      "transcripts": {
+        "turbo|raw|none": "嗯,那个,就是这个Composer的按钮嗯,再加个快捷键",
+        "turbo|raw|punct": "嗯,那个,就是这个。composer 的按钮。嗯,再加个快捷键。",
+        "turbo|raw|flat": "嗯,那个,就是这个composer的按钮嗯,再加个快捷键",
+        "turbo|trim|none": "嗯,那个,就是这个Composer的按钮嗯,再加个快捷键",
+        "v3|raw|none": "嗯,那个,就是这个。Composer的按钮。嗯,再加个快捷键。"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|punct": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|flat": "2026-09-22T15:35:41.828Z",
+        "turbo|trim|none": "2026-09-22T15:35:41.828Z",
+        "v3|raw|none": "2026-09-22T15:35:41.828Z"
+      }
+    },
+    {
+      "clip": "d07-o65.wav",
+      "language": "zh",
+      "reference": "server 模块下的 voice 目录里加一个 call 的测试",
+      "audio": {
+        "baselineSec": 14.4,
+        "rawSha256": "ba1ce9cd005435b163ca71010fff1fa4efc002e0864eccd0e0721b68a8d6ba46",
+        "trimFrozenSha256": "aadbe64472cd7b1d62dedf49a7d18c870f4150c537c92b331fe51699f26167bb",
+        "trimFrozenSavedRatio": 0.24236111111111114
+      },
+      "transcripts": {
+        "turbo|raw|none": "Server模块下的Voice目录里加一个Code测试",
+        "turbo|raw|punct": "Server. 模块下的 voice. 目录里加一个.call 的测试。",
+        "turbo|raw|flat": "Server. 模块下的 voice. 目录里加一个. 靠的测试。",
+        "turbo|trim|none": "Server模块下的Voice目录里加一个Code测试",
+        "v3|raw|none": "Server模块下的Voice目录里加一个Call的测试"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|punct": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|flat": "2026-09-22T15:35:41.828Z",
+        "turbo|trim|none": "2026-09-22T15:35:41.828Z",
+        "v3|raw|none": "2026-09-22T15:35:41.828Z"
+      }
+    },
+    {
+      "clip": "d08-o65.wav",
+      "language": "zh",
+      "reference": "把默认模型换成 whisper large，啊不，是 whisper turbo",
+      "audio": {
+        "baselineSec": 17.8338125,
+        "rawSha256": "9fa1a8980719db8e0c243aa740fabbc9538e56d2eca646468f005e5657d8605f",
+        "trimFrozenSha256": "03c3651750eeb421d9e5af07b5a33e8329e5c01e4d47b328b74200706db3fd3f",
+        "trimFrozenSavedRatio": 0.24581465684917347
+      },
+      "transcripts": {
+        "turbo|raw|none": "把默认模型换成WhisperLargeAbu是WhisperTurbo",
+        "turbo|raw|punct": "把默认模型换成 whisper.large.abu. 是 whisper.turbo.",
+        "turbo|raw|flat": "把默认模型换成 whisper.large.abu.是 whisper.turbo.",
+        "turbo|trim|none": "把默认模型换成WhisperLargeAbu是WhisperTurbo",
+        "v3|raw|none": "把默认模型换成WhisperLargeAbu是WhisperTurbo"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|punct": "2026-09-22T15:35:41.828Z",
+        "turbo|raw|flat": "2026-09-22T15:35:41.828Z",
+        "turbo|trim|none": "2026-09-22T15:35:41.828Z",
+        "v3|raw|none": "2026-09-22T15:35:41.828Z"
+      }
+    }
+  ]
+}

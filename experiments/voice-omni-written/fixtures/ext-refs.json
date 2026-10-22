@@ -1,0 +1,36 @@
+{
+  "provenance": {
+    "generatedAt": "2026-09-24",
+    "recipe": "tools/dictation-corpus.mjs buildCorpus({scenario:\"o65\", trimChunks:false}) — the pre-fix recipe, chosen 2026-09-24 so the extension set lands in the same acoustic domain as the 80 Chinese clips already on disk",
+    "voice": "zh-CN-XiaoxiaoNeural (edge-tts)",
+    "source": "rewritten into speech from five real user messages in this project's own session history; see raw/README.md",
+    "groundTruth": "the script text fed to TTS — exact by construction"
+  },
+  "clips": [
+    {
+      "id": "n01-o65",
+      "kind": "path",
+      "text": "我想在 composer 旁边加一个展示用的组件，就是语音回放那个 pill。嗯不对，先只说组件本身。位置放在 ChatComposer 点 t s x 四百四十二行旁边，显示 blob 的基本信息就行。"
+    },
+    {
+      "id": "n02-o65",
+      "kind": "self-correct",
+      "text": "刚才我用咱们这个应用发现一个问题：编辑并重发之后，底下会残留一条旧消息。嗯，不是重发那条，是原来那条。你查一下 resend 那个 action 有没有过滤掉旧的 message id。"
+    },
+    {
+      "id": "n03-o65",
+      "kind": "deictic",
+      "text": "你看一下左侧那个会话列表，名字都取第一次对话的内容，特别长。我想加一个自动改名的机制，拿会话最后一段内容生成一个短名字。你先讨论方案，别直接写。"
+    },
+    {
+      "id": "n04-o65",
+      "kind": "negation",
+      "text": "上次那个偏置的实验我看过了。它把 use voice input 修成驼峰那个是对的，但是带点的路径反而被切碎了。这些其实都算有效，别纠结合成语音还是真按键录音。"
+    },
+    {
+      "id": "n05-o65",
+      "kind": "negation",
+      "text": "现在这个 dev server 的优化目标是本地重建最快，不打包、不缓存、秒级 HMR。我就想问，咱们有没有一个打包的生产形态？还有，我经常看到页面整个自动刷新，白屏几秒又回来。"
+    }
+  ]
+}

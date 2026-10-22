@@ -1,0 +1,35 @@
+{
+  "title": "Autoriser l'accès",
+  "loading": "Chargement de la demande d'autorisation…",
+  "errorTitle": "Erreur d'autorisation",
+  "retry": "Réessayer",
+  "unknownClient": "Application inconnue",
+  "wantsAccess": "souhaite accéder à votre compte CloudCLI.",
+  "callbackWarning": "Votre code d'autorisation sera envoyé à",
+  "signingInAs": "Connecté en tant que {{username}}",
+  "scopesLabel": "Autorisations",
+  "scopes": {
+    "read": "Lire les projets, les sessions, les exécutions et l'état",
+    "sessionSend": "Envoyer des messages aux sessions existantes (la session exécute des commandes)",
+    "sessionCreate": "Démarrer de nouvelles sessions (la session exécute des commandes)",
+    "sessionControl": "Interrompre les exécutions, démarrer et fermer des sessions, arrêter les tâches d'arrière-plan",
+    "approve": "Répondre aux approbations d'outils en attente",
+    "navigate": "Ouvrir une session dans l'un de vos navigateurs",
+    "other": "Autorisation supplémentaire demandée par cette application"
+  },
+  "writeWarning": "Cette application pourra envoyer, créer et contrôler des sessions. Ne l'autorisez que si vous lui faites confiance.",
+  "revokeHint": "Vous pouvez révoquer cet accès à tout moment dans Paramètres → Applications connectées.",
+  "passwordLabel": "Confirmez votre mot de passe",
+  "passwordHint": "Saisissez à nouveau votre mot de passe pour confirmer cette autorisation.",
+  "allow": "Autoriser",
+  "deny": "Refuser",
+  "submitting": "Autorisation en cours…",
+  "errors": {
+    "missingRequest": "Ce lien ne contient pas les paramètres requis. Relancez la connexion depuis l'application.",
+    "invalidRequest": "Cette demande d'autorisation n'est pas valide. Elle a peut-être expiré ou provient d'une application non enregistrée.",
+    "unauthorized": "Votre session a expiré. Reconnectez-vous pour continuer.",
+    "network": "Le serveur est injoignable. Vérifiez votre connexion et réessayez.",
+    "invalidCredentials": "Mot de passe incorrect. Réessayez.",
+    "rateLimited": "Trop de tentatives de mot de passe. Patientez quelques minutes et réessayez."
+  }
+}
