@@ -43,6 +43,27 @@ test('explicit model and max permission persist for both families with no model 
   }
 });
 
+test('dontAsk is accepted where the provider declares it and refused where it does not', async () => {
+  // The mode an unattended run needs: the session must exist and the row must
+  // carry the mode, or the create is a session that still waits for a person.
+  const created = await buildSessionCreate(
+    { project: 'fixture', provider: 'claude', permissionMode: 'dontAsk' }, ctx, wiring());
+  const row = db.sessionsDb.getSessionById(created.sessionId)!;
+  assert.equal(row.permission_mode, 'dontAsk');
+
+  // The other half of the same matrix: a provider that never declared the mode
+  // refuses it before a row exists, rather than recording a preference its
+  // runtime cannot honour.
+  const before = rowCount();
+  await assert.rejects(
+    () => buildSessionCreate({ project: 'fixture', provider: 'codex', permissionMode: 'dontAsk' }, ctx, wiring()),
+    (e: any) => e.code === 'UNSUPPORTED_PERMISSION_MODE'
+      && (e.details?.supported as string[]).includes('bypassPermissions')
+      && !(e.details?.supported as string[]).includes('dontAsk'),
+  );
+  assert.equal(rowCount(), before);
+});
+
 test('opening send receives the verified model and max permission after their SQLite write', async () => {
   const before = calls;
   const result = await buildSessionCreate({ project: 'fixture', provider: 'codex', model: 'codex-first-fixture', permissionMode: 'bypassPermissions', message: 'fixture only' }, ctx, wiring());

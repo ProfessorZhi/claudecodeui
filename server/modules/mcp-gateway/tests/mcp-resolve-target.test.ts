@@ -370,6 +370,7 @@ function readToolStubs(record: { projectIds: string[] }): McpReadToolDeps {
     sessions: {
       listRecentSessions: () => ({ conversations: [], total: 0 }),
       readSessionLifecycle: () => null,
+      readSessionPermissionMode: () => null,
       fetchHistory: unexpected('fetchHistory'),
       fetchOutline: unexpected('fetchOutline'),
       fetchWindowAround: unexpected('fetchWindowAround'),
