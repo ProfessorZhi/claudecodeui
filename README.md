@@ -4,6 +4,12 @@
  <p>A desktop and mobile UI for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>, <a href="https://docs.cursor.com/en/cli/overview">Cursor CLI</a>, and <a href="https://developers.openai.com/codex">Codex</a>.<br>Use it locally or remotely to view your active projects and sessions from everywhere.</p>
 </div>
 
+> **This repository is an independent working copy of [yaleh/claudecodeui](https://github.com/yaleh/claudecodeui) at `v1.39.0` (upstream commit `300e5fa`).**
+> It is not a GitHub fork and carries no upstream git history; the branch `upstream-v1.39.0` marks the unmodified base.
+> The changes on `main` add MCP surfaces used by ServerOS Fleet: durable run receipts, project creation under an
+> explicit workspace root, and permission-mode readback on `session_get` / `sessions_list`. Licensed
+> AGPL-3.0-or-later; `LICENSE` and `NOTICE` are kept verbatim, including the Section 7 additional terms.
+
 > **This repository is a fork of [siteboon/claudecodeui](https://github.com/siteboon/claudecodeui).**
 > It is published to npm as [`@yalehwang/cloudcli`](https://www.npmjs.com/package/@yalehwang/cloudcli).
 > Every install command below pulls this fork — the upstream CloudCLI package under the `@cloudcli-ai`
