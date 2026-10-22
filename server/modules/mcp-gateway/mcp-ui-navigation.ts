@@ -422,5 +422,9 @@ export function registerMcpUiNavigationTool(
     inputSchema: registration.inputSchema,
     outputSchema: registration.outputSchema,
     handler: body,
+    // The device's own reading of "is a handler installed": false until the
+    // composition root injects real deps, which is the state Fleet's capability
+    // read distinguishes from "declared but unimplemented".
+    handlerBound: deps !== null,
   });
 }
