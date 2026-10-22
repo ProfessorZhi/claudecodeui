@@ -1120,6 +1120,23 @@ export const sessionsService = {
   },
 
   /**
+   * The permission mode stored for one session, or null when the row has none.
+   *
+   * Read straight off the row and deliberately not defaulted: the column is
+   * nullable because a session that never named a mode is a different fact from
+   * one that named `default`, and a reader that collapsed them would answer a
+   * question the database did not. Callers that want a default apply it
+   * themselves, visibly.
+   *
+   * Unknown ids answer null for the same reason as `readSessionLifecycle`: the
+   * question "what mode is this session in" has no answer for a session that
+   * does not exist, and inventing one would make a typo look like a mode.
+   */
+  readSessionPermissionMode(sessionId: string): string | null {
+    return sessionsDb.getSessionById(sessionId)?.permission_mode ?? null;
+  },
+
+  /**
    * Records a new lifecycle-mode preference for one session and moves any live
    * host out of the way.
    *

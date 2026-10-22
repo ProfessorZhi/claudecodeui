@@ -170,6 +170,16 @@ export type McpSessionReading = {
   provider: string;
   projectId: string | null;
   lifecycleMode: string;
+  /**
+   * The permission mode the session was created (or last reconfigured) with,
+   * read from the row, or null when it never named one.
+   *
+   * This is the only place a caller can learn what a session will actually do
+   * when it asks for approval: a create request naming a mode is a request, and
+   * a request that is echoed back is not a readback. Null means "the row never
+   * recorded a choice", which is a different fact from `default`.
+   */
+  permissionMode: string | null;
   hostState: HostState | null;
   running: boolean;
   lastActivity: McpTime | null;
@@ -202,6 +212,13 @@ export type McpReadToolDeps = {
   sessions: {
     listRecentSessions(limit: number, offset: number): McpRecentSessionsPage;
     readSessionLifecycle(sessionId: string): McpSessionLifecycle | null;
+    /**
+     * The stored permission-mode preference, or null when the row never
+     * recorded one. Required rather than optional: an omitted reader would make
+     * every session read as "no mode", which is a fabricated answer, and the
+     * answer this whole field exists to stop fabricating.
+     */
+    readSessionPermissionMode(sessionId: string): string | null;
     fetchHistory(sessionId: string, options?: { limit?: number | null; offset?: number }): Promise<McpHistoryPage>;
     fetchOutline(sessionId: string): Promise<McpOutline>;
     fetchWindowAround(
@@ -601,6 +618,7 @@ function toSessionReading(row: SessionRow, deps: McpReadToolDeps, running: Reado
     provider: row.provider,
     projectId: row.projectId,
     lifecycleMode: deps.sessions.readSessionLifecycle(row.id)?.mode ?? 'per-run',
+    permissionMode: deps.sessions.readSessionPermissionMode(row.id),
     hostState: deps.hosts.liveHostForSession(row.id)?.state ?? null,
     running: running.has(row.id),
     lastActivity: readTimeField(row.lastActivity, deps.now),
@@ -700,6 +718,7 @@ const sessionSchema = z.object({
   provider: z.string(),
   projectId: z.string().nullable(),
   lifecycleMode: z.string(),
+  permissionMode: z.string().nullable(),
   hostState: z.string().nullable(),
   running: z.boolean(),
   lastActivity: nullableTimeSchema,

@@ -108,7 +108,12 @@ type ProviderCapabilities = {
 const PROVIDER_CAPABILITIES: Record<LLMProvider, ProviderCapabilities> = {
   claude: {
     provider: 'claude',
-    permissionModes: ['default', 'auto', 'acceptEdits', 'bypassPermissions', 'plan'],
+    // `dontAsk` is the one mode that never waits for a person: anything the SDK
+    // would have asked about is refused immediately instead, and `canUseTool`
+    // is never consulted. It is listed because the CLI has accepted it since
+    // 2.1.x and the provider passes any non-`default` value straight through —
+    // omitting it here would refuse the only mode an unattended run can use.
+    permissionModes: ['default', 'auto', 'acceptEdits', 'bypassPermissions', 'plan', 'dontAsk'],
     defaultPermissionMode: 'default',
     supportsImages: true,
     supportsFiles: true,

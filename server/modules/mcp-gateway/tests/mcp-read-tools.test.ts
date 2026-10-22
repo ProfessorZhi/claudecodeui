@@ -722,6 +722,35 @@ test('(c) session_get carries the resident host and says a cold session has none
   });
 });
 
+// ------------------- (c2) the stored permission mode -------------------
+
+test('(c2) session_get reports the mode stored for the session, and null when none was', { concurrency: false }, async () => {
+  await withMcpReadTools(async (harness) => {
+    // The negative half first: a session that never named a mode must not be
+    // dressed in the provider default. `null` and `default` are different
+    // answers, and only the row can say which one is true.
+    const bare = await harness.call('session_get', { session: SESSION_RESIDENT });
+    assert.equal((bare.payload?.session as AnyRecord | undefined)?.permissionMode, null,
+      'a session with no stored mode must read as null, not as a default');
+
+    sessionsDb.setSessionPermissionMode(SESSION_QUIET, 'dontAsk');
+
+    const named = await harness.call('session_get', { session: SESSION_QUIET });
+    console.log(`[c2] session_get(${SESSION_QUIET}) session=${JSON.stringify(named.payload?.session)}`);
+    assert.equal(named.isError, false);
+    assert.equal((named.payload?.session as AnyRecord | undefined)?.permissionMode, 'dontAsk',
+      'the mode the row records must be the mode the reading reports');
+
+    const listed = await harness.call('sessions_list', { limit: 10 });
+    assert.equal(listed.isError, false);
+    const rows = (listed.payload as AnyRecord)?.sessions as AnyRecord[];
+    const namedRow = rows.find((row) => row.id === SESSION_QUIET);
+    assert.ok(namedRow, 'the quiet fixture must be in the listing');
+    assert.equal(namedRow.permissionMode, 'dontAsk',
+      'sessions_list and session_get read one shape, so the field must be there too');
+  });
+});
+
 // --------------------------- (d) session_read ---------------------------
 
 test('(d) session_read: latest folds the tool call, outline lists every user turn, around centres a window', { concurrency: false }, async () => {
