@@ -62,7 +62,7 @@ type OnboardingStatusPayload = {
 };
 
 type ApiErrorPayload = {
-  error?: string;
+  error?: string | { message?: string } | null;
   message?: string;
 };
 
@@ -96,7 +96,16 @@ function resolveApiErrorMessage(payload: ApiErrorPayload | null, fallback: strin
     return fallback;
   }
 
-  return payload.error ?? payload.message ?? fallback;
+  // `auth.routes` answers a failed login with the structured AppError envelope
+  // (`error: { code, message }`), which `readApiJson` in shared/api.ts already
+  // unwraps. Returning the envelope itself put an object into `error` state,
+  // which React refuses to render — the login screen showed nothing useful.
+  // Read the envelope the same way the shared reader does.
+  const raw = payload.error ?? payload.message ?? fallback;
+  if (raw && typeof raw === 'object') {
+    return raw.message ?? fallback;
+  }
+  return raw;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
