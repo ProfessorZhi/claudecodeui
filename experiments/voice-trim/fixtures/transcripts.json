@@ -1,0 +1,219 @@
+{
+  "description": "Quality corpus for AC-118: the same eight clips run-savings.mjs measures, each with four real recogniser transcripts (untrimmed baseline; the shipping module's output; and two controls) plus the authored reference each was spoken from. The criterion in run-quality.mjs reads this file offline and never calls a recogniser.",
+  "provenance": {
+    "recogniser": {
+      "provider": "Groq",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "model": "whisper-large-v3-turbo",
+      "request": "POST /audio/transcriptions, response_format=json, language=<zh|en> from the clip name, no prompt",
+      "throttle": "3200 ms minimum interval between calls (the out-of-tree client's own rate-limit gate)"
+    },
+    "generatedAt": "2026-09-21",
+    "recipe": "One-off, out of tree: decode fixtures/<clip> with the runner's decodeWav, encode the four columns with the runner's encodeWav (baseline = the file itself; trimmed = trimVoiceAudio(samples, rate); flattened = trimVoiceAudio(..., { caps: FLATTENED_CAPS }); aggressive = trimVoiceAudio(..., AGGRESSIVE_TRIM)), post each encoded buffer to the recogniser, keep the returned text verbatim. The command and its date are recorded in the task's completion note. The generator is deliberately not in the repo: a committed criterion that can re-run the network is not an offline criterion, and the committed artefact is the frozen reading.",
+    "audioColumns": "Each entry pins the sha256 of every encoded column. run-quality.mjs re-derives all four from the fixture wav through src/shared/voiceTrim.ts and requires the bytes to match, so \"the trimmed transcript came from the shipping module's audio\" is checked rather than asserted.",
+    "referenceSource": "Authored scripts from the out-of-tree corpus generator tools/dictation-corpus.mjs (SCRIPTS / SCRIPTS_EN), verbatim — the text the TTS was given, so the reference is ground truth by construction.",
+    "composition": "Eight clips: three Chinese occupancy tiers (o85 / o65 / o45) and two English, the same ladder run-savings.mjs uses. The transcripts are one take each, not an average."
+  },
+  "entries": [
+    {
+      "clip": "en-e01-o45.wav",
+      "language": "en",
+      "reference": "Change the timeout in voice.service.ts to thirty seconds",
+      "transcripts": {
+        "baseline": " Change the timeout in voice.service.ts to 30 seconds",
+        "trimmed": " Change the timeout in voice.service.ts to 30 seconds.",
+        "flattened": " Change the timeout in voice.service.ts to 30 seconds.",
+        "aggressive": " Change the timeout in voice.service.ts to 30 seconds."
+      },
+      "audio": {
+        "baselineSec": 11.3229375,
+        "baselineSha256": "0273ea7a13995842074f84dad8063ab3112fd72fde6092c6863611ad8c4b86b3",
+        "trimmedSha256": "ac612df025824d139a4e62694754246e82f8f4660332e16bd2a530ec2b1d00bb",
+        "trimmedSavedRatio": 0.444490442519885,
+        "trimmedSpeechKeptRatio": 1,
+        "flattenedSha256": "3eeb330bed8d1bfc60758372c9c6ee6f2942f065a038b69834a7c41320bfadb9",
+        "flattenedSavedRatio": 0.4709853339736265,
+        "flattenedSpeechKeptRatio": 1,
+        "aggressiveSha256": "b79315fbe8b30c096e9678b74a464e02564f7ee95f15c60a40398a783b8e5996",
+        "aggressiveSavedRatio": 0.5416383778502707,
+        "aggressiveSpeechKeptRatio": 0.850187265917603,
+        "savedRatio": 0.444490442519885
+      }
+    },
+    {
+      "clip": "en-e01-o65.wav",
+      "language": "en",
+      "reference": "Change the timeout in voice.service.ts to thirty seconds",
+      "transcripts": {
+        "baseline": " Change the timeout in voice.service.ts to 30 seconds.",
+        "trimmed": " Change the timeout in voice.service.ts to 30 seconds.",
+        "flattened": " Change the timeout in voice.service.ts to 30 seconds.",
+        "aggressive": " Change the timeout in service.ts to 30 seconds."
+      },
+      "audio": {
+        "baselineSec": 7.8389375,
+        "baselineSha256": "282592c514651da91942eabb0d56296c1ad760965fa3f1315b6da5835314fc0f",
+        "trimmedSha256": "29efd8fefd23aa6706ec0c06d7b3ffd6b2ad0a441c5309a6d7e54d337b238d23",
+        "trimmedSavedRatio": 0.21545490061631434,
+        "trimmedSpeechKeptRatio": 1,
+        "flattenedSha256": "ad04105651faacef962386c94e4d4f87babb7dc51f8371aa3c7e67e1c8baadc4",
+        "flattenedSavedRatio": 0.2537253932691772,
+        "flattenedSpeechKeptRatio": 1,
+        "aggressiveSha256": "52553df762204be884f9d08f51c5d93f7d51e5e2894e8f48d3435abd268b1422",
+        "aggressiveSavedRatio": 0.35578004034347765,
+        "aggressiveSpeechKeptRatio": 0.8461538461538461,
+        "savedRatio": 0.21545490061631434
+      }
+    },
+    {
+      "clip": "zh-d01-o85.wav",
+      "language": "zh",
+      "reference": "把 server 里的 voice.service.ts 的超时改成三十秒",
+      "transcripts": {
+        "baseline": "把Server里的voice.se的超时改成30秒",
+        "trimmed": "把Server里的voice.se的超时改成30秒",
+        "flattened": "把Server里的voice.seLouis TS的超时改成30秒",
+        "aggressive": "把server你的voice.sevsts的超时改成30秒"
+      },
+      "audio": {
+        "baselineSec": 11.8870625,
+        "baselineSha256": "8beca7fce03a8e25b1421761ccdbeb4adb22b4c3b58964609ce9f8c711dba30f",
+        "trimmedSha256": "1c2e5bc9dfbddbd203ae047cb4249da3a5f40d079dda6f98e62ff7933a195b64",
+        "trimmedSavedRatio": 0.08219545409137041,
+        "trimmedSpeechKeptRatio": 1,
+        "flattenedSha256": "3294c3eb6a46edd523d9fcbd41567133440f4c09992e9a7c09ae027714f2a77c",
+        "flattenedSavedRatio": 0.09902046868181269,
+        "flattenedSpeechKeptRatio": 1,
+        "aggressiveSha256": "20afd73aeccc678504dc21bd9a73d25327d23f2cf9d9e23df7b5a83839981483",
+        "aggressiveSavedRatio": 0.2319380839463071,
+        "aggressiveSpeechKeptRatio": 0.8736842105263158,
+        "savedRatio": 0.08219545409137041
+      }
+    },
+    {
+      "clip": "zh-d02-o65.wav",
+      "language": "zh",
+      "reference": "改一下 voice.service.ts，嗯不对，应该是 voice.routes.ts",
+      "transcripts": {
+        "baseline": "改一下。voice.seLuis.ts嗯不对。应该是。voice.roUts.ts",
+        "trimmed": "改一下voice.sereasts嗯不对应该是voice.rouse.ts",
+        "flattened": "改一下voice.sereists嗯不对应该是voice.roeutsts",
+        "aggressive": "看一下OS.SEWISTS嗯不对应该是OS.ROUTS"
+      },
+      "audio": {
+        "baselineSec": 20.16,
+        "baselineSha256": "340ba7e323ae1a4d6871afb1fdbac8f8bd04662ca66dec4ac7c3453f53d989e3",
+        "trimmedSha256": "8c870c011bd3e08fe560139fd5b960adc61bec55c8b44dbab701757040f90ab3",
+        "trimmedSavedRatio": 0.23859126984126988,
+        "trimmedSpeechKeptRatio": 1,
+        "flattenedSha256": "df3176997b4a8e8e9be78104f475da14f58a953d362070d4fda4e8227d509ec8",
+        "flattenedSavedRatio": 0.28125,
+        "flattenedSpeechKeptRatio": 1,
+        "aggressiveSha256": "6709c59105c23c1134992ecc75fa8c66cfbe8700a530621d00a8befa803285fd",
+        "aggressiveSavedRatio": 0.3903769841269842,
+        "aggressiveSpeechKeptRatio": 0.8444790046656299,
+        "savedRatio": 0.23859126984126988
+      }
+    },
+    {
+      "clip": "zh-d03-o45.wav",
+      "language": "zh",
+      "reference": "看一下 useVoiceInput 这个 hook 是怎么处理 recording 的",
+      "transcripts": {
+        "baseline": "看一下。Use voiceInput这个Hook是怎么处理RecordingG的",
+        "trimmed": "看一下Use voiceInput这个Hook是怎么处理RecordingG的",
+        "flattened": "看一下Use voiceInput这个Hook是怎么处理RecordingG的",
+        "aggressive": "看一下use voiceinput这个talk是怎么处理recordingread"
+      },
+      "audio": {
+        "baselineSec": 29.12,
+        "baselineSha256": "ad79d356a504e5564ce735bea47961900192fe4c62677a846c097bf0fd2b1c8d",
+        "trimmedSha256": "ff39196894215b3b9407901e101eb450130a026745db8bb4149c7694c948f72b",
+        "trimmedSavedRatio": 0.4474587912087913,
+        "trimmedSpeechKeptRatio": 1,
+        "flattenedSha256": "fbf5cea1313a4e42740ecc134d65062f4997034128eb32f7049858f43e9394a4",
+        "flattenedSavedRatio": 0.49828296703296704,
+        "flattenedSpeechKeptRatio": 1,
+        "aggressiveSha256": "efebeeab0391334bf1b37d8ca0df2500d6f19130d0bfe444dd0985d91cd014f2",
+        "aggressiveSavedRatio": 0.601304945054945,
+        "aggressiveSpeechKeptRatio": 0.7738287560581584,
+        "savedRatio": 0.4474587912087913
+      }
+    },
+    {
+      "clip": "zh-d06-o65.wav",
+      "language": "zh",
+      "reference": "嗯…那个…就是这个 composer 的按钮，嗯…再加个快捷键",
+      "transcripts": {
+        "baseline": "嗯,那个,就是这个Composer的按钮嗯,再加个快捷键",
+        "trimmed": "嗯,那个,就是这个Composer的按钮嗯,再加个快捷键",
+        "flattened": "嗯,那个,就是这个,composer的按钮嗯,再加个快捷键",
+        "aggressive": "嗯,那个,就是这个,composer按钮嗯,再加个快捷键"
+      },
+      "audio": {
+        "baselineSec": 13.6615,
+        "baselineSha256": "b325ac5de252365885cd8f7ae8bc76d8db05f4f8594d4259fe65f4f1e14ec14e",
+        "trimmedSha256": "24ae9eed471beace70020b1c74f08bb454f5becc14d54e5f43185c5e45851c58",
+        "trimmedSavedRatio": 0.27313984555136706,
+        "trimmedSpeechKeptRatio": 1,
+        "flattenedSha256": "2e66c687294bb6d3a3e46a08dd1acf09667cdc4336953d15d27b3f7313efa5b5",
+        "flattenedSavedRatio": 0.32437872854371774,
+        "flattenedSpeechKeptRatio": 1,
+        "aggressiveSha256": "dbe8a8ab919e296376a4b652350e3226d19a43777793ae452b93debc7d6aba4d",
+        "aggressiveSavedRatio": 0.4693115690077957,
+        "aggressiveSpeechKeptRatio": 0.7927461139896373,
+        "savedRatio": 0.27313984555136706
+      }
+    },
+    {
+      "clip": "zh-d10-o85.wav",
+      "language": "zh",
+      "reference": "这个逻辑不要放在前端，放到 server 那边去",
+      "transcripts": {
+        "baseline": "这个逻辑不要放在前端放到server那边去",
+        "trimmed": "这个逻辑不要放在前端放到server那边去",
+        "flattened": "这个逻辑不要放在前端放到server那边去",
+        "aggressive": "这个逻辑不要放在前端放到server那边去"
+      },
+      "audio": {
+        "baselineSec": 9.6281875,
+        "baselineSha256": "e2902d201b9cbecc8aa79c711e826d582779667bf52b5a9a8bbbce4fb91d62b5",
+        "trimmedSha256": "6394e7e02bfceb79bbfc83d223969b5acad1820dd0b435cf9b736592ecd8a75f",
+        "trimmedSavedRatio": 0.07666941467436095,
+        "trimmedSpeechKeptRatio": 1,
+        "flattenedSha256": "1a19b02e8cd63da36b4644ed6f72b25a8bef7f46aab9527e486ed0c981861938",
+        "flattenedSavedRatio": 0.11405962960318339,
+        "flattenedSpeechKeptRatio": 1,
+        "aggressiveSha256": "001e2c13463c4a433b5228ef0a7293ea0ad2b22b02e956fd5b909ffe53bc4d83",
+        "aggressiveSavedRatio": 0.2719294259693218,
+        "aggressiveSpeechKeptRatio": 0.84,
+        "savedRatio": 0.07666941467436095
+      }
+    },
+    {
+      "clip": "zh-d13-o45.wav",
+      "language": "zh",
+      "reference": "呃…我想想…就是在那个设置页面…嗯…加一个开关",
+      "transcripts": {
+        "baseline": "嗯,我想想,就是在那个设置页面,嗯加一个开关",
+        "trimmed": "嗯,我想想,就是在那个设置页面,嗯加一个开关",
+        "flattened": "嗯,我想想,就是在,那个设置页面,嗯,加一个开关。",
+        "aggressive": "呃,我想想,就是在,那个设置页面,嗯,加一个开关。"
+      },
+      "audio": {
+        "baselineSec": 15.7333125,
+        "baselineSha256": "40f87c6306f46c5c7305bca77aff506ac58a24c1002168fe5d29395d6f4271af",
+        "trimmedSha256": "28dd75a3b55557c103037ab64c5846636843db0fd93ed10db1f54867b8c44d18",
+        "trimmedSavedRatio": 0.5137705425987058,
+        "trimmedSpeechKeptRatio": 1,
+        "flattenedSha256": "dc1084fa6850d9e1f608829b7d95117d3f98835150f45494f010c79ba40405e2",
+        "flattenedSavedRatio": 0.5519061863164544,
+        "flattenedSpeechKeptRatio": 1,
+        "aggressiveSha256": "7fc6861e542775dca39b43dd7172fd4a7e587c31fb636dc0f5c3e8db0045c871",
+        "aggressiveSavedRatio": 0.6332622262476513,
+        "aggressiveSpeechKeptRatio": 0.8006644518272426,
+        "savedRatio": 0.5137705425987058
+      }
+    }
+  ]
+}

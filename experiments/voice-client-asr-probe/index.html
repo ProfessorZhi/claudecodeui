@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SenseVoice-Small 客户端 WASM 探针</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, monospace; margin: 1rem; }
+  #log { white-space: pre-wrap; background: #f6f6f6; padding: .5rem; border-radius: 6px; }
+  button { font: inherit; padding: .3rem .8rem; }
+</style>
+</head>
+<body>
+<h3>SenseVoice-Small 客户端 WASM 探针（D2）</h3>
+<p>读取 <code>window.__probe.info()</code> / <code>window.__probe.run(clipUrl)</code>。</p>
+<button id="go" disabled>run 一条样例</button>
+<button id="batch" disabled>跑 60 条并上传</button>
+<progress id="bar" max="1" value="0" style="width:100%;display:none"></progress>
+<div id="log">boot…</div>
+
+<script>
+// Capture every WebAssembly.Memory the runtime allocates, so the wasm linear-memory high-water
+// can be read from the page (onnxruntime-web does not expose it).
+window.__wasmMemories = [];
+(function () {
+  const Orig = WebAssembly.Memory;
+  function Wrapped(desc) { const m = new Orig(desc); window.__wasmMemories.push(m); return m; }
+  Wrapped.prototype = Orig.prototype;
+  try { WebAssembly.Memory = Wrapped; } catch (e) { /* frozen in some engines */ }
+})();
+window.__maxWasmHeap = () => {
+  let mx = 0;
+  for (const m of window.__wasmMemories) { try { if (m.buffer.byteLength > mx) mx = m.buffer.byteLength; } catch (e) {} }
+  return mx;
+};
+window.__jsHeap = () => (performance.memory ? performance.memory.usedJSHeapSize : null);
+</script>
+
+<script type="module">
+import * as ort from '/ort/ort.wasm.min.mjs';
+import { createProbe, PROBE_VERSION } from '/probe.mjs';
+
+const log = (m) => { document.getElementById('log').textContent = m; };
+const T0 = performance.now();
+window.__probeReady = false;
+
+ort.env.wasm.wasmPaths = '/ort/';
+
+const mb = (n) => (n / 1048576).toFixed(1);
+const bar = document.getElementById('bar');
+
+// Stream a download with a live progress line (bytes, %, speed, ETA). Falls back to indeterminate
+// (bytes + speed only) when the response carries no usable Content-Length.
+async function fetchWithProgress(url, label) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${label} fetch ${r.status}`);
+  const total = Number(r.headers.get('Content-Length')) || 0;
+  const t0 = performance.now();
+  let got = 0, last = 0;
+  const chunks = [];
+  const show = () => {
+    const sec = (performance.now() - t0) / 1000, speed = got / Math.max(sec, 0.001);
+    const pct = total ? ` ${(got / total * 100).toFixed(1)}%` : '';
+    const eta = total && speed > 0 ? `, ETA ${Math.ceil((total - got) / speed)}s` : '';
+    if (total) { bar.style.display = ''; bar.value = got / total; }
+    log(`downloading ${label}: ${mb(got)}${total ? ' / ' + mb(total) : ''} MB${pct} (${mb(speed)} MB/s${eta}, ${Math.round(sec)}s elapsed) — keep this tab in the foreground`);
+  };
+  const reader = r.body.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value); got += value.length;
+    const now = performance.now();
+    if (now - last > 250) { last = now; show(); }
+  }
+  show();
+  bar.style.display = 'none';
+  const out = new Uint8Array(got);
+  let off = 0;
+  for (const c of chunks) { out.set(c, off); off += c.length; }
+  return out.buffer;
+}
+
+async function loadModelBytes(url) {
+  try {
+    const cache = await caches.open('vcasr-probe-v1');
+    const hit = await cache.match(url);
+    if (hit) { log('model found in Cache API, reading…'); window.__modelSource = 'cache'; return await hit.arrayBuffer(); }
+  } catch (e) { /* Cache API unavailable */ }
+  const buf = await fetchWithProgress(url, 'model.int8.onnx');
+  window.__modelSource = 'network';
+  log('saving model to Cache API…');
+  try {
+    const cache = await caches.open('vcasr-probe-v1');
+    await cache.put(url, new Response(buf.slice(0), { headers: { 'Content-Type': 'application/octet-stream' } }));
+  } catch (e) { /* quota */ }
+  return buf;
+}
+
+async function sha256Hex(buf) {
+  const d = await crypto.subtle.digest('SHA-256', buf);
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// wasm-SIMD feature detection (standard validate() probe)
+const WASM_SIMD = (() => {
+  try {
+    return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]));
+  } catch (e) { return false; }
+})();
+
+(async () => {
+  try {
+    const tokensText = new TextDecoder().decode(await fetchWithProgress('/model/tokens.txt', 'tokens.txt'));
+    const tFetch = performance.now();
+    const modelBuf = await loadModelBytes('/model/model.int8.onnx');
+    const modelFetchMs = performance.now() - tFetch;
+    log('verifying model sha256…');
+    const modelSha = await sha256Hex(modelBuf);
+    const buildId = `ort-web ${ort.env.versions ? ort.env.versions.web : '1.30.0'} | sensevoice-small-int8-2024-07-17 | probe-${PROBE_VERSION} | sha256:${modelSha.slice(0, 16)}`;
+    const tSess = performance.now();
+    const tick = setInterval(() => log(`creating ONNX session (no progress available; slow on weak CPUs): ${Math.round((performance.now() - tSess) / 1000)}s…`), 500);
+    const probe = await createProbe({ ort, modelArrayBuffer: modelBuf, tokensText, buildId }).finally(() => clearInterval(tick));
+    const readyMs = performance.now() - T0;
+
+    window.__probe = {
+      version: PROBE_VERSION,
+      info: () => ({
+        crossOriginIsolated: typeof crossOriginIsolated !== 'undefined' ? crossOriginIsolated : null,
+        wasmSimd: WASM_SIMD,
+        threads: probe.numThreads,
+        runtime: 'ort-web',
+        buildId,
+        sharedArrayBuffer: typeof SharedArrayBuffer !== 'undefined',
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        ortVersion: ort.env.versions ? ort.env.versions.web : '1.30.0',
+        modelBytes: modelBuf.byteLength,
+        modelSha256: modelSha,
+        modelSource: window.__modelSource,
+        userAgent: navigator.userAgent,
+      }),
+      readyMs,
+      sessionLoadMs: probe.loadMs,
+      modelFetchMs,
+      meta: () => ({
+        lfr_window_size: probe.meta.lfr_window_size,
+        lfr_window_shift: probe.meta.lfr_window_shift,
+        normalize_samples: probe.meta.normalize_samples,
+        vocab_size: probe.meta.vocab_size,
+        model_version: probe.meta.version,
+      }),
+      run: (url) => probe.run(url),
+      runSamples: (samples) => probe.runFromSamples(samples),
+      stats: () => ({ wasmHeapBytes: window.__maxWasmHeap(), jsHeapBytes: window.__jsHeap() }),
+    };
+    window.__probeReady = true;
+    const btn = document.getElementById('go');
+    btn.disabled = false;
+    btn.onclick = async () => { log(JSON.stringify(await window.__probe.run('/clips/' + (window.__clip || '1.wav')), null, 1).slice(0, 4000)); };
+    const bb = document.getElementById('batch');
+    bb.disabled = false;
+    bb.onclick = async () => {
+      bb.disabled = true;
+      const ids = await (await fetch('/clips60.json')).json();
+      const clips = [];
+      for (let i = 0; i < ids.length; i++) {
+        log(`running ${i + 1}/${ids.length} (clip ${ids[i]})`);
+        const r = await window.__probe.run('/clips/' + ids[i] + '.wav');
+        clips.push({ id: ids[i], text: r.text, tokens: r.tokens, ms: r.ms, audioSec: r.audioSec, wasmHeapBytes: window.__maxWasmHeap() });
+        await new Promise((res) => setTimeout(res, 0));
+      }
+      const out = { info: window.__probe.info(), readyMs, modelFetchMs, sessionLoadMs: probe.loadMs, stats: window.__probe.stats(), clips };
+      const rtf = clips.map((c) => c.ms / 1000 / c.audioSec).sort((a, b) => a - b);
+      const p = (q) => rtf[Math.min(rtf.length - 1, Math.ceil(q * rtf.length) - 1)];
+      let up = 'upload failed';
+      try { up = 'uploaded ' + await (await fetch('/result', { method: 'POST', body: JSON.stringify(out) })).text(); } catch (e) { up += ': ' + e; }
+      log(JSON.stringify({ up, rtf_p50: p(0.5), rtf_p90: p(0.9), rtf_max: rtf[rtf.length - 1], readyMs, wasmHeapBytes: out.stats.wasmHeapBytes, crossOriginIsolated: out.info.crossOriginIsolated, threads: out.info.threads }, null, 1));
+      bb.disabled = false;
+    };
+    log(JSON.stringify({ ready: true, readyMs, ...window.__probe.info() }, null, 1));
+  } catch (e) {
+    window.__probeError = String(e && e.stack || e);
+    log('ERROR: ' + window.__probeError);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1285 @@
+{
+  "schema": "voice-omni-written-frozen-snapshot/1",
+  "runId": "voice-omni-written-freeze-2026-09-24",
+  "provenance": {
+    "runId": "voice-omni-written-freeze-2026-09-24",
+    "frozenAt": "2026-09-24",
+    "readingWindow": "2026-09-23 至 09-24（raw/README.md）",
+    "promptVersion": "written-e-2026-09-24",
+    "source": {
+      "promptFile": {
+        "path": "experiments/voice-omni-written/raw/written.mts",
+        "sha256": "f1f5bc0c6c4be320b35d6a43f16a6b3e52049ee926c0f81612dc2743da589418"
+      },
+      "readingsFile": {
+        "path": "experiments/voice-omni-written/raw/written-ds.jsonl",
+        "sha256": "b11e563f673b650963d9cb2e61e23d5d8f2b1327fe8db904d5fe0d8d538a7e25"
+      }
+    },
+    "sourceBatches": [
+      {
+        "reps": [
+          0,
+          2
+        ],
+        "readings": 48,
+        "basis": "raw/README.md: 前 3 次与后 7 次是两次运行"
+      },
+      {
+        "reps": [
+          3,
+          9
+        ],
+        "readings": 112,
+        "basis": "raw/README.md: 前 3 次与后 7 次是两次运行"
+      }
+    ],
+    "clips": [
+      "d01-o65.wav",
+      "d02-o65.wav",
+      "d03-o65.wav",
+      "d04-o65.wav",
+      "d05-o65.wav",
+      "d06-o65.wav",
+      "d07-o65.wav",
+      "d08-o65.wav"
+    ],
+    "groups": {
+      "C": {
+        "condition": "C-fewshot",
+        "clips": 8,
+        "readings": 80
+      },
+      "E": {
+        "condition": "E-twostep-low",
+        "clips": 8,
+        "readings": 80
+      }
+    },
+    "statuses": {
+      "200": 160
+    },
+    "judge": "每条读数冻结的是原文（text）、延迟（ms）与调用结果（status，160 条全为 200）；语义判定（✅ 意图正确 / ◐ 可猜回 / ❌ 会误导）没有逐条冻结，因为它由 raw/judge.mts 的规则算出，而 judge.mts 经 written.mts 导入 omni.mts，omni.mts 在导入期读取未入库的 webm（raw/README.md：重算前需先用 ffmpeg 生成），离线驱动不了；把规则重写一遍又会在工装里留下第二份实现。口径本身记在 README 里：C ✅50 ◐26 ❌4、E ✅58 ◐18 ❌4（各 80 条）。",
+    "limits": "8 条 TTS 合成中文片段；语义判定是规则化的人工口径；不同运行之间有时段差异（延迟尤其明显）；qwen3.8-omni-flash 是别名，服务端升级后效果可能漂移；读数不重跑（联网且计费，按 ADR-004 决策 8 归人工）。"
+  },
+  "prompts": {
+    "ROLE": "你是编码 agent 的语音指令整理器。用户对着麦克风口述了一条给编码 agent 的指令，你收到的是这段录音。你的任务不是逐字转写，而是输出一条清晰、书面化、可以直接交给编码 agent 执行的指令。",
+    "RULES": "规则：\n1. 说话人自我更正（如“嗯不对”“啊不”“不是…是…”）时，只保留更正后的意思，删掉被否定的部分。\n2. 删掉口头禅和填充词（嗯、那个、就是、啊）。\n3. 文件名、函数名、hook 名等代码标识符用反引号包起来，按听到的拼写写出，不要猜测或替换。\n4. 数字一律用阿拉伯数字。\n5. 不得添加录音里没有的信息，不得省略录音里的任何要求。\n6. 只输出整理后的指令本身，不要解释。",
+    "EXAMPLES": "示例（口述 → 整理后的指令）：\n口述：嗯，那个，把 README 里的端口，就是 3000，改成八千零八十\n指令：把 `README` 里的端口从 3000 改成 8080。\n口述：给 login 页面加个校验，啊不对，是 signup 页面\n指令：给 signup 页面加上校验。\n口述：删掉 utils 目录下那个 date 的 helper，嗯，别动测试\n指令：删掉 `utils` 目录下的 date helper，不要改动测试。",
+    "JSON_TASK": "先逐字转写录音，再按规则整理成指令。只输出一个 JSON 对象：{\"transcript\": \"逐字转写\", \"instruction\": \"整理后的指令\"}，不要输出其他内容。",
+    "reasoning_effort": "low",
+    "model": "qwen3.8-omni-flash"
+  },
+  "groups": {
+    "C": {
+      "condition": "C-fewshot",
+      "clips": [
+        {
+          "clip": "d01-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 2501,
+              "text": "把 `server` 里的 `voice.se.res.ts` 的超时改成 30s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 2182,
+              "text": "把 `server` 里的 `voice.se.rs.ts` 的超时改成 30s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 1741,
+              "text": "把 `server` 里的 `voice.se.res.ts` 的超时改成 30 s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 1415,
+              "text": "把 `server` 里的 `voice.se.res.ts` 的超时改成 30s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1454,
+              "text": "把 `server` 里的 `voice.se.race.ts` 的超时改成 30s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 843,
+              "text": "把 `server` 里的 `voice.ts`、`raise.ts` 的超时改成 30s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1821,
+              "text": "把 `server` 里的 `voice.se.ts` 的超时改成 30s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 1555,
+              "text": "把 `server` 里的 `voice.ts`、`race.ts` 的超时改成 30s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 1886,
+              "text": "把 `server` 里的 `voice.se.race.ts` 的超时改成 30s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 1911,
+              "text": "把 `server` 里的 `voice.se.race.ts` 的超时改成 30s。"
+            }
+          ]
+        },
+        {
+          "clip": "d02-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 3237,
+              "text": "修改 `voice.ro.ts` 文件。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 2476,
+              "text": "改一下 `voice.ts`，不对，应该是 `voice.ro.useTS`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 1930,
+              "text": "把 `voice.se` 里的 `race.ts`，嗯不对，应该是 `voice.ro` 里的 `use.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 1609,
+              "text": "改一下 `voice.ro.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 788,
+              "text": "修改 `voice.ro.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 1500,
+              "text": "修改 `voice.ro.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1656,
+              "text": "把 `voice.ts` 改成 `voice.ro.useTs`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 1425,
+              "text": "改一下 `voice.ro/use.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 1620,
+              "text": "把 `voice.se.rs.ts` 改成 `voice.ro.use.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 1680,
+              "text": "修改 `voice.ro.utils.ts`。"
+            }
+          ]
+        },
+        {
+          "clip": "d03-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 2291,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 3613,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 状态的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 3846,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 状态的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 789,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1525,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 状态的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 1572,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 状态的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1544,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 状态的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 1516,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 1695,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 状态的。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 1750,
+              "text": "看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 状态的。"
+            }
+          ]
+        },
+        {
+          "clip": "d04-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 1687,
+              "text": "不要动 `voice.se`、`race.ts`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 3602,
+              "text": "不要动 `voice.se`、`race.ts`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 4435,
+              "text": "不要动 `voice.tsx`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 720,
+              "text": "不要动 `voice.se`、`race.ts`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1321,
+              "text": "不要动 `voice.se` 和 `race.ts`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 1434,
+              "text": "不要动 `voice.ts`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1353,
+              "text": "不要动 `voice.se`、`race.ts`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 1527,
+              "text": "不要动 `voice.se`、`race.ts`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 1432,
+              "text": "不要动 `voice.se`、`race.ts`，只改 `voice.module.ts`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 1391,
+              "text": "不要动 `voice.se`、`race.ts`，只改 `voice.module.ts`。"
+            }
+          ]
+        },
+        {
+          "clip": "d05-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 1964,
+              "text": "把超时从 15 秒改成 50 秒。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 2042,
+              "text": "把超时从 15 秒改成 50 秒。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 1782,
+              "text": "把超时从 15 秒改成 50 秒。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 1266,
+              "text": "把超时从 15s 改成 50s，不是 5s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1156,
+              "text": "把超时从 15 秒改成 50 秒，不是 5 秒。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 1232,
+              "text": "把超时从 15s 改成 50s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1250,
+              "text": "把超时从 15 秒改成 50 秒。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 1225,
+              "text": "把超时从 15 秒改成 50 秒。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 874,
+              "text": "把超时从 15s 改成 50s。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 1232,
+              "text": "把超时从 15 秒改成 50 秒，不是 5 秒。"
+            }
+          ]
+        },
+        {
+          "clip": "d06-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 2838,
+              "text": "给 `composer` 的按钮加个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 2469,
+              "text": "给 `composer` 的按钮再加个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 1734,
+              "text": "给 `composer` 的按钮加个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 1477,
+              "text": "给 `composer` 的按钮加个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1431,
+              "text": "给 `composer` 的按钮再加个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 1295,
+              "text": "给 `composer` 的按钮加个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1479,
+              "text": "给 `composer` 的按钮加一个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 1588,
+              "text": "给 `composer` 的按钮加一个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 1403,
+              "text": "给 `composer` 的按钮再加个快捷键。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 1649,
+              "text": "给 `composer` 的按钮增加快捷键。"
+            }
+          ]
+        },
+        {
+          "clip": "d07-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 2191,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 2160,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 2897,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 1296,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1300,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 2012,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 2051,
+              "text": "在 server 模块下的 voice 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 1280,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 863,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 1501,
+              "text": "在 `server` 模块下的 `voice` 目录里加一个 call 的测试。"
+            }
+          ]
+        },
+        {
+          "clip": "d08-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 2709,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 2405,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 2598,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 732,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1639,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 1589,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1835,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 2425,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 1636,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 1925,
+              "text": "把默认模型换成 `whisper-turbo`。"
+            }
+          ]
+        }
+      ]
+    },
+    "E": {
+      "condition": "E-twostep-low",
+      "clips": [
+        {
+          "clip": "d01-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 3248,
+              "text": "{\"transcript\": \"把 server 里的 voice 点 s e r v i c e t s 的超时改成 30 秒\", \"instruction\": \"把 `server` 目录下 `voice.service.ts` 的超时改成 30 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 2816,
+              "text": "{\"transcript\": \"把 server 里的 voice 点 s e，voice t s 的超时改成 30 秒。\", \"instruction\": \"把 `server` 里 `voice.ts` 的超时改成 30 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 4276,
+              "text": "{\"transcript\": \"把 server 里的 voice 点 s e r v i c e 的超时改成 30 秒。\", \"instruction\": \"把 `server` 里的 `voice.service` 的超时改成 30 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 5768,
+              "text": "```json\n{\"transcript\": \"把server里的voice点s e，race ts的超时改成30秒。\", \"instruction\": \"把 `server` 里的 `voice.ts` 和 `race.ts` 的超时改成 30 秒。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 2645,
+              "text": "{\"transcript\": \"把 server 里的 voice 点 s e r v i c e t s 的超时改成 30 秒。\", \"instruction\": \"把 `server` 里的 `voice.service.ts` 的超时改成 30 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 4161,
+              "text": "{\"transcript\": \"把 server 里的 voice 点 s e，voice ts 的超时改成 30 秒。\", \"instruction\": \"把 `server` 里 `voice.ts` 的超时改成 30 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 17341,
+              "text": "```json\n{\"transcript\": \"把 server 里的 voice.se res.ts 的超时改成 30 秒。\", \"instruction\": \"把 `server` 里的 `voices.ts` 的超时改成 30 秒。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 4816,
+              "text": "{\"transcript\":\"把 server 里的 voice点SE race TS 的超时改成30秒。\",\"instruction\":\"把 `server` 里 `voice.service.ts` 的超时改成 30 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 7340,
+              "text": "{\"transcript\": \"把 server 里的 voice 点 s e race t s 的超时改成 30 秒。\", \"instruction\": \"把 `server` 里的 `voice.service.ts` 的超时改成 30 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 3383,
+              "text": "{\"transcript\": \"把 server 里的 voice 点 s e r v i c e 点 t s 的超时改成 30 秒。\", \"instruction\": \"把 `server` 里的 `voice.service.ts` 的超时改成 30 秒。\"}"
+            }
+          ]
+        },
+        {
+          "clip": "d02-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 12971,
+              "text": "```json\n{\n  \"transcript\": \"改一下 voice点s e re s t s，嗯不对，应该是 voice点r o u t s t s\",\n  \"instruction\": \"改一下 `voice.rousts`。\"\n}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 9914,
+              "text": "{\"transcript\":\"改一下 voice点se res ts 嗯不对 应该是 voice点ro use ts\",\"instruction\":\"把 `voice.ro.use.ts` 改一下。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 4686,
+              "text": "{\"transcript\": \"改一下 voice 点 s e r e c t s，嗯不对，应该是 voice 点 r o u t e s\", \"instruction\": \"改一下 `voice.routes.ts`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 13154,
+              "text": "{\"transcript\": \"改一下 voice 点 s e raise t s 嗯不对 应该是 voice 点 r o use t s\", \"instruction\": \"修改 `voice.ro.ts`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 3479,
+              "text": "{\"transcript\": \"改一下 voice点s e r e s t s 嗯不对 应该是 voice点r o u t e s\", \"instruction\": \"修改 `voice.routes` 文件。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 19485,
+              "text": "```json\n{\"transcript\": \"改一下 voice 点 SE race TS，嗯不对，应该是 voice 点 RO use TS\", \"instruction\": \"修改 `voice.rouse.ts` 文件。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 10222,
+              "text": "{\"transcript\": \"改一下，voice点se，race ts，嗯不对，应该是，voice点ro，use ts。\", \"instruction\": \"把 `voice.serace.ts` 改成 `voice.rouse.ts`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 5032,
+              "text": "{\"transcript\":\"改一下，voice点se，raise ts，嗯不对，应该是，voice点ro，use ts。\",\"instruction\":\"修改 `voice.ro.use.ts`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 11013,
+              "text": "```json\n{\"transcript\": \"改一下 voice 点 se race ts，嗯不对，应该是 voice 点 ro use ts\", \"instruction\": \"修改 `voice.ro.use.ts`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 6663,
+              "text": "```json\n{\"transcript\": \"改一下 voice点se re ts，嗯不对，应该是 voice点ro use ts\", \"instruction\": \"改一下 `voice.serets`，啊不对，应该是 `voice.rousts`。\"}\n```"
+            }
+          ]
+        },
+        {
+          "clip": "d03-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 3185,
+              "text": "{\"transcript\":\"看一下 useVoiceInput 这个 hook 是怎么处理 recording 的\",\"instruction\":\"看一下 `useVoiceInput` 这个 hook 是怎么处理 `recording` 的。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 3699,
+              "text": "{\"transcript\":\"看一下 useVoiceInput 这个 hook 是怎么处理 recording 的\",\"instruction\":\"看一下 `useVoiceInput` 这个 hook 是怎么处理 `recording` 的。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 3656,
+              "text": "{\"transcript\":\"看一下 useVoiceInput 这个 hook 是怎么处理 recording 的\",\"instruction\":\"看一下 `useVoiceInput` 这个 hook 是怎么处理 `recording` 的。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 2313,
+              "text": "{\"transcript\": \"看一下 useVoiceInput 这个 hook 是怎么处理 recording 的。\", \"instruction\": \"看一下 `useVoiceInput` 这个 hook 是怎么处理 recording 的。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 3839,
+              "text": "{\"transcript\":\"看一下，useVoiceInput这个hook是怎么处理recording的。\",\"instruction\":\"看一下 `useVoiceInput` 这个 hook 是怎么处理 `recording` 的。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 2696,
+              "text": "{\"transcript\": \"看一下 useVoiceInput 这个 hook 是怎么处理 recordingG 的。\", \"instruction\": \"查看 `useVoiceInput` 这个 hook 是如何处理 `recordingG` 的。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 2647,
+              "text": "{\"transcript\": \"看一下 useVoiceInput 这个 hook 是怎么处理 recording 的\", \"instruction\": \"看一下 `useVoiceInput` 这个 hook 是怎么处理 `recording` 的。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 2653,
+              "text": "```json\n{\"transcript\": \"看一下 useVoiceInput 这个 hook 是怎么处理 recording 的\", \"instruction\": \"看一下 `useVoiceInput` 这个 hook 是怎么处理 `recording` 的。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 5348,
+              "text": "```json\n{\"transcript\": \"看一下 useVoiceInput 这个 hook 是怎么处理 recorded 的。\", \"instruction\": \"查看 `useVoiceInput` 这个 hook 是怎么处理 `recorded` 的。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 6972,
+              "text": "{\"transcript\": \"看一下 useVoiceInput 这个 hook 是怎么处理 recording 的。\", \"instruction\": \"查看 `useVoiceInput` 这个 hook 是如何处理 `recording` 的。\"}"
+            }
+          ]
+        },
+        {
+          "clip": "d04-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 3921,
+              "text": "{\"transcript\":\"不要动 voice 点 s e voice t s 只改 voice module t s\",\"instruction\":\"不要改动 `voice.se` 和 `voice.ts`，只修改 `voice.module.ts`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 3091,
+              "text": "{\"transcript\": \"不要动 voice 点 s e，voice ts，只改 voice module ts。\", \"instruction\": \"不要动 `voice.se` 和 `voice.ts`，只改 `voice.module.ts`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 10633,
+              "text": "```json\n{\"transcript\": \"不要动 voice 点 ts，voice ts，只改 voice module ts\", \"instruction\": \"不要动 `voice.ts`，只改 `voice.module.ts`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 10655,
+              "text": "```json\n{\"transcript\": \"不要动 voice点s e voice t s 只改 voice module t s\", \"instruction\": \"不要修改 `voice.se` 和 `voice.ts`，只改 `voice.module.ts`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 3618,
+              "text": "{\"transcript\": \"不要动 voice点se rest ts 只改 voice module ts\", \"instruction\": \"不要修改 `voice.se.rest.ts`，只改 `voice.module.ts`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 1881,
+              "text": "```json\n{\"transcript\": \"不要动 voice 点 s e voice t s 只改 voice module t s\", \"instruction\": \"不要改动 `voice.se` 和 `voice.ts`，只修改 `voice.module.ts`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 14396,
+              "text": "```json\n{\"transcript\": \"不要动 voice点s e raise ts 只改voice module ts\", \"instruction\": \"不要动 `voice.se` 和 `raise.ts`，只改 `voice.module.ts`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 5023,
+              "text": "```json\n{\"transcript\": \"不要动 voice 点 s e voice t s 只改 voice module t s\", \"instruction\": \"不要修改 `voice.se` 和 `voice.ts`，只改 `voice.module.ts`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 30702,
+              "text": "{\"transcript\": \"不要动 voice点s e race t s 只改 voice module t s\", \"instruction\": \"不要动 `voice.serialize.ts`，只改 `voice.module.ts`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 7576,
+              "text": "{\"transcript\": \"不要动 voice 点 s e voice t s 只改 voice module t s\", \"instruction\": \"不要动 `voice.ts`，只改 `voice.module.ts`。\"}"
+            }
+          ]
+        },
+        {
+          "clip": "d05-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 3535,
+              "text": "{\"transcript\": \"把超时从15秒改成50秒，不是5秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 2986,
+              "text": "{\"transcript\": \"把超时从十五秒改成五十秒，不是五秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 3599,
+              "text": "```json\n{\"transcript\": \"把超时从15秒改成50秒，不是5秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 2619,
+              "text": "{\"transcript\": \"把超时从15秒改成50秒，不是5秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 3969,
+              "text": "```json\n{\"transcript\": \"把超时从十五秒改成。五十秒。不是五秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 2135,
+              "text": "```json\n{\"transcript\": \"把超时从15秒改成50秒，不是5秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 3172,
+              "text": "{\"transcript\":\"把超时从15秒改成。50秒。不是5秒。\",\"instruction\":\"把超时从 15 秒改成 50 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 3788,
+              "text": "```json\n{\"transcript\": \"把超时从15秒改成50秒，不是5秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 5701,
+              "text": "{\"transcript\": \"把超时从十五秒改成……五十秒……不是五秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 5012,
+              "text": "```json\n{\"transcript\": \"把超时从15秒改成50秒，不是5秒。\", \"instruction\": \"把超时从 15 秒改成 50 秒。\"}\n```"
+            }
+          ]
+        },
+        {
+          "clip": "d06-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 2845,
+              "text": "{\"transcript\": \"嗯，那个，就是这个 composer 的按钮，嗯，再加个快捷键。\", \"instruction\": \"给 `composer` 的按钮加个快捷键。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 3039,
+              "text": "{\"transcript\": \"嗯，那个，就是这个 composer 的按钮，嗯，再加个快捷键。\", \"instruction\": \"给 `composer` 的按钮加个快捷键。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 3482,
+              "text": "{\"transcript\": \"嗯，那个，就是这个 composer 的按钮，嗯，再加个快捷键。\", \"instruction\": \"给 `composer` 的按钮加个快捷键。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 2113,
+              "text": "{\"transcript\": \"嗯，那个，就是这个，composer，的按钮，嗯，再加个快捷键。\", \"instruction\": \"给 `composer` 的按钮加个快捷键。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1961,
+              "text": "{\"transcript\":\"嗯，那个，就是这个，composer的按钮，嗯，再加个快捷键。\",\"instruction\":\"给 `composer` 的按钮加个快捷键。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 3007,
+              "text": "{\"transcript\": \"嗯，那个，就是这个，composer 的按钮，嗯，再加个快捷键。\", \"instruction\": \"给 `composer` 的按钮加个快捷键。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1870,
+              "text": "```json\n{\"transcript\": \"嗯，那个，就是这个，composer，的按钮，嗯，再加个快捷键。\", \"instruction\": \"给 `composer` 的按钮加个快捷键。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 4122,
+              "text": "{\"transcript\":\"嗯，那个，就是这个 composer 的按钮，嗯，再加个快捷键。\",\"instruction\":\"给 `composer` 的按钮加个快捷键。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 2914,
+              "text": "{\"transcript\": \"嗯，那个，就是这个。Composer的按钮。嗯，再加个快捷键。\", \"instruction\": \"给 `Composer` 的按钮加个快捷键。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 2484,
+              "text": "{\"transcript\": \"嗯，那个，就是这个 composer 的按钮，嗯，再加个快捷键。\", \"instruction\": \"给 `composer` 的按钮加一个快捷键。\"}"
+            }
+          ]
+        },
+        {
+          "clip": "d07-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 2413,
+              "text": "{\"transcript\": \"server 模块下的 voice 目录里加一个 call 的测试\", \"instruction\": \"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 3987,
+              "text": "{\"transcript\": \"server模块下的voice目录里加一个call的测试。\", \"instruction\": \"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 3069,
+              "text": "{\"transcript\": \"server 模块下的 voice 目录里加一个 call 的测试。\", \"instruction\": \"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 4143,
+              "text": "{\"transcript\": \"server模块下的voice目录里加一个call的测试。\", \"instruction\": \"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1794,
+              "text": "{\"transcript\":\"server模块下的voice目录里加一个call的测试\",\"instruction\":\"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 4308,
+              "text": "{\"transcript\": \"server模块下的voice目录里加一个call的测试。\", \"instruction\": \"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 1697,
+              "text": "{\"transcript\":\"server 模块下的 voice 目录里加一个 call 的测试。\",\"instruction\":\"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 2367,
+              "text": "{\"transcript\": \"server 模块下的 voice 目录里加一个 call 的测试\", \"instruction\": \"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 2484,
+              "text": "{\"transcript\": \"server 模块下的 voice 目录里加一个 call 的测试\", \"instruction\": \"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 2256,
+              "text": "{\"transcript\": \"server 模块下的 voice 目录里加一个 call 的测试\", \"instruction\": \"在 `server` 模块下的 `voice` 目录里加一个 `call` 的测试。\"}"
+            }
+          ]
+        },
+        {
+          "clip": "d08-o65.wav",
+          "readings": [
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 0,
+              "status": 200,
+              "ms": 2779,
+              "text": "{\"transcript\": \"把默认模型换成whisper large啊不是whisper turbo\", \"instruction\": \"把默认模型换成 `whisper-turbo`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 1,
+              "status": 200,
+              "ms": 5223,
+              "text": "```json\n{\"transcript\": \"把默认模型换成 whisper large 啊不 是 whisper turbo\", \"instruction\": \"把默认模型换成 `whisper turbo`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 2,
+              "status": 200,
+              "ms": 6389,
+              "text": "```json\n{\"transcript\": \"把默认模型换成 whisper large 啊不 是 whisper turbo\", \"instruction\": \"把默认模型换成 `whisper-turbo`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 3,
+              "status": 200,
+              "ms": 1933,
+              "text": "{\"transcript\": \"把默认模型换成 whisper large 啊不 是 whisper turbo\", \"instruction\": \"把默认模型换成 `whisper turbo`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 4,
+              "status": 200,
+              "ms": 1718,
+              "text": "{\"transcript\": \"把默认模型换成 whisper large，啊不，是 whisper turbo。\", \"instruction\": \"把默认模型换成 `whisper-turbo`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 5,
+              "status": 200,
+              "ms": 3890,
+              "text": "{\"transcript\": \"把默认模型换成 whisper large，啊不，是 whisper turbo。\", \"instruction\": \"把默认模型换成 `whisper-turbo`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 6,
+              "status": 200,
+              "ms": 5443,
+              "text": "```json\n{\"transcript\": \"把默认模型换成 whisper large 啊不 是 whisper turbo\", \"instruction\": \"把默认模型换成 `whisper-turbo`。\"}\n```"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 7,
+              "status": 200,
+              "ms": 2603,
+              "text": "{\"transcript\": \"把默认模型换成 Whisper large 啊不 是 Whisper turbo\", \"instruction\": \"把默认模型换成 `Whisper turbo`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 8,
+              "status": 200,
+              "ms": 3071,
+              "text": "{\"transcript\": \"把默认模型换成 whisper large 啊不，是 whisper turbo\", \"instruction\": \"把默认模型换成 `whisper-turbo`。\"}"
+            },
+            {
+              "runId": "voice-omni-written-freeze-2026-09-24",
+              "rep": 9,
+              "status": 200,
+              "ms": 6974,
+              "text": "```json\n{\"transcript\": \"把默认模型换成 whisper large 啊不 是 whisper turbo\", \"instruction\": \"把默认模型换成 `whisper turbo`。\"}\n```"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

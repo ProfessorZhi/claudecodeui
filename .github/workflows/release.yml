@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: "Version bump: patch, minor, major, or explicit (e.g. 1.27.0)"
+        required: true
+        default: "patch"
+        type: string
+      release_name:
+        description: 'Custom release name (optional, defaults to "CloudCLI UI vX.Y.Z")'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+# This workflow publishes releases with write credentials, so actions are pinned
+# to immutable commit SHAs. The trailing comments keep the original major tag
+# visible for maintenance context.
+#
+# This is the FORK release path for yaleh/claudecodeui. It cuts a GitHub Release
+# and publishes the package to npm as `@yalehwang/cloudcli`, authenticated with
+# npm trusted publishing (OIDC): the `@yalehwang/cloudcli` package trusts this repo's
+# release.yml, so no npm token is involved (npm now rejects 2FA-bypass tokens). It pushes the release commit/tag to the
+# `yaleh` remote named by .release-it.json's `git.pushRepo`, never `origin`
+# (which points at upstream siteboon/claudecodeui).
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
+
+      # `registry-url` points npm at the public registry; authentication is OIDC (id-token above).
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: git config
+        run: |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+      # .release-it.json pushes with `git.pushRepo: "yaleh"`, but actions/checkout
+      # only ever creates an `origin` remote — regardless of which repo the run is
+      # in. Without a `yaleh` remote, `git push yaleh` below fails with "does not
+      # appear to be a git repository". Add (or repoint) it at this same repo,
+      # authenticated with the same PAT the checkout uses.
+      - name: Point the yaleh release remote at this repo
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          REMOTE_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git"
+          git remote add yaleh "$REMOTE_URL" 2>/dev/null || git remote set-url yaleh "$REMOTE_URL"
+          git remote -v
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # @vscode/ripgrep downloads its binary from GitHub in postinstall; anonymous requests
+          # are rate-limited (403), same reason desktop-release.yml passes a token here.
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # Upgraded only after `npm ci` (newer npm refuses the lockfile's mirror-resolved entries). Trusted publishing needs npm >= 11.5.1; Node 22 ships an older npm.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest && npm --version
+
+      - name: Release
+        id: release
+        run: |
+          # Stream subprocess output so publishing errors are visible immediately.
+          # The npm publish is driven by .release-it.json's `npm.publish: true`, authenticated by OIDC.
+          ARGS=(--ci --verbose --verbose "--increment=$RELEASE_INCREMENT")
+          if [ -n "$RELEASE_NAME" ]; then
+            ARGS+=("--github.releaseName=$RELEASE_NAME")
+          fi
+          npx release-it "${ARGS[@]}"
+        env:
+          RELEASE_INCREMENT: ${{ inputs.increment }}
+          RELEASE_NAME: ${{ inputs.release_name }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}

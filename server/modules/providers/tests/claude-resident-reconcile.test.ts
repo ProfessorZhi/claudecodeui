@@ -1,0 +1,1639 @@
+/**
+ * Criterion for the resident host's reconcile loop and its §10.2 log lines
+ * (AC-390, SPEC §10.1, §10.2, §12 S5).
+ *
+ * WHAT THIS FILE IS FOR. The ledger (S1) made a resident session's state
+ * derivable, and the run registry holds the runs. Neither reads the other, and
+ * the 2026-10-14 defect (`fdd3e920`) sat exactly in the gap: a run the registry
+ * still held as `running` for a session whose ledger had stopped moving, with no
+ * later frame able to close either. §10.1's answer is a reconcile check over the
+ * two readings, and this criterion is that check's reading.
+ *
+ * THREE LINE FAMILIES, ONE READING EACH (§10.2), all of them with `session=`:
+ *
+ *   · `[reconcile] … mode=<log|enforce> anomaly=<code>` — the anomaly, written
+ *     wherever the ledger records one (four codes reach it that way) or by the
+ *     reconcile check itself (`phantom-run`).
+ *   · `[ledger] … delivery=<8> state=<s> turn=<8|-> source=<…>` — one per
+ *     DELIVERY whose state moved.
+ *   · `[turn] … turn=<id> kind=<…> open|close …` — one per turn that opened and
+ *     one per turn that closed.
+ *
+ * HOW IT IS DRIVEN. A REAL `ClaudeResidentHostDriver` over a REAL session-host
+ * manager and a scripted process (the injected `createProcess` seam), with the
+ * three things a reconcile reading needs injected: the clock, the run registry
+ * PORT (`connectedClientCount` is the precedent — the registry lives in the
+ * websocket module, which imports this one, so the edge cannot be an import),
+ * and the log sink. No real `claude` binary is started and no service is
+ * restarted.
+ *
+ * THE FALSE FORM (AC (f)), and why leg (c) is the leg that carries it:
+ *
+ *   Remove ONE condition from the reconcile check — the "a turn is open, so
+ *   nothing here is phantom" guard — leaving "the registry says a run is going
+ *   and the ledger has stood still past `T_q`". Leg (c) then closes a REAL turn
+ *   that is in flight: `longTurnClosed=true` where it must read `false`, and its
+ *   `turn` lease disappears. That is over-settlement, the thing §10.1 forbids
+ *   ("不用 lease 定时过期来「修」：那会结算真正在跑的 turn"). No other leg reds
+ *   under that mutant — (a) and (b) inject a divergence with NO turn open, and
+ *   (d)/(e) inject no registry run at all — so the red names the defect rather
+ *   than a neighbour. Every reading is collected and printed before anything is
+ *   asserted, so a red lands on the wrong reading and not on a timeout.
+ *
+ * Red lines:
+ * - The process budget guard below kills the whole process with `exit 3` rather
+ *   than failing one case, as in the sibling resident criteria.
+ * - `T_q` and `T_int` are injected (200 ms / 50 ms), so no leg pays the shipped
+ *   ten seconds of wall clock; every reading taken across a deadline is the line
+ *   it produced, never the wait.
+ * - Nothing here reads a private field: the readings come from the driver's own
+ *   `reconcileTick` / `ledgerReading`, from the manager's lease projection, from
+ *   the injected registry port, and from the lines the driver handed the sink.
+ *
+ * Run with this repo's TS-ESM test entrypoint:
+ *
+ *     npx tsx --tsconfig server/tsconfig.json --test \
+ *       server/modules/providers/tests/claude-resident-reconcile.test.ts
+ */
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import util from 'node:util';
+
+import {
+  ClaudeResidentHostDriver,
+  readSessionTurnRun,
+  startResidentReconcileBeat,
+} from '@/modules/providers/list/claude/claude-host-driver.provider.js';
+import type {
+  ClaudeResidentProcess,
+  ClaudeResidentProcessFactory,
+  ClaudeResidentQuery,
+  ClaudeResidentReconcileBeat,
+  ClaudeResidentReconcileMode,
+  ClaudeResidentReconcileReading,
+  ClaudeResidentRunRegistryPort,
+  ClaudeResidentRunningRun,
+} from '@/modules/providers/list/claude/claude-host-driver.provider.js';
+import { createSessionHostManager } from '@/modules/session-hosts/index.js';
+import type { HostScheduler, SessionHostManager } from '@/modules/session-hosts/index.js';
+import { createNormalizedMessage } from '@/shared/utils.js';
+import type {
+  AnyRecord,
+  ProcessHost,
+  ProviderRuntimeContext,
+  ProviderRuntimeWriter,
+} from '@/shared/types.js';
+
+/**
+ * The wall-clock bound this criterion reports the whole run against (AC (g): < 50s).
+ *
+ * Every leg drives an injected clock, so nothing here waits ten seconds for a
+ * deadline that the production configuration would take ten seconds to reach.
+ */
+const RUN_BUDGET_MS = 50_000;
+
+const STARTED_AT = Date.now();
+
+const budgetGuard = setTimeout(() => {
+  const elapsed = Date.now() - STARTED_AT;
+  console.error(
+    `[budget] budget=${RUN_BUDGET_MS}ms elapsed=${elapsed}ms exit=3 — the reconcile criterion did not finish ` +
+      `inside its process budget (a process-level kill, not a node:test case failure).`,
+  );
+  process.exit(3);
+}, RUN_BUDGET_MS - 1_000);
+budgetGuard.unref();
+
+/** The pid the scripted seam reports; it is read and never acted on. */
+const PROCESS_PID = 4242;
+
+/** The whole clock these legs drive: `T_q` and the lease readings both read it. */
+const CLOCK_START = 1_700_000_000_000;
+
+/** `T_q`, injected small: the deadline is reached by a number, not by a wait. */
+const T_Q_MS = 200;
+
+/** `T_int`, injected small: the unanswered-interrupt deadline costs no wall clock. */
+const T_INT_MS = 50;
+
+/** How long a leg waits past `T_int` before reading the line the deadline writes. */
+const PAST_T_INT_MS = T_INT_MS * 4;
+
+// ---------------------------------------------------------------------------
+// stdout, teed
+// ---------------------------------------------------------------------------
+
+/**
+ * Every line written to stdout, teed out of `console.log`.
+ *
+ * A tee rather than a redirect, because stdout IS the reconcile line's channel:
+ * §10.2 is the operator's reading of an anomaly, and the `[reconcile]` family has
+ * been on stdout since S1 (`claude-resident-interrupt-ledger.test.ts` reads it
+ * there). Reading it from the tee is therefore a reading of the SHIPPED channel
+ * rather than of the sink the criterion also installs.
+ */
+const stdoutLines: string[] = [];
+{
+  const original = console.log.bind(console) as (...data: unknown[]) => void;
+  const tee = (...data: unknown[]): void => {
+    stdoutLines.push(util.format(...data));
+    original(...data);
+  };
+  console.log = tee as typeof console.log;
+}
+
+/** The `[reconcile]` stdout lines one session got for one anomaly code. */
+function reconcileLines(sessionId: string, code: string): string[] {
+  const prefix = `[reconcile] session=${sessionId} `;
+  return stdoutLines.filter((line) => line.startsWith(prefix) && line.includes(` anomaly=${code} `));
+}
+
+/** The same reading, taken from the injected sink instead of stdout. */
+function reconcileSinkLines(lines: readonly string[], sessionId: string, code: string): string[] {
+  const prefix = `[reconcile] session=${sessionId} `;
+  return lines.filter((line) => line.startsWith(prefix) && line.includes(` anomaly=${code} `));
+}
+
+/** The `[ledger]` / `[turn]` lines one session's sink collected, by family. */
+function familyLines(lines: readonly string[], sessionId: string, family: 'ledger' | 'turn'): string[] {
+  const prefix = `[${family}] session=${sessionId} `;
+  return lines.filter((line) => line.startsWith(prefix));
+}
+
+// ---------------------------------------------------------------------------
+// The scripted process
+// ---------------------------------------------------------------------------
+
+/**
+ * A resident process the criterion owns: a stream it pushes into, in order.
+ *
+ * The query never ends on its own — an iterable that finished would make the
+ * driver's read loop call `reportExit` and close the host, turning every reading
+ * into a reading of a dead process.
+ */
+function createFakeProcess(): {
+  factory: ClaudeResidentProcessFactory;
+  emit(frame: AnyRecord): void;
+  /** The control frames the driver wrote to this process's stdin, in order. */
+  written(): readonly AnyRecord[];
+} {
+  const pending: AnyRecord[] = [];
+  const waiters: Array<(frame: AnyRecord) => void> = [];
+  const written: AnyRecord[] = [];
+
+  const push = (frame: AnyRecord): void => {
+    const waiter = waiters.shift();
+    if (waiter) {
+      waiter(frame);
+      return;
+    }
+    pending.push(frame);
+  };
+
+  const iterator: AsyncIterator<AnyRecord> = {
+    next(): Promise<IteratorResult<AnyRecord>> {
+      const frame = pending.shift();
+      if (frame) {
+        return Promise.resolve({ value: frame, done: false });
+      }
+      return new Promise<IteratorResult<AnyRecord>>((resolve) => {
+        waiters.push((queued) => resolve({ value: queued, done: false }));
+      });
+    },
+    return(): Promise<IteratorResult<AnyRecord>> {
+      return new Promise<IteratorResult<AnyRecord>>(() => undefined);
+    },
+  };
+
+  const query: ClaudeResidentQuery = {
+    [Symbol.asyncIterator]: () => iterator,
+    interrupt: async () => undefined,
+    close: () => undefined,
+  };
+
+  return {
+    factory: () =>
+      ({
+        query,
+        pid: PROCESS_PID,
+        // A scripted stream has no stdin of its own; recording the frame is what
+        // makes the withdrawal leg a reading of the control request the driver
+        // really wrote rather than of a call the criterion assumed.
+        writeRaw: (frame: AnyRecord) => {
+          written.push(frame);
+        },
+      }) satisfies ClaudeResidentProcess,
+    emit: push,
+    written: () => written,
+  };
+}
+
+/** A scheduler whose deadlines never fire: these legs are not about lifetime. */
+function inertScheduler(): HostScheduler {
+  return { schedule: () => () => undefined };
+}
+
+/** The runtime's own turn inputs, stubbed to the facts these legs' driver asks for. */
+const CONTEXT: ProviderRuntimeContext = {
+  resolveProviderSessionId: () => null,
+  resolveResumeModel: async () => undefined,
+  getProviderModels: async () => ({}) as never,
+  normalizeMessage: () => [],
+  isProviderInstalled: async () => true,
+};
+
+/** A writer that records every frame it is handed, so a run's `complete` is countable. */
+function createRecordingWriter(): { writer: ProviderRuntimeWriter; frames: AnyRecord[] } {
+  const frames: AnyRecord[] = [];
+  const writer: ProviderRuntimeWriter = {
+    send: (message) => {
+      frames.push(message as AnyRecord);
+    },
+    setSessionId: () => undefined,
+    userId: 1,
+  };
+  return { writer, frames };
+}
+
+/** The turn's `system/init`, as the CLI announces it. */
+function initFrame(uuid: string): AnyRecord {
+  return { type: 'system', subtype: 'init', uuid };
+}
+
+/** The turn's terminal `result`. */
+function resultFrame(isError = false): AnyRecord {
+  return { type: 'result', subtype: 'success', is_error: isError };
+}
+
+/** The CLI's own account of one command's lifecycle. */
+function lifecycleFrame(commandUuid: string, state: string): AnyRecord {
+  return { type: 'command_lifecycle', command_uuid: commandUuid, state };
+}
+
+/** The turn-bearing frame §5.2 names, arriving when no turn is open. */
+function assistantFrame(uuid: string): AnyRecord {
+  return { type: 'assistant', uuid, message: { role: 'assistant', content: [{ type: 'text', text: 'hi' }] } };
+}
+
+/** Yields the microtask queue enough times for the read loop to drain what was pushed. */
+async function settle(): Promise<void> {
+  for (let hop = 0; hop < 200; hop += 1) {
+    await Promise.resolve();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The injected run registry
+// ---------------------------------------------------------------------------
+
+type FakeRegistry = {
+  port: ClaudeResidentRunRegistryPort;
+  /** The runs it currently holds as `running` — §10.1's left-hand reading. */
+  runs(): readonly ClaudeResidentRunningRun[];
+  /** Every close it was asked for, in order. */
+  closes(): ReadonlyArray<{ runId: string; outcome: 'aborted'; reason: string }>;
+  add(sessionId: string, runId: string): void;
+};
+
+/**
+ * The registry, as the driver may read and act on it.
+ *
+ * A stand-in rather than the real registry because the real one lives in the
+ * websocket module and cannot be imported from here by the driver — that is the
+ * whole reason the reading is a port. What the stand-in has to be faithful about
+ * is the two verbs' contract: `runningRuns` answers what is still `running`, and
+ * `closeRun` is the ONLY thing that changes that answer, which is what makes the
+ * `runsBefore`/`runsAfter` reading a reading of `mode` rather than of the fake.
+ */
+function createFakeRegistry(): FakeRegistry {
+  const running = new Map<string, ClaudeResidentRunningRun>();
+  const closes: Array<{ runId: string; outcome: 'aborted'; reason: string }> = [];
+  return {
+    port: {
+      runningRuns: () => [...running.values()],
+      closeRun: (input) => {
+        closes.push({ runId: input.runId, outcome: input.outcome, reason: input.reason });
+        running.delete(input.runId);
+      },
+    },
+    runs: () => [...running.values()],
+    closes: () => closes,
+    add: (sessionId, runId) => {
+      running.set(runId, { sessionId, runId });
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The harness
+// ---------------------------------------------------------------------------
+
+type Harness = {
+  sessionId: string;
+  manager: SessionHostManager;
+  driver: ClaudeResidentHostDriver;
+  process: { emit(frame: AnyRecord): void; written(): readonly AnyRecord[] };
+  registry: FakeRegistry;
+  /** Every line the driver handed the injected sink, in order. */
+  lines: string[];
+  /** The runtime context each armed round runs under (its normalizer included). */
+  context: ProviderRuntimeContext;
+  /** The writer each armed round handed the driver, with every frame it sent. */
+  roundWriters: Array<{ writer: ProviderRuntimeWriter; frames: AnyRecord[] }>;
+  /** Moves the injected clock every reader in this leg shares. */
+  advance(ms: number): void;
+  /** The `run` promises armed so far, for the settle at the end of a leg. */
+  rounds: Promise<void>[];
+};
+
+type HarnessOptions = {
+  sessionId: string;
+  mode?: ClaudeResidentReconcileMode;
+  reconcile?: boolean;
+  /**
+   * The per-host reconcile beat this leg runs at.
+   *
+   * A large default keeps the legs that drive `reconcileTick` by hand exactly as
+   * they were: those readings are about an explicit check, not about a timer
+   * firing underneath them. The beat legs below ask for a short interval.
+   */
+  reconcileBeatMs?: number;
+  /** How many browsers the driver's port reports; defaults to none. */
+  connectedClientCount?: () => number;
+  /**
+   * The runtime context this leg's rounds run under. The default normalizes to
+   * nothing (these legs are about anomalies, not frames); a forwarding leg
+   * injects a context whose normalizer emits one countable frame per raw frame.
+   */
+  context?: ProviderRuntimeContext;
+};
+
+/**
+ * Builds one leg: a real driver over a scripted process, a real manager, and the
+ * three injected readings the reconcile check is built around.
+ *
+ * `reconcile: false` leaves the run registry un-injected — the shipped default
+ * for a process that never bound the seam — which is the negative reading the
+ * §10.2 legs take: lines must appear with no registry involved at all.
+ */
+function createHarness(options: HarnessOptions): Harness {
+  // One clock per leg, shared by the manager and the driver, so "the ledger has
+  // stood still past T_q" is one statement rather than two clocks' agreement.
+  let nowMs = CLOCK_START;
+  const manager = createSessionHostManager({ now: () => nowMs, scheduler: inertScheduler() });
+  const process = createFakeProcess();
+  const registry = createFakeRegistry();
+  const lines: string[] = [];
+  const driver = new ClaudeResidentHostDriver({
+    host: manager,
+    notifyBackgroundWork: () => undefined,
+    notifyUnattendedWork: () => undefined,
+    notifyRunStopped: () => undefined,
+    createProcess: process.factory,
+    now: () => nowMs,
+    interruptResultTimeoutMs: T_INT_MS,
+    reconcileMode: options.mode ?? 'log',
+    quiesceMs: T_Q_MS,
+    // A host with no explicit interval in a leg driven by hand must not start a
+    // timer that could add a reading the leg did not ask for.
+    reconcileBeatMs: options.reconcileBeatMs ?? 3_600_000,
+    connectedClientCount: options.connectedClientCount ?? (() => 0),
+    ...(options.reconcile === false ? {} : { runRegistry: registry.port }),
+    logSink: (line) => lines.push(line),
+  });
+
+  return {
+    sessionId: options.sessionId,
+    manager,
+    driver,
+    process,
+    registry,
+    lines,
+    context: options.context ?? CONTEXT,
+    roundWriters: [],
+    advance: (ms: number) => {
+      nowMs += ms;
+    },
+    rounds: [],
+  };
+}
+
+/** The host record the manager opened for this leg's session. */
+function hostOf(harness: Harness): ProcessHost {
+  const host = harness.manager.snapshot().find((candidate) => candidate.bindings.has(harness.sessionId));
+  if (!host) {
+    throw new Error('harness: the resident host must be open');
+  }
+  return host;
+}
+
+/** How many `turn` leases the manager is holding for one session's binding. */
+function turnLeaseCount(manager: SessionHostManager, sessionId: string): number {
+  for (const host of manager.snapshot()) {
+    const binding = host.bindings.get(sessionId);
+    if (binding) {
+      return binding.leases.filter((lease) => lease.kind === 'turn').length;
+    }
+  }
+  return 0;
+}
+
+/** Polls the manager's lease reading, letting the async `run` entry make progress. */
+async function waitForTurnLeases(
+  manager: SessionHostManager,
+  sessionId: string,
+  count: number,
+  timeoutMs: number,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (turnLeaseCount(manager, sessionId) >= count) {
+      return true;
+    }
+    await new Promise((resolve) => { setTimeout(resolve, 1); });
+  }
+  return false;
+}
+
+/**
+ * Arms one cold round and waits for its `turn` lease.
+ *
+ * The round is NOT awaited: a round settles only once this leg pushes the CLI's
+ * frames, so awaiting it here would deadlock. The promise is kept on the harness
+ * for the settle at the end.
+ */
+async function armRound(harness: Harness, command: string, expectedLeases = 1): Promise<void> {
+  const writer = createRecordingWriter();
+  harness.roundWriters.push({ writer: writer.writer, frames: writer.frames });
+  harness.rounds.push(harness.driver.run(harness.sessionId, { command, options: {} }, writer.writer, harness.context));
+  assert.ok(
+    await waitForTurnLeases(harness.manager, harness.sessionId, expectedLeases, 5_000),
+    `the round "${command}" must arm its turn lease (expected ${expectedLeases})`,
+  );
+}
+
+/**
+ * The delivery id of the newest send, read from the driver's own ledger reading.
+ *
+ * Read rather than remembered from the send: the driver stamps the uuid on the
+ * frames it writes to the CLI's stdin, and this side never sees it otherwise —
+ * the stream does not echo a pushed uuid. The ledger is where the driver's own
+ * account of it lives, and reading it there is what keeps this a reading of the
+ * driver rather than a copy of what the criterion hoped it wrote.
+ */
+function latestDeliveryUuid(harness: Harness): string {
+  const deliveries = harness.driver.ledgerReading(harness.sessionId)?.deliveries ?? [];
+  const last = deliveries.at(-1);
+  assert.ok(last, 'the send must have a ledger record to take its id from');
+  return last.deliveryId;
+}
+
+/**
+ * Ends one leg: closes the host the manager opened, then settles its rounds.
+ *
+ * Every reading a leg takes is taken and asserted BEFORE this runs — they are
+ * readings of the standing state, not of the teardown — and the close is what
+ * makes a round that is still in flight (an interrupt nobody answered, a turn
+ * that never got its `RESULT`) settle, instead of leaving a promise behind.
+ */
+async function dispose(harness: Harness): Promise<void> {
+  for (const host of harness.manager.snapshot()) {
+    if (host.state !== 'closed') {
+      harness.manager.closeHost(host.hostId, 'server-shutdown');
+    }
+  }
+  await Promise.allSettled(harness.rounds);
+}
+
+/** Real-time wait, for the legs whose subject is a real interval. */
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => { setTimeout(resolve, ms); });
+}
+
+/** Polls a synchronous predicate, so a real interval is given time to beat. */
+async function waitFor(predicate: () => boolean, timeoutMs: number, label: string): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (predicate()) {
+      return;
+    }
+    await sleep(5);
+  }
+  throw new Error(`Timed out after ${timeoutMs}ms waiting for ${label}.`);
+}
+
+/**
+ * Wraps the driver's `reconcileTick` and records every call.
+ *
+ * The beat calls `this.reconcileTick` — a prototype method — so an own property
+ * on the instance shadows it and the wrapper sees exactly the calls the
+ * production beat makes. That is the assembly reading: the count comes from the
+ * driver's own wiring rather than from the criterion ticking it.
+ */
+function spyReconcileTicks(driver: ClaudeResidentHostDriver): { calls: string[] } {
+  const calls: string[] = [];
+  const original = driver.reconcileTick.bind(driver);
+  driver.reconcileTick = (appSessionId: string) => {
+    calls.push(appSessionId);
+    return original(appSessionId);
+  };
+  return { calls };
+}
+
+// ---------------------------------------------------------------------------
+// (g) the host's own reconcile beat (gap-reconcile-heartbeat-unwired)
+// ---------------------------------------------------------------------------
+
+/**
+ * The beat's interval in the legs below. Short enough to watch several beats in
+ * a few hundred milliseconds; `T_q` is injected at 200 ms, so the clock — not
+ * the interval — is what decides whether a divergence is old enough.
+ */
+const BEAT_MS = 20;
+
+// ---------------------------------------------------------------------------
+// (a) mode=log names the phantom run and changes nothing
+// ---------------------------------------------------------------------------
+
+test('AC390 (a) mode=log: one [reconcile] line for a phantom run, and no state changes', async () => {
+  const sessionId = 'ac390-a-log';
+  const harness = createHarness({ sessionId, mode: 'log' });
+
+  // The divergence §10.1 is about: a send this host accepted and the CLI never
+  // spoke about, so the ledger holds an open run and NO open turn — and the
+  // registry (injected) still reports a run for the session.
+  await armRound(harness, 'A in flight');
+  harness.registry.add(sessionId, 'run-phantom-log');
+
+  const runsBefore = harness.registry.runs().length;
+  const leasesBefore = turnLeaseCount(harness.manager, sessionId);
+
+  harness.advance(T_Q_MS * 3);
+  const readings: Array<ClaudeResidentReconcileReading | null> = [
+    harness.driver.reconcileTick(sessionId),
+    harness.driver.reconcileTick(sessionId),
+    harness.driver.reconcileTick(sessionId),
+  ];
+
+  const runsAfter = harness.registry.runs().length;
+  const leasesAfter = turnLeaseCount(harness.manager, sessionId);
+  const reconcileLineCount = reconcileLines(sessionId, 'phantom-run').length;
+  const sinkLineCount = reconcileSinkLines(harness.lines, sessionId, 'phantom-run').length;
+  const firstLine = reconcileLines(sessionId, 'phantom-run')[0] ?? '';
+  const firstReading = readings[0];
+
+  console.log(`runsBefore=${runsBefore} runsAfter=${runsAfter} leasesBefore=${leasesBefore} leasesAfter=${leasesAfter}`);
+  console.log(
+    `reconcileLineCount=${reconcileLineCount} reconcileSinkLineCount=${sinkLineCount} ` +
+      `readingMode=${String(firstReading?.mode)} readingAnomaly=${String(firstReading?.anomaly)} ` +
+      `closedRuns=${firstReading?.closedRuns.length ?? -1} quiescentMs=${firstReading?.quiescentMs ?? -1} ` +
+      `turnOpen=${String(firstReading?.turnOpen)}`,
+  );
+  console.log(`reconcileLine=${firstLine}`);
+
+  // Readings first, assertions after: a red must land on the wrong reading.
+  assert.strictEqual(leasesBefore, 1, `the accepted send must hold its turn lease (read ${leasesBefore})`);
+  assert.strictEqual(firstReading?.mode, 'log', 'the shipped arm is the one under test');
+  assert.strictEqual(firstReading?.turnOpen, false, 'the ledger has no open turn — that is the divergence');
+  assert.strictEqual(firstReading?.quiescentMs, T_Q_MS * 3, 'the ledger stood still past T_q');
+  assert.strictEqual(firstReading?.anomaly, 'phantom-run', 'the divergence is named');
+  assert.strictEqual(firstReading?.closedRuns.length, 0, 'log mode closes nothing');
+  assert.strictEqual(sinkLineCount, 1, `exactly one line reaches the sink (read ${sinkLineCount})`);
+  assert.strictEqual(reconcileLineCount, 1, `exactly one line reaches stdout (read ${reconcileLineCount})`);
+  assert.match(
+    firstLine,
+    new RegExp(`^\\[reconcile\\] session=${sessionId} mode=log anomaly=phantom-run( |$)`),
+    'the line is §10.2\'s shape at this arm',
+  );
+  assert.strictEqual(runsBefore, 1, 'the registry reported one running run before the check');
+  assert.strictEqual(runsAfter, 1, 'log mode must not change the registry reading');
+  assert.strictEqual(leasesAfter, 1, 'log mode must not change the lease reading');
+
+  await dispose(harness);
+});
+
+// ---------------------------------------------------------------------------
+// (b) mode=enforce closes the phantom run
+// ---------------------------------------------------------------------------
+
+test('AC390 (b) mode=enforce: the phantom run is closed aborted/reason=reconciled', async () => {
+  const sessionId = 'ac390-b-enforce';
+  const harness = createHarness({ sessionId, mode: 'enforce' });
+
+  await armRound(harness, 'A in flight');
+  harness.registry.add(sessionId, 'run-phantom-enforce');
+  const runsBefore = harness.registry.runs().length;
+
+  harness.advance(T_Q_MS * 3);
+  const readings: Array<ClaudeResidentReconcileReading | null> = [
+    harness.driver.reconcileTick(sessionId),
+    harness.driver.reconcileTick(sessionId),
+    harness.driver.reconcileTick(sessionId),
+  ];
+  const runsAfter = harness.registry.runs().length;
+  const close = harness.registry.closes()[0] ?? null;
+  const reconcileLineCount = reconcileLines(sessionId, 'phantom-run').length;
+  const firstLine = reconcileLines(sessionId, 'phantom-run')[0] ?? '';
+
+  console.log(
+    `runsBefore=${runsBefore} runsAfter=${runsAfter} phantomRunOutcome=${String(close?.outcome)} ` +
+      `reason=${String(close?.reason)} closes=${harness.registry.closes().length} ` +
+      `reconcileLineCount=${reconcileLineCount} readingAnomaly=${String(readings[0]?.anomaly)}`,
+  );
+  console.log(`reconcileLine=${firstLine}`);
+
+  assert.strictEqual(runsBefore, 1, 'the registry reported one running run before the check');
+  assert.strictEqual(readings[0]?.anomaly, 'phantom-run', 'the same divergence is named in enforce mode');
+  assert.deepStrictEqual(readings[0]?.closedRuns, ['run-phantom-enforce'], 'the check closed the run it named');
+  assert.strictEqual(close?.outcome, 'aborted', 'a reconciled run is closed as aborted');
+  assert.strictEqual(close?.reason, 'reconciled', 'and the reason says why (§10.1)');
+  assert.strictEqual(harness.registry.closes().length, 1, 'one divergence, one close');
+  assert.strictEqual(reconcileLineCount, 1, `exactly one line reaches stdout (read ${reconcileLineCount})`);
+  assert.match(
+    firstLine,
+    new RegExp(`^\\[reconcile\\] session=${sessionId} mode=enforce anomaly=phantom-run( |$)`),
+    'the line carries this arm in its mode= field',
+  );
+  assert.strictEqual(runsAfter, 0, 'the closed run is gone from the registry reading');
+
+  await dispose(harness);
+});
+
+// ---------------------------------------------------------------------------
+// (c) a real long turn is never closed — the guard §10.1 requires
+// ---------------------------------------------------------------------------
+
+test('AC390 (c) a turn in flight is not closed, in either mode, across several beats', async () => {
+  type Arm = {
+    mode: ClaudeResidentReconcileMode;
+    leasesAtOpen: number;
+    turnOpen: boolean;
+    leasesPerBeat: number[];
+    anomalies: Array<string | null>;
+    longTurnClosed: boolean;
+    phantomLines: number;
+  };
+  const arms: Arm[] = [];
+
+  // `enforce` first: it is the arm that ACTS on a false reading, so the leg that
+  // carries the false form is the one whose reading is asserted first — the red
+  // then names over-settlement rather than the observation that preceded it.
+  for (const mode of ['enforce', 'log'] as const) {
+    const sessionId = `ac390-c-${mode}`;
+    const harness = createHarness({ sessionId, mode });
+    await armRound(harness, 'A long turn');
+    harness.process.emit(initFrame(`ac390-init-${mode}`));
+    await settle();
+
+    const leasesAtOpen = turnLeaseCount(harness.manager, sessionId);
+    const turnOpen = harness.driver.ledgerReading(sessionId)?.turn?.open === true;
+    // The divergence's OTHER half, injected: the registry says a run is going for
+    // this session. That is what makes the false form bite here — without it the
+    // mutant would have nothing to close and this leg would prove nothing.
+    harness.registry.add(sessionId, `run-long-${mode}`);
+
+    const leasesPerBeat: number[] = [];
+    const anomalies: Array<string | null> = [];
+    let longTurnClosed = false;
+    for (let beat = 0; beat < 3; beat += 1) {
+      harness.advance(T_Q_MS * 2);
+      const reading = harness.driver.reconcileTick(sessionId);
+      anomalies.push(reading?.anomaly ?? null);
+      longTurnClosed = longTurnClosed || (reading?.closedRuns.length ?? 0) > 0;
+      leasesPerBeat.push(turnLeaseCount(harness.manager, sessionId));
+    }
+
+    arms.push({
+      mode,
+      leasesAtOpen,
+      turnOpen,
+      leasesPerBeat,
+      anomalies,
+      longTurnClosed,
+      phantomLines: reconcileLines(sessionId, 'phantom-run').length,
+    });
+
+    await dispose(harness);
+  }
+
+  console.log(
+    `longTurnClosed=${arms[0]?.longTurnClosed} longTurnClosed=${arms[1]?.longTurnClosed} ` +
+      `leasesPerBeat=${JSON.stringify(arms.map((arm) => arm.leasesPerBeat))}`,
+  );
+  for (const arm of arms) {
+    console.log(
+      `mode=${arm.mode} turnOpen=${arm.turnOpen} leasesAtOpen=${arm.leasesAtOpen} ` +
+        `anomalies=${JSON.stringify(arm.anomalies)} phantomLines=${arm.phantomLines} ` +
+        `longTurnClosed=${arm.longTurnClosed}`,
+    );
+  }
+
+  for (const arm of arms) {
+    assert.strictEqual(arm.turnOpen, true, `${arm.mode}: the ledger must have a turn open — a turn is running`);
+    assert.strictEqual(arm.leasesAtOpen, 1, `${arm.mode}: the running turn holds its lease (read ${arm.leasesAtOpen})`);
+    // The defect's own signature first: this is the reading the false form gets
+    // wrong, and the one whose wrongness is unrepairable (the turn is gone).
+    assert.strictEqual(
+      arm.longTurnClosed,
+      false,
+      `${arm.mode}: over-settlement — a turn that is running must never be closed by the reconciler`,
+    );
+    assert.deepStrictEqual(
+      arm.anomalies,
+      [null, null, null],
+      `${arm.mode}: a long turn is not a divergence, on any beat (read ${JSON.stringify(arm.anomalies)})`,
+    );
+    assert.strictEqual(arm.phantomLines, 0, `${arm.mode}: no beat may name a phantom run (read ${arm.phantomLines})`);
+    assert.deepStrictEqual(
+      arm.leasesPerBeat,
+      [1, 1, 1],
+      `${arm.mode}: the lease must survive every beat (read ${JSON.stringify(arm.leasesPerBeat)})`,
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// (d) the other four codes, one line each
+// ---------------------------------------------------------------------------
+
+/** The reading one code's leg took. */
+type CodeReading = { code: string; lineCount: number; sinkLineCount: number; firstLine: string };
+
+function readCode(sessionId: string, lines: readonly string[], code: string): CodeReading {
+  const inSink = reconcileSinkLines(lines, sessionId, code);
+  return {
+    code,
+    lineCount: reconcileLines(sessionId, code).length,
+    sinkLineCount: inSink.length,
+    firstLine: inSink[0] ?? reconcileLines(sessionId, code)[0] ?? '',
+  };
+}
+
+test('AC390 (d) owed-terminal-missing: a delivery that reached the next boundary with no terminal', async () => {
+  const sessionId = 'ac390-d-owed';
+  const harness = createHarness({ sessionId });
+  await armRound(harness, 'A owed');
+  harness.process.emit(initFrame('ac390-owed-init'));
+  await settle();
+  // A second send while the first turn is in flight: its `started` is the next
+  // BOUNDARY (I4), which is where an owed delivery is reconciled.
+  await armRound(harness, 'B boundary', 2);
+  const bUuid = latestDeliveryUuid(harness);
+  harness.process.emit(resultFrame());
+  await settle();
+  harness.process.emit(lifecycleFrame(bUuid, 'started'));
+  await settle();
+
+  const reading = readCode(sessionId, harness.lines, 'owed-terminal-missing');
+  console.log(`code=${reading.code} lineCount=${reading.lineCount} sinkLineCount=${reading.sinkLineCount}`);
+  console.log(`codeLine=${reading.firstLine}`);
+
+  assert.strictEqual(reading.lineCount, 1, `exactly one line for owed-terminal-missing (read ${reading.lineCount})`);
+  assert.strictEqual(reading.sinkLineCount, 1, 'and the sink saw the same one');
+  assert.match(
+    reading.firstLine,
+    new RegExp(`^\\[reconcile\\] session=${sessionId} .* anomaly=owed-terminal-missing( |$)`),
+    'the code is §10.1\'s, verbatim, on a §10.2 line',
+  );
+
+  await dispose(harness);
+});
+
+test('AC390 (d) double-init: a second init before the first turn ended', async () => {
+  const sessionId = 'ac390-d-double-init';
+  const harness = createHarness({ sessionId });
+  await armRound(harness, 'A double init');
+  harness.process.emit(initFrame('ac390-double-init-1'));
+  await settle();
+  harness.process.emit(initFrame('ac390-double-init-2'));
+  await settle();
+
+  const reading = readCode(sessionId, harness.lines, 'double-init');
+  console.log(`code=${reading.code} lineCount=${reading.lineCount} sinkLineCount=${reading.sinkLineCount}`);
+  console.log(`codeLine=${reading.firstLine}`);
+
+  assert.strictEqual(reading.lineCount, 1, `exactly one line for double-init (read ${reading.lineCount})`);
+  assert.match(
+    reading.firstLine,
+    new RegExp(`^\\[reconcile\\] session=${sessionId} .* anomaly=double-init( |$)`),
+    'the code is §10.1\'s, verbatim',
+  );
+
+  await dispose(harness);
+});
+
+test('AC390 (d) interrupt-no-result: an interrupt the CLI never answers inside T_int', async () => {
+  const sessionId = 'ac390-d-interrupt';
+  const harness = createHarness({ sessionId });
+  await armRound(harness, 'A interrupted');
+  harness.process.emit(initFrame('ac390-interrupt-init'));
+  await settle();
+  const stopped = await harness.driver.interrupt(hostOf(harness), sessionId);
+  await settle();
+  await new Promise((resolve) => { setTimeout(resolve, PAST_T_INT_MS); });
+
+  const reading = readCode(sessionId, harness.lines, 'interrupt-no-result');
+  console.log(
+    `code=${reading.code} lineCount=${reading.lineCount} sinkLineCount=${reading.sinkLineCount} ` +
+      `interruptPlaced=${stopped} tIntMs=${T_INT_MS}`,
+  );
+  console.log(`codeLine=${reading.firstLine}`);
+
+  assert.strictEqual(stopped, true, 'the interrupt must have been placed on the turn in flight');
+  assert.strictEqual(reading.lineCount, 1, `exactly one line for interrupt-no-result (read ${reading.lineCount})`);
+  assert.match(
+    reading.firstLine,
+    new RegExp(`^\\[reconcile\\] session=${sessionId} .* anomaly=interrupt-no-result( |$)`),
+    'the code is §6.3\'s, verbatim',
+  );
+
+  await dispose(harness);
+});
+
+test('AC390 (d) frame-without-turn: a turn-bearing frame that belongs to no turn', async () => {
+  const sessionId = 'ac390-d-frame';
+  const harness = createHarness({ sessionId });
+  await armRound(harness, 'A frame');
+  harness.process.emit(initFrame('ac390-frame-init'));
+  await settle();
+  harness.process.emit(resultFrame());
+  await settle();
+  // §5.2's case: the assistant's own frame arriving with no turn open.
+  harness.process.emit(assistantFrame('ac390-frame-assistant'));
+  await settle();
+
+  const reading = readCode(sessionId, harness.lines, 'frame-without-turn');
+  const turnOpenAfter = harness.driver.ledgerReading(sessionId)?.turn?.open ?? true;
+  console.log(
+    `code=${reading.code} lineCount=${reading.lineCount} sinkLineCount=${reading.sinkLineCount} ` +
+      `turnOpenWhenRead=${String(turnOpenAfter)}`,
+  );
+  console.log(`codeLine=${reading.firstLine}`);
+
+  assert.strictEqual(turnOpenAfter, false, 'the frame really arrived with no turn open');
+  assert.strictEqual(reading.lineCount, 1, `exactly one line for frame-without-turn (read ${reading.lineCount})`);
+  assert.match(
+    reading.firstLine,
+    new RegExp(`^\\[reconcile\\] session=${sessionId} .* anomaly=frame-without-turn( |$)`),
+    'the code is §5.2\'s, verbatim',
+  );
+
+  await dispose(harness);
+});
+
+// ---------------------------------------------------------------------------
+// frame-without-turn: subagent frames are normal traffic, not a divergence
+// ---------------------------------------------------------------------------
+
+/**
+ * A subagent frame: exactly the shape the parent CLI relays into its own stream.
+ *
+ * A Task subagent's traffic is forwarded by the parent process's stream-json, so
+ * its frames carry `parent_tool_use_id` (snake_case, as the raw SDK frame does)
+ * and arrive between the parent's turns. They are supposed to have no parent
+ * turn open — recording one as `frame-without-turn` is the false positive.
+ */
+function subagentAssistantFrame(uuid: string): AnyRecord {
+  return { ...assistantFrame(uuid), parent_tool_use_id: 'toolu-subagent-parent' };
+}
+
+/** A subagent's `user` frame (its tool result coming back through the relay). */
+function subagentUserFrame(uuid: string): AnyRecord {
+  return {
+    type: 'user',
+    uuid,
+    parent_tool_use_id: 'toolu-subagent-parent',
+    message: { role: 'user', content: [{ type: 'tool_result', content: 'ok' }] },
+  };
+}
+
+/** A parent-thread `user` frame: a tool result with no subagent attached. */
+function plainUserFrame(uuid: string): AnyRecord {
+  return {
+    type: 'user',
+    uuid,
+    message: { role: 'user', content: [{ type: 'tool_result', content: 'ok' }] },
+  };
+}
+
+/**
+ * A context whose normalizer makes forwarding countable.
+ *
+ * The harness's shared `CONTEXT` normalizes every frame to nothing, which is the
+ * right reading for anomaly-only legs but makes "did this frame reach the
+ * forwarding seam" unobservable. Here each raw frame yields one text frame tagged
+ * with its uuid, and `normalizedCalls` counts the frames that entered
+ * `forwardNormalizedFrames` (the normalizer is called nowhere else on this path).
+ */
+function countingContext(): { context: ProviderRuntimeContext; normalizedCalls: () => number } {
+  let calls = 0;
+  return {
+    context: {
+      ...CONTEXT,
+      normalizeMessage: (raw) => {
+        calls += 1;
+        const frame = raw as AnyRecord;
+        return [
+          createNormalizedMessage({
+            kind: 'text',
+            role: frame?.type === 'user' ? 'user' : 'assistant',
+            // The uuid travels in `text` only so this leg can name which injected
+            // frame a writer received; it is not a production-shaped payload.
+            text: String(frame?.uuid ?? ''),
+            sessionId: null,
+            provider: 'claude',
+          }),
+        ];
+      },
+    },
+    normalizedCalls: () => calls,
+  };
+}
+
+test('frame-without-turn: a subagent frame with no turn open records no anomaly', async () => {
+  const sessionId = 'frame-without-turn-subagent';
+  const harness = createHarness({ sessionId });
+  await armRound(harness, 'A subagent frame');
+  harness.process.emit(initFrame('subagent-frame-init'));
+  await settle();
+  harness.process.emit(resultFrame());
+  await settle();
+  // The false-positive shape: the parent turn is over, and subagent traffic is
+  // relayed in with `parent_tool_use_id` and no parent turn of its own.
+  harness.process.emit(subagentAssistantFrame('subagent-frame-assistant'));
+  await settle();
+  harness.process.emit(subagentUserFrame('subagent-frame-user'));
+  await settle();
+
+  const reading = readCode(sessionId, harness.lines, 'frame-without-turn');
+  const turnOpenAfter = harness.driver.ledgerReading(sessionId)?.turn?.open ?? true;
+  console.log(
+    `session=${sessionId} lineCount=${reading.lineCount} sinkLineCount=${reading.sinkLineCount} ` +
+      `turnOpenWhenRead=${String(turnOpenAfter)}`,
+  );
+  console.log(`codeLine=${reading.firstLine}`);
+
+  assert.strictEqual(turnOpenAfter, false, 'the subagent frames really arrived with no parent turn open');
+  assert.strictEqual(
+    reading.lineCount,
+    0,
+    `subagent frames are normal between-turn traffic, not a divergence (read ${reading.lineCount})`,
+  );
+  assert.strictEqual(reading.sinkLineCount, 0, 'and the sink saw none either');
+
+  await dispose(harness);
+});
+
+test('frame-without-turn: a frame without parent_tool_use_id still records exactly one', async () => {
+  const sessionId = 'frame-without-turn-control';
+  const harness = createHarness({ sessionId });
+  await armRound(harness, 'A plain frame');
+  harness.process.emit(initFrame('control-frame-init'));
+  await settle();
+  harness.process.emit(resultFrame());
+  await settle();
+  // The reverse control: this frame belongs to the parent thread, so with no turn
+  // open it is the real divergence §5.2 names and must still be recorded.
+  harness.process.emit(assistantFrame('control-frame-assistant'));
+  await settle();
+
+  const reading = readCode(sessionId, harness.lines, 'frame-without-turn');
+  const turnOpenAfter = harness.driver.ledgerReading(sessionId)?.turn?.open ?? true;
+  console.log(
+    `session=${sessionId} lineCount=${reading.lineCount} sinkLineCount=${reading.sinkLineCount} ` +
+      `turnOpenWhenRead=${String(turnOpenAfter)}`,
+  );
+  console.log(`codeLine=${reading.firstLine}`);
+
+  assert.strictEqual(turnOpenAfter, false, 'the frame really arrived with no turn open');
+  assert.strictEqual(reading.lineCount, 1, `exactly one line for the plain frame (read ${reading.lineCount})`);
+  assert.match(
+    reading.firstLine,
+    new RegExp(`^\\[reconcile\\] session=${sessionId} .* anomaly=frame-without-turn( |$)`),
+    'the code is §5.2\'s, verbatim',
+  );
+
+  await dispose(harness);
+});
+
+test('frame-without-turn: excluding subagent frames forwards exactly the same frames', async () => {
+  const sessionId = 'frame-without-turn-forwarding';
+  const counting = countingContext();
+  const harness = createHarness({ sessionId, context: counting.context });
+  await armRound(harness, 'A forwarding');
+  harness.process.emit(initFrame('forwarding-init'));
+  await settle();
+  harness.process.emit(resultFrame());
+  await settle();
+
+  const sent = () => harness.roundWriters.flatMap((entry) => entry.frames);
+  const framesBefore = sent().length;
+  const callsBefore = counting.normalizedCalls();
+
+  harness.process.emit(subagentAssistantFrame('forwarding-subagent-assistant'));
+  await settle();
+  harness.process.emit(subagentUserFrame('forwarding-subagent-user'));
+  await settle();
+  harness.process.emit(assistantFrame('forwarding-plain-assistant'));
+  await settle();
+  harness.process.emit(plainUserFrame('forwarding-plain-user'));
+  await settle();
+
+  const textOf = (frame: AnyRecord): string => String(frame?.text ?? '');
+  const forwarded = (uuid: string): number => sent().filter((frame) => textOf(frame) === uuid).length;
+  const framesAfter = sent().length;
+  const callsAfter = counting.normalizedCalls();
+  const reading = readCode(sessionId, harness.lines, 'frame-without-turn');
+
+  console.log(
+    `normalizedCalls=${callsBefore}->${callsAfter} sentFrames=${framesBefore}->${framesAfter} ` +
+      `subagentAssistant=${forwarded('forwarding-subagent-assistant')} ` +
+      `subagentUser=${forwarded('forwarding-subagent-user')} ` +
+      `plainAssistant=${forwarded('forwarding-plain-assistant')} ` +
+      `plainUser=${forwarded('forwarding-plain-user')} ` +
+      `frameWithoutTurnLines=${reading.lineCount}`,
+  );
+
+  // Both injected classes still reach the one forwarding seam: four frames in,
+  // four normalizer calls. The exclusion is an anomaly-record decision, not a
+  // routing one.
+  assert.strictEqual(callsAfter - callsBefore, 4, 'all four injected frames reached forwardNormalizedFrames');
+  // The shipped isSubagentPromptEcho rule is untouched: the subagent's own prompt
+  // echo is dropped there (and still is), every other frame reaches the writer.
+  assert.strictEqual(forwarded('forwarding-subagent-assistant'), 1, 'subagent assistant frame is forwarded');
+  assert.strictEqual(forwarded('forwarding-subagent-user'), 0, 'the subagent prompt echo is still dropped by isSubagentPromptEcho');
+  assert.strictEqual(forwarded('forwarding-plain-assistant'), 1, 'plain assistant frame is forwarded');
+  assert.strictEqual(forwarded('forwarding-plain-user'), 1, 'plain user frame is forwarded');
+  assert.strictEqual(framesAfter - framesBefore, 3, 'three frames on the wire: no frame added or removed');
+  // The anomaly reading is the only thing the change moves: the subagent frames
+  // record nothing, the plain turn-bearing frames still do.
+  assert.strictEqual(reading.lineCount, 2, `plain frames still record the anomaly (read ${reading.lineCount})`);
+
+  await dispose(harness);
+});
+
+// ---------------------------------------------------------------------------
+// (e1) the registry's forwarded line carries session=
+// ---------------------------------------------------------------------------
+
+test('AC390 (e1) command_lifecycle forwarded carries session=', async () => {
+  const { createChatRunRegistry } = await import('@/modules/websocket/index.js');
+  const sessionId = 'ac390-e1-registry-session';
+  const collected: Array<{
+    commandUuid: string;
+    commandState: string;
+    runId: string;
+    connections: number;
+    appSessionId: string;
+  }> = [];
+  const registry = createChatRunRegistry({ lifecycleLog: (line) => collected.push(line) });
+  const run = registry.startRun({
+    appSessionId: sessionId,
+    provider: 'claude',
+    providerSessionId: null,
+    connection: null,
+    userId: null,
+  });
+  assert.ok(run, 'the registry must open a run for the forwarded frame');
+
+  // One `command_lifecycle` frame through the run's writer: the same path the
+  // production registry logs.
+  run.writer.send({ kind: 'command_lifecycle', commandUuid: 'e1-command', commandState: 'queued', sessionId });
+
+  const entry = collected[0] ?? null;
+  const line = entry
+    ? `[ChatRunRegistry] command_lifecycle forwarded uuid=${entry.commandUuid} state=${entry.commandState} ` +
+      `runId=${entry.runId} connections=${entry.connections} session=${entry.appSessionId}`
+    : '';
+  console.log(`forwardedLines=${collected.length} line=${line}`);
+
+  assert.strictEqual(collected.length, 1, `one frame, one line (read ${collected.length})`);
+  assert.strictEqual(entry?.appSessionId, sessionId, 'the line record carries the app session id');
+  assert.match(line, new RegExp(`session=${sessionId}( |$)`), 'and the line states it as session=');
+  assert.match(
+    line,
+    /^\[ChatRunRegistry\] command_lifecycle forwarded uuid=\S+ state=\S+ runId=\S+ connections=\d+ session=\S+$/,
+    'the production line shape is unchanged apart from the added field',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// (e2) [ledger] / [turn]: exactly one line per transition
+// ---------------------------------------------------------------------------
+
+test('AC390 (e2) [ledger] and [turn]: one line per transition, each carrying session=', async () => {
+  const sessionId = 'ac390-e2-lines';
+  const harness = createHarness({ sessionId, reconcile: false });
+  await armRound(harness, 'A one turn');
+  const aUuid = latestDeliveryUuid(harness);
+  harness.process.emit(initFrame('ac390-e2-init'));
+  await settle();
+  const leasesAfterOpen = turnLeaseCount(harness.manager, sessionId);
+  harness.process.emit(lifecycleFrame(aUuid, 'started'));
+  await settle();
+  harness.process.emit(lifecycleFrame(aUuid, 'completed'));
+  await settle();
+  const leasesBeforeResult = turnLeaseCount(harness.manager, sessionId);
+  harness.process.emit(resultFrame());
+  await settle();
+  const leasesAfterResult = turnLeaseCount(harness.manager, sessionId);
+
+  const ledger = familyLines(harness.lines, sessionId, 'ledger');
+  const turnLines = familyLines(harness.lines, sessionId, 'turn');
+  const turnOpenLines = turnLines.filter((line) => line.includes(' open ')).length;
+  const turnCloseLines = turnLines.filter((line) => line.includes(' close ')).length;
+  const terminalLedgerLines = ledger.filter((line) => line.includes('state=completed')).length;
+  const sessionsInEveryLine = [...ledger, ...turnLines].every((line) => line.includes(`session=${sessionId}`));
+
+  console.log(
+    `ledgerLines=${ledger.length} turnOpenLines=${turnOpenLines} turnCloseLines=${turnCloseLines} ` +
+      `terminalLedgerLines=${terminalLedgerLines} sessionsInEveryLine=${sessionsInEveryLine}`,
+  );
+  console.log(`leasesAfterOpen=${leasesAfterOpen} leasesBeforeResult=${leasesBeforeResult} leasesAfterResult=${leasesAfterResult}`);
+  for (const line of [...ledger, ...turnLines]) {
+    console.log(`line=${line}`);
+  }
+
+  assert.strictEqual(leasesAfterOpen, 1, 'the open turn holds one lease');
+  assert.strictEqual(leasesBeforeResult, 1, 'and still holds it while its command runs');
+  assert.strictEqual(leasesAfterResult, 0, 'the RESULT is the lease change (read from the manager)');
+  assert.strictEqual(turnOpenLines, 1, `exactly one [turn] open line (read ${turnOpenLines})`);
+  assert.strictEqual(turnCloseLines, 1, `exactly one [turn] close line (read ${turnCloseLines})`);
+  assert.strictEqual(terminalLedgerLines, 1, `exactly one [ledger] line states the terminal (read ${terminalLedgerLines})`);
+  assert.strictEqual(
+    ledger.length,
+    3,
+    `one [ledger] line per delivery state the send passed through — pushed, started, completed (read ${ledger.length})`,
+  );
+  assert.strictEqual(sessionsInEveryLine, true, 'every §10.2 line states the session');
+  assert.match(
+    turnLines.find((line) => line.includes(' open ')) ?? '',
+    new RegExp(`^\\[turn\\] session=${sessionId} turn=\\S+ kind=delivered open`),
+    'the open line is §10.2\'s shape',
+  );
+  assert.match(
+    turnLines.find((line) => line.includes(' close ')) ?? '',
+    new RegExp(`^\\[turn\\] session=${sessionId} turn=\\S+ kind=delivered close outcome=completed`),
+    'the close line is §10.2\'s shape',
+  );
+
+  await dispose(harness);
+});
+
+// ---------------------------------------------------------------------------
+// (h) the turn owns its run: a closed turn closes the run it minted
+// ---------------------------------------------------------------------------
+
+/**
+ * Runs `body` with the run=turn switch on, restoring the process's own reading
+ * afterwards.
+ *
+ * The predicate is read at CALL time (`residentRunIsTurn()`), which is what lets
+ * one leg turn the switch on without reloading a module: every reader in the
+ * driver — `bindTurnRun`, `closeRun`, the turn-closed arm — sees the same value
+ * for the frames this leg pushes. The rest of the file runs with the shipped
+ * default (off), so the restore is part of the reading rather than hygiene.
+ */
+async function withRunIsTurn(body: () => Promise<void>): Promise<void> {
+  const previous = process.env.RESIDENT_RUN_IS_TURN;
+  process.env.RESIDENT_RUN_IS_TURN = '1';
+  try {
+    await body();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.RESIDENT_RUN_IS_TURN;
+    } else {
+      process.env.RESIDENT_RUN_IS_TURN = previous;
+    }
+  }
+}
+
+/**
+ * The defect this criterion is about (gap-turn-closed-must-close-minted-run).
+ *
+ * A run is minted by the turn's `system/init` (`bind-turn-run`) and, before the
+ * fix, was closed only through the DELIVERY's runtime (`run-closed` →
+ * `closeRun`). When that leg cannot reach it the run sits in the registry as
+ * `running` for the life of the process, while the ledger already reads
+ * `turn.open=false` — the ghost of session `4073c200` (a turn ended at
+ * 04:47:47, its run still `running` 21+ minutes later).
+ *
+ * THE DIVERGENCE, injected through the public frame stream and the real
+ * registry: the CLI cancels the command the turn was opened for, after the turn
+ * minted its run. The withdrawal path (`endWithdrawnRun`) writes its terminal on
+ * the ROUND's writer, not on the turn run's writer the delivery was bound to,
+ * and it closes the delivery's run (`runOpen=false`) — so the turn's `RESULT`
+ * has no `run-closed` effect left to close the turn's run through. Nothing but
+ * `turn-closed` still names that run, which is why the close belongs there.
+ */
+test('TURNC1 a closed turn closes the run it minted, even when the per-delivery leg cannot', async () => {
+  await withRunIsTurn(async () => {
+    const { createChatRunRegistry } = await import('@/modules/websocket/index.js');
+    const sessionId = 'turnc1-minted-run';
+    const harness = createHarness({ sessionId, reconcile: false });
+    const registry = createChatRunRegistry();
+    // The production wiring (`server/index.ts`): the manager asks the registry to
+    // open or adopt the turn's run, so `status` below is the REAL registry's
+    // reading of that run rather than a stand-in's.
+    harness.manager.setTurnOpener((input) => registry.openTurn(input));
+
+    await armRound(harness, 'A turn that will be cancelled');
+    const deliveryId = latestDeliveryUuid(harness);
+
+    harness.process.emit(initFrame('turnc1-init'));
+    await settle();
+    // The turn's run, read from the driver's own live projection: the registry is
+    // keyed by session, and this is the binding the turn minted.
+    const runAtOpen = readSessionTurnRun(sessionId);
+    const statusAtOpen = runAtOpen.runId ? registry.getRun(sessionId)?.status ?? null : null;
+
+    // THE DIVERGENCE (see the test's comment): withdraw the command the turn was
+    // opened for, then let the turn reach its `RESULT` with no open run left.
+    const pending = harness.driver.cancelQueuedInput(sessionId, deliveryId);
+    harness.process.emit(lifecycleFrame(deliveryId, 'cancelled'));
+    await settle();
+    const withdrawal = await pending;
+    await settle();
+    const controlFrames = harness.process.written().length;
+
+    harness.process.emit(resultFrame());
+    await settle();
+
+    const ledger = harness.driver.ledgerReading(sessionId);
+    const runAfter = runAtOpen.runId ? registry.readRun(runAtOpen.runId) : null;
+    const completeFrames = (runAfter?.events ?? []).filter((event) => event.kind === 'complete');
+    const turnRunAfter = readSessionTurnRun(sessionId);
+    const leasesAfter = turnLeaseCount(harness.manager, sessionId);
+
+    console.log(
+      `runIdAtOpen=${String(runAtOpen.runId)} statusAtOpen=${String(statusAtOpen)} ` +
+        `withdrawal=${withdrawal} controlFrames=${controlFrames} ` +
+        `turnOpenAfter=${String(ledger?.turn?.open)} openRunsAfter=${ledger?.openRuns ?? -1} ` +
+        `runStatusAfter=${String(runAfter?.status)} completeFrames=${completeFrames.length} ` +
+        `completeAborted=${String(completeFrames[0]?.aborted)} ` +
+        `turnRunIdAfter=${String(turnRunAfter.runId)} leasesAfter=${leasesAfter}`,
+    );
+
+    assert.strictEqual(statusAtOpen, 'running', 'the turn minted its run at `init` (read from the registry)');
+    assert.strictEqual(withdrawal, 'withdrawn', 'the CLI answered the withdrawal — the per-delivery leg ran and ended elsewhere');
+    assert.strictEqual(controlFrames, 1, `the driver wrote the control frame (read ${controlFrames})`);
+    assert.strictEqual(ledger?.turn?.open, false, 'the turn closed on its `RESULT`');
+    assert.strictEqual(ledger?.openRuns, 0, 'and the ledger has no open run left to close the turn run through');
+    // The invariant, read where it was broken: the registry's own status.
+    assert.strictEqual(
+      runAfter?.status,
+      'completed',
+      'a closed turn must close the run it minted — a `running` run here is the ghost',
+    );
+    assert.strictEqual(
+      completeFrames.length,
+      1,
+      `the run's event log holds exactly one terminal — the turn's, dropped on the ordinary path (read ${completeFrames.length})`,
+    );
+    assert.strictEqual(completeFrames[0]?.aborted, false, 'the terminal carries the turn\'s outcome');
+    assert.strictEqual(turnRunAfter.runId, null, 'the turn-run binding is cleared with the turn');
+    assert.strictEqual(leasesAfter, 0, 'the lease is settled with the turn');
+
+    await dispose(harness);
+  });
+});
+
+/**
+ * The ordinary path, held to the same reading the fix must not move.
+ *
+ * `closeRun` writes the terminal through the turn's writer, so by the time
+ * `turn-closed` runs the registry has already ended the run. The turn-closed
+ * frame is therefore the duplicate `decorateAndRecordEvent` drops, and the
+ * reading that proves it is the run's OWN event log: exactly one `complete`,
+ * with the turn's outcome. Remove the drop rule or move the terminal and this
+ * count — not a log line — is what changes.
+ */
+test('TURNC2 an ordinary turn closes its run once and the turn-closed frame is the dropped duplicate', async () => {
+  await withRunIsTurn(async () => {
+    const { createChatRunRegistry } = await import('@/modules/websocket/index.js');
+    const sessionId = 'turnc2-ordinary-turn';
+    const harness = createHarness({ sessionId, reconcile: false });
+    const registry = createChatRunRegistry();
+    harness.manager.setTurnOpener((input) => registry.openTurn(input));
+
+    await armRound(harness, 'A ordinary turn');
+    harness.process.emit(initFrame('turnc2-init'));
+    await settle();
+    const runAtOpen = readSessionTurnRun(sessionId);
+    harness.process.emit(resultFrame());
+    await settle();
+
+    const runAfter = runAtOpen.runId ? registry.readRun(runAtOpen.runId) : null;
+    const completeFrames = (runAfter?.events ?? []).filter((event) => event.kind === 'complete');
+    const turnRunAfter = readSessionTurnRun(sessionId);
+    const leasesAfter = turnLeaseCount(harness.manager, sessionId);
+
+    console.log(
+      `runIdAtOpen=${String(runAtOpen.runId)} runStatusAfter=${String(runAfter?.status)} ` +
+        `completeFrames=${completeFrames.length} turnRunIdAfter=${String(turnRunAfter.runId)} ` +
+        `leasesAfter=${leasesAfter}`,
+    );
+
+    assert.notStrictEqual(runAtOpen.runId, null, 'the ordinary turn minted its run too');
+    assert.strictEqual(runAfter?.status, 'completed', 'the turn\'s ending is the run\'s ending');
+    assert.strictEqual(
+      completeFrames.length,
+      1,
+      `no duplicate terminal is visible to a client (read ${completeFrames.length})`,
+    );
+    assert.strictEqual(turnRunAfter.runId, null, 'the turn-run binding is cleared');
+    assert.strictEqual(leasesAfter, 0, 'the lease is settled');
+
+    await dispose(harness);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// (g)–(l) the host's own reconcile beat — gap-reconcile-heartbeat-unwired
+//
+// §10.1's second check point is the heartbeat, and until this task the only
+// caller of `reconcileTick` was the `result` branch: a check taken when
+// `quiescentMs≈0`, which can never satisfy `> T_q`. The beat these legs read is
+// the driver's own per-HOST one, armed at `startHost` and stopped at close. The
+// legs are deliberately driver-level: the manager opens a host, a scripted
+// process supplies frames, and NO websocket, server or browser subscription
+// exists anywhere in the process — the property the per-socket activity
+// heartbeat cannot offer, and the one that makes this a real check point rather
+// than a second per-socket false form.
+// ---------------------------------------------------------------------------
+
+test('BEAT (g) the host arms its own reconcile beat with no client subscription', async () => {
+  const sessionId = 'beat-g-assembly';
+  let connectedReads = 0;
+  const harness = createHarness({
+    sessionId,
+    reconcileBeatMs: BEAT_MS,
+    connectedClientCount: () => {
+      connectedReads += 1;
+      return 0;
+    },
+  });
+  const spy = spyReconcileTicks(harness.driver);
+
+  await armRound(harness, 'A beat assembly');
+  await waitFor(() => spy.calls.length >= 2, 3_000, 'two reconcile beats');
+  const ticksAfterTwo = spy.calls.length;
+  await waitFor(() => spy.calls.length > ticksAfterTwo, 3_000, 'a further reconcile beat');
+  const ticksAfterThree = spy.calls.length;
+
+  const sameSession = spy.calls.every((id) => id === sessionId);
+  console.log(
+    `clientSubscriptions=0 connectedClients=0 connectedReads=${connectedReads} ` +
+      `beatTicks=${ticksAfterThree} ticksAfterTwo=${ticksAfterTwo} allSameSession=${sameSession}`,
+  );
+
+  // The beat is the assembly's, not the criterion's: every call came from the
+  // driver's own tick callback, for this host's session, with nobody attached.
+  assert.ok(ticksAfterTwo >= 2, `the beat must call reconcileTick repeatedly (read ${ticksAfterTwo})`);
+  assert.ok(
+    ticksAfterThree > ticksAfterTwo,
+    `a further interval must add a further call (read ${ticksAfterThree} after ${ticksAfterTwo})`,
+  );
+  assert.strictEqual(sameSession, true, 'every beat asks about this host\'s session');
+  assert.strictEqual(connectedReads, 0, 'the beat never consults the browser count — it exists without one');
+
+  await dispose(harness);
+});
+
+test('BEAT (h) mode=log: the beat names the phantom run with no client', async () => {
+  const sessionId = 'beat-h-log';
+  const harness = createHarness({ sessionId, mode: 'log', reconcileBeatMs: BEAT_MS });
+  const spy = spyReconcileTicks(harness.driver);
+
+  // The divergence §10.1 is about: a send the CLI never spoke about, so the
+  // ledger has no open turn, and a registry run the registry still holds.
+  await armRound(harness, 'A in flight');
+  harness.registry.add(sessionId, 'run-beat-log');
+  harness.advance(T_Q_MS * 3);
+
+  await waitFor(
+    () => reconcileLines(sessionId, 'phantom-run').length > 0,
+    3_000,
+    'the beat to name the phantom run',
+  );
+  const ticksAtFirstLine = spy.calls.length;
+  await waitFor(() => spy.calls.length >= ticksAtFirstLine + 2, 3_000, 'two more beats');
+
+  const ticks = spy.calls.length;
+  const lines = reconcileLines(sessionId, 'phantom-run');
+  const sinkLines = reconcileSinkLines(harness.lines, sessionId, 'phantom-run');
+  const runsAfter = harness.registry.runs().length;
+  const leasesAfter = turnLeaseCount(harness.manager, sessionId);
+
+  console.log(
+    `beatTicks=${ticks} ticksAtFirstLine=${ticksAtFirstLine} logLines=${lines.length} ` +
+      `sinkLines=${sinkLines.length} runsAfter=${runsAfter} leasesAfter=${leasesAfter} ` +
+      `readingMode=${String(harness.driver.reconcileTick(sessionId)?.mode)}`,
+  );
+  console.log(`reconcileLine=${lines[0] ?? ''}`);
+  // AC2's phrase is "每拍记一行"; what §10.2 ships (and AC390 (a) pins) is one
+  // line per ANOMALY, so a standing divergence is stated once rather than every
+  // 20 ms. The reading is printed as the deviation it is, not reworded to fit.
+  console.log(
+    `DEVIATION AC2-phrase "each beat records a line" reads "the beat produces the line": ` +
+      `beatTicks=${ticks} logLines=${lines.length} (one per anomaly, §10.2 / AC390 (a))`,
+  );
+
+  assert.ok(ticks >= 3, `several beats must have run (read ${ticks})`);
+  assert.strictEqual(lines.length, 1, `the beat names the anomaly exactly once (read ${lines.length})`);
+  assert.strictEqual(sinkLines.length, 1, `the sink carries the same one line (read ${sinkLines.length})`);
+  assert.match(
+    lines[0] ?? '',
+    new RegExp(`^\\[reconcile\\] session=${sessionId} mode=log anomaly=phantom-run( |$)`),
+    'the line is §10.2\'s shape at this arm',
+  );
+  assert.strictEqual(runsAfter, 1, 'log mode changes no registry state');
+  assert.strictEqual(leasesAfter, 1, 'log mode changes no lease state');
+
+  await dispose(harness);
+});
+
+test('BEAT (i) mode=enforce: the beat closes the phantom run aborted/reason=reconciled', async () => {
+  const sessionId = 'beat-i-enforce';
+  const harness = createHarness({ sessionId, mode: 'enforce', reconcileBeatMs: BEAT_MS });
+  const spy = spyReconcileTicks(harness.driver);
+
+  await armRound(harness, 'A in flight');
+  harness.registry.add(sessionId, 'run-beat-enforce');
+  harness.advance(T_Q_MS * 3);
+
+  await waitFor(() => harness.registry.closes().length === 1, 3_000, 'the beat to close the phantom run');
+  // At least one beat after the close: the beat keeps running and must not close
+  // the same run again.
+  const ticksAtClose = spy.calls.length;
+  await waitFor(() => spy.calls.length > ticksAtClose, 3_000, 'a beat after the close');
+
+  const close = harness.registry.closes()[0] ?? null;
+  const ticks = spy.calls.length;
+  const lines = reconcileLines(sessionId, 'phantom-run');
+  const runsAfter = harness.registry.runs().length;
+
+  console.log(
+    `beatTicks=${ticks} closes=${harness.registry.closes().length} phantomRunOutcome=${String(close?.outcome)} ` +
+      `reason=${String(close?.reason)} runsAfter=${runsAfter} logLines=${lines.length}`,
+  );
+  console.log(`reconcileLine=${lines[0] ?? ''}`);
+
+  assert.ok(ticks >= 2, `the close came from the beat, and the beat went on (read ${ticks})`);
+  assert.strictEqual(close?.outcome, 'aborted', 'a reconciled run is closed as aborted');
+  assert.strictEqual(close?.reason, 'reconciled', 'and the reason says why (§10.1)');
+  assert.strictEqual(harness.registry.closes().length, 1, 'one divergence, one close, on any number of beats');
+  assert.strictEqual(runsAfter, 0, 'the closed run is gone from the registry reading');
+  assert.strictEqual(lines.length, 1, `the beat states the anomaly once (read ${lines.length})`);
+  assert.match(
+    lines[0] ?? '',
+    new RegExp(`^\\[reconcile\\] session=${sessionId} mode=enforce anomaly=phantom-run( |$)`),
+    'the line carries this arm in its mode= field',
+  );
+
+  await dispose(harness);
+});
+
+test('BEAT (j) a real long turn is not closed by the beat, in either mode', async () => {
+  type Arm = {
+    mode: ClaudeResidentReconcileMode;
+    ticks: number;
+    turnOpen: boolean;
+    leasesAfter: number;
+    closes: number;
+    phantomLines: number;
+  };
+  const arms: Arm[] = [];
+
+  for (const mode of ['enforce', 'log'] as const) {
+    const sessionId = `beat-j-${mode}`;
+    const harness = createHarness({ sessionId, mode, reconcileBeatMs: BEAT_MS });
+    const spy = spyReconcileTicks(harness.driver);
+    await armRound(harness, 'A long turn');
+    harness.process.emit(initFrame(`beat-j-init-${mode}`));
+    await settle();
+
+    // The other half of the divergence, injected: the registry says a run is
+    // going. Without it the mutant would have nothing to over-settle.
+    harness.registry.add(sessionId, `run-beat-long-${mode}`);
+    harness.advance(T_Q_MS * 3);
+
+    const ticksBefore = spy.calls.length;
+    await waitFor(() => spy.calls.length >= ticksBefore + 3, 3_000, `${mode}: three beats on a running turn`);
+
+    arms.push({
+      mode,
+      ticks: spy.calls.length,
+      turnOpen: harness.driver.ledgerReading(sessionId)?.turn?.open === true,
+      leasesAfter: turnLeaseCount(harness.manager, sessionId),
+      closes: harness.registry.closes().length,
+      phantomLines: reconcileLines(sessionId, 'phantom-run').length,
+    });
+
+    await dispose(harness);
+  }
+
+  for (const arm of arms) {
+    console.log(
+      `mode=${arm.mode} beatTicks=${arm.ticks} turnOpen=${arm.turnOpen} leasesAfter=${arm.leasesAfter} ` +
+        `closes=${arm.closes} phantomLines=${arm.phantomLines}`,
+    );
+  }
+
+  for (const arm of arms) {
+    assert.ok(arm.ticks >= 3, `${arm.mode}: several beats ran (read ${arm.ticks})`);
+    assert.strictEqual(arm.turnOpen, true, `${arm.mode}: the ledger really has a turn open`);
+    assert.strictEqual(arm.leasesAfter, 1, `${arm.mode}: the running turn keeps its lease`);
+    assert.strictEqual(arm.closes, 0, `${arm.mode}: over-settlement — a running turn is never closed`);
+    assert.strictEqual(arm.phantomLines, 0, `${arm.mode}: a long turn is not a phantom run`);
+  }
+});
+
+test('BEAT (k) false form: with the beat disabled, the same divergence is never seen', async () => {
+  type Arm = { ticks: number; lines: number; runsAfter: number };
+
+  // The mutant is "the beat's reconcileTick call is gone" / "the beat is never
+  // armed". `reconcileBeatMs: 0` is that assembly exactly: the host is live, the
+  // divergence stands, and nothing checks it.
+  async function drive(reconcileBeatMs: number): Promise<Arm> {
+    const sessionId = `beat-k-${reconcileBeatMs}`;
+    const harness = createHarness({ sessionId, mode: 'log', reconcileBeatMs });
+    const spy = spyReconcileTicks(harness.driver);
+    await armRound(harness, 'A in flight');
+    harness.registry.add(sessionId, `run-beat-${reconcileBeatMs}`);
+    harness.advance(T_Q_MS * 3);
+    // Six beat periods: an armed beat cannot miss the standing divergence.
+    await sleep(BEAT_MS * 6);
+    const arm = {
+      ticks: spy.calls.length,
+      lines: reconcileLines(sessionId, 'phantom-run').length,
+      runsAfter: harness.registry.runs().length,
+    };
+    await dispose(harness);
+    return arm;
+  }
+
+  const disabled = await drive(0);
+  const enabled = await drive(BEAT_MS);
+
+  console.log(
+    `disabled beatTicks=${disabled.ticks} logLines=${disabled.lines} runsAfter=${disabled.runsAfter} ` +
+      `| enabled beatTicks=${enabled.ticks} logLines=${enabled.lines} runsAfter=${enabled.runsAfter}`,
+  );
+
+  assert.strictEqual(disabled.ticks, 0, 'with the beat gone, reconcileTick is never called');
+  assert.strictEqual(disabled.lines, 0, 'and the divergence is never named');
+  assert.strictEqual(disabled.runsAfter, 1, 'and nothing changed it');
+  assert.ok(enabled.ticks >= 2, `the enabled beat is what the count reads (read ${enabled.ticks})`);
+  assert.strictEqual(enabled.lines, 1, 'the enabled beat names the same divergence');
+});
+
+test('BEAT (l) the beat is unref\'d and stops when the host closes', async () => {
+  // (1) The timer's own reading: unref'd, so it does not keep the process alive.
+  let directTicks = 0;
+  const direct: ClaudeResidentReconcileBeat = startResidentReconcileBeat(BEAT_MS, () => {
+    directTicks += 1;
+  });
+  await waitFor(() => directTicks >= 2, 3_000, 'the directly-bound beat to tick');
+  const hasRef = direct.hasRef();
+  direct.stop();
+  const afterStop = directTicks;
+  await sleep(BEAT_MS * 4);
+  const afterWait = directTicks;
+
+  // (2) The host's own beat: closing the host stops it (no timer outlives the
+  // map entry that owns it).
+  const sessionId = 'beat-l-lifecycle';
+  const harness = createHarness({ sessionId, reconcileBeatMs: BEAT_MS });
+  const spy = spyReconcileTicks(harness.driver);
+  await armRound(harness, 'A beat lifecycle');
+  await waitFor(() => spy.calls.length >= 2, 3_000, 'two host beats');
+  const host = hostOf(harness);
+  harness.manager.closeHost(host.hostId, 'server-shutdown');
+  const ticksAtClose = spy.calls.length;
+  await sleep(BEAT_MS * 5);
+  const ticksAfterWait = spy.calls.length;
+
+  console.log(
+    `unrefHasRef=${hasRef} directTicksAfterStop=${afterStop} directTicksAfterWait=${afterWait} ` +
+      `hostTicksAtClose=${ticksAtClose} hostTicksAfterWait=${ticksAfterWait} ` +
+      `hostState=${String(harness.manager.snapshot().find((h) => h.hostId === host.hostId)?.state)}`,
+  );
+
+  assert.strictEqual(hasRef, false, 'the beat is unref\'d — it never holds the process open');
+  assert.strictEqual(afterWait, afterStop, `a stopped beat must not tick again (read ${afterWait} vs ${afterStop})`);
+  assert.ok(ticksAtClose >= 2, `the host beat was live before the close (read ${ticksAtClose})`);
+  assert.strictEqual(ticksAfterWait, ticksAtClose, `closing the host must clear its beat (read ${ticksAfterWait})`);
+
+  await dispose(harness);
+});
+
+// ---------------------------------------------------------------------------
+// The criterion's own budget
+// ---------------------------------------------------------------------------
+
+test('the criterion finished inside its wall-clock budget', () => {
+  const measured = Date.now() - STARTED_AT;
+  console.log(`[readings] elapsed=${measured}ms budget=${RUN_BUDGET_MS}ms`);
+  assert.ok(measured < RUN_BUDGET_MS, `the whole criterion must finish inside ${RUN_BUDGET_MS}ms (read ${measured}ms)`);
+});

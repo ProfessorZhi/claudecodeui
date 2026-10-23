@@ -1,0 +1,7 @@
+{
+  "currency": "CNY",
+  "budgetCny": 2.0,
+  "inputPerMillionCny": 1.0,
+  "outputPerMillionCny": 2.0,
+  "note": "TEST-ONLY prices, not any provider's tariff. They exist so the budget gate and the T4 plan can be exercised offline (and so the frozen sweep snapshot's recognition group has a legal price on record). The committed ../pricing.json stays a placeholder for a human to fill from the console."
+}

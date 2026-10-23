@@ -1,0 +1,500 @@
+# scripts/suite-duration-baseline.tsv
+#
+# Per-file SERVER test durations, one per line as  <duration_ms><TAB><path>, newest first.
+# scripts/test.sh reads this to dispatch the server phase LONGEST-FIRST (see its
+# "longest-first server dispatch" block). It is a DATA file, not a script: a new
+# scripts/*.mjs would be picked up by scripts/tsconfig.json (allowJs+checkJs+strict) and
+# red the whole suite via `npm run typecheck`.
+#
+# Lines starting with # and blank lines are skipped. Any other line that does not match
+# ^[0-9]+<TAB>server/...test.(ts|js)$ makes test.sh FAIL OPEN to plain alphabetical order
+# (see the AC in tasks/gap-suite-server-dispatch-longest-first-and-parallel-static-stages.md).
+#
+# DATA SOURCE: the most recent GREEN round (fail=0) in the main checkout ledger,
+#   /data/home/yale/work/claudecodeui/.quay/verification-round.jsonl
+# Source round: 636 (startedAt 2026-10-05T23:24:11Z, runner=inner, 399 tests / 0 failed,
+# 232 server files; the two voice-realtime-dashscope-transport rows were appended by that task,
+# and the mcp-pending-interaction row by gap-mcp-pending-interaction-visibility-and-idempotent-answer,
+#   the two voice-realtime-live-executor rows by gap-voice-realtime-live-session-send-wiring,
+#   the voice-realtime-connection-resilience row by gap-voice-realtime-connection-resilience,
+#   and the voice-realtime-ws-proxy.protocol-simulation row (AC-315's new server test, absorbed by
+#   gap-mcp-session-send-reports-pending-interaction-it-queued-behind to keep the count pins honest),
+#   and the debug-agent-permission-popup row by
+#   gap-debug-agent-simulates-permission-popup-for-mcp-e2e (its own new criterion; measured on the
+#   arm that first ran it, since the ledger for a green round that contains it does not exist yet),
+#   and the five voice-realtime rows (diagnose, replay, spend-guard, streaming-stages,
+#   ws-proxy.real-transport) by gap-voice-realtime-test-files-restore-quay-test-script-pins,
+#   each measured one file at a time on 2026-10-10 because those files reached develop without a
+#   fan-in round, so no green round contains them yet),
+#   and the voice-realtime-segmented-protocol row by
+#   gap-voice-segmented-relay-protocol-server-commit, measured one file at a time on 2026-10-10
+#   (that file also reached develop without a green round containing it),
+#   and the voice-realtime-upstream-pool row by gap-voice-realtime-upstream-pool-rotation,
+#   measured one file at a time on 2026-10-10 (the newest criterion; no green round contains it yet),
+#   and the voice-realtime-context-injection and voice-realtime-context-and-settings rows by
+#   gap-voice-realtime-context-pack-and-hot-settings, measured one file at a time on 2026-10-10
+#   (both files are new and no green round contains them yet),
+#   and the voice-realtime-segmented-default and voice-realtime-cost-replay rows by
+#   gap-voice-segmented-relay-rollout-and-reconcile, measured one file at a time on 2026-10-10
+#   (both files are new and no green round contains them yet),
+#   and the voice-realtime-log and voice-realtime-log-wiring rows by
+#   gap-voice-realtime-relay-log-persistence, measured one file at a time on 2026-10-10
+#   (both files are new and no green round contains them yet),
+#   and the voice-realtime-audio-capture, voice-realtime-audio-capture-wiring and
+#   voice-realtime-audio-capture-alignment rows by gap-voice-realtime-uplink-audio-capture,
+#   measured one file at a time on 2026-10-11 (all three files are new and no green round
+#   contains them yet),
+#   and the voice-realtime-interrupt row by gap-live-voice-voice-terminated-interrupt,
+#   measured one file at a time on 2026-10-11 (that file is new and no green round contains it yet),
+#   and the mcp-usage-stats row by gap-mcp-usage-stats-tool-and-audit-telemetry-columns,
+#   measured one file at a time on 2026-10-11 (its own new criterion; no green round contains it yet),
+#   and the mcp-changes row by gap-mcp-changes-on-demand-event-stream,
+#   measured one file at a time on 2026-10-11 (its own new criterion; no green round contains it yet),
+#   and the voice-realtime-status-injection row by gap-live-voice-status-aggregate-and-inject,
+#   measured one file at a time on 2026-10-12 (that file is new and no green round contains it yet),
+#   and the voice-realtime-status-tool row by gap-live-voice-status-tool,
+#   measured one file at a time on 2026-10-12 (that file is new and no green round contains it yet),
+#   and the voice-realtime-interrupt-audit row by gap-live-voice-interrupt-audit-intent-trigger,
+#   measured one file at a time on 2026-10-12 (that file is new and no green round contains it yet),
+#   and the voice-realtime-queue-depth-truth row by gap-live-voice-queue-depth-host-lifecycle-truth,
+#   measured one file at a time on 2026-10-12 (that file is new and no green round contains it yet),
+#   and the voice-realtime-queue-depth-drain-refresh row by
+#   gap-live-voice-queue-depth-refresh-on-turn-boundary, measured one file at a time on 2026-10-12
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-instructions-no-stop-words row by
+#   gap-live-voice-prompt-drop-stop-word-trigger, measured one file at a time on 2026-10-12
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-interrupt-fence row by gap-live-voice-interrupt-run-utterance-fence,
+#   measured one file at a time on 2026-10-12 (that file is new and no green round contains it yet),
+#   and the voice-realtime-interrupt-revision-order row by
+#   gap-live-voice-interrupt-after-revision-enqueued, measured one file at a time on 2026-10-12
+#   (that file is new and no green round contains it yet),
+#   and the mcp-changes-session-paging row by
+#   gap-mcp-changes-session-keyset-asc-paging-no-loss, measured one file at a time on 2026-10-12
+#   (its own new criterion; no green round contains it yet),
+#   and the provider-capabilities-cancel-queued row by
+#   gap-claude-resident-cancel-queued-capability-truth, measured one file at a time on 2026-10-12
+#   (that file is new and no green round contains it yet),
+#   and the mcp-changes-quay-index row by
+#   gap-mcp-changes-quay-status-index-async-bootstrap, measured one file at a time on 2026-10-12
+#   (its own new criterion; no green round contains it yet),
+#   and the voice-realtime-manual-vad-session-update row by
+#   gap-live-voice-manual-mode-session-update-keeps-vad-off, measured one file at a time on 2026-10-12
+#   (that file is new and no green round contains it yet),
+#   and the mcp-changes-cursor-bounds row by
+#   gap-mcp-changes-cursor-bounded-rebase, measured one file at a time on 2026-10-12
+#   (its own new criterion; no green round contains it yet),
+#   and the voice-realtime-interrupt-aftermath row by gap-live-voice-interrupt-honest-aftermath,
+#   measured one file at a time on 2026-10-12 (that file is new and no green round contains it yet),
+#   and the voice-realtime-scripted-upstream-state row by
+#   gap-live-voice-scripted-upstream-protocol-state-machine, measured one file at a time on 2026-10-12
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-fake-vad-upstream row by
+#   gap-live-voice-continuous-experience-e2e-harness, measured one file at a time on 2026-10-12
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-caption-item-attribution row by
+#   gap-live-voice-caption-segment-attribution-by-item-id, measured one file at a time on 2026-10-12
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-silence-tail-suppression row by
+#   gap-live-voice-silence-tail-suppression, measured one file at a time on 2026-10-13
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-transport-opt-in row by
+#   gap-live-voice-continuous-transport-opt-in, measured one file at a time on 2026-10-13
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-unforwarded-disposition row by
+#   gap-voice-unforwarded-utterance-visible-disposition, measured from that branch's own
+#   suite-log __PERFILE__ row on 2026-10-13 (that file is new and no green round contains it yet),
+#   and the voice-realtime-function-call-output-receipt row by
+#   gap-live-voice-function-call-output-rejected-after-speech-resume, measured one file at a time
+#   on 2026-10-14 (that file is new and no green round contains it yet),
+#   and the voice-realtime-continuous-empty-guard-span row by
+#   gap-live-voice-continuous-empty-guard-misrefuses-multi-item-relay, measured one file at a
+#   time on 2026-10-14 (that file is new and no green round contains it yet),
+#   and the voice-realtime-silence-tail-deprecated row by
+#   gap-live-voice-sts-production-disconnect, measured one file at a time on 2026-10-14
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-uplink-vad-arm-point row by
+#   gap-live-voice-uplink-vad-production-arm-point, measured one file at a time on 2026-10-14
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-single-pending-message row by
+#   gap-voice-proxy-holds-one-merged-pending-message, measured one file at a time on 2026-10-14
+#   (that file is new and no green round contains it yet),
+#   and the 32 rows gap-baseline-red-suite-count-pins-336 took wholesale from that same ledger's
+#   most recent GREEN round — round 1129 (startedAt 2026-10-14T13:06:00Z, fail=0), the round the
+#   REGENERATE command below would pick today. This file had never been regenerated since round 636,
+#   so it had fallen to 298/336 collected files (88.7%), under AC7's 90% floor, which is what parked
+#   every in-flight task's fan-in as HARD RED; the 32 rows restore the floor on their own. The other
+#   six (session-creation-selection, session-selection-launch-spec,
+#   voice-realtime-browser-keepalive, voice-realtime-queue-reconcile-poll,
+#   voice-realtime-unclaimed-utterance-relay, voice-realtime-uplink-vad-hold-open) appear in NO green
+#   round at all, so each was measured one file at a time on 2026-10-15 with the fan-in lane's own
+#   command — `TSX_TSCONFIG_PATH=server/tsconfig.json node --import tsx --import
+#   ./scripts/undici-blocked-ports-preload.mjs --test <file>` — reading wall-clock ms
+#   (4611 / 3317 / 3195 / 3166 / 3025 / 1140 in the order listed above).
+#   and the mcp-session-create-library-model row by
+#   gap-mcp-session-create-drops-library-model, measured one file at a time on 2026-10-15
+#   (that file is new and no green round contains it yet),
+#   and the voice-realtime-busy-quiet-window row by
+#   gap-live-voice-busy-release-quiet-window-next-priority, measured one file at a time on 2026-10-15
+#   (that file is new and no green round contains it yet),
+#   and the server-import-cycle-budget row by gap-ac394-server-import-cycle-budget,
+#   measured one file at a time on 2026-10-17 (its own new criterion; no green round contains it yet),
+# so this file now covers 339 of the 361 files the current `find server -name '*.test.ts' -o -name
+# '*.test.js' | sort` list collects; a row here is a dispatch ORDER hint only, so an unlisted file is
+# not skipped — it just sorts alphabetically after the listed ones. The remaining ~22 unlisted files
+# (claude-resident-dispatch-hook and voice-realtime-voice-active-marker among them) came in with
+# sibling tasks that moved the collected-count pins but left this baseline alone).
+#
+# REGENERATE (prints the data body on stdout; keep THIS header above it, then diff):
+#   node -e 'const fs=require("fs");const rows=fs.readFileSync(process.argv[1],"utf8").trim().split("\n").map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean);const g=[...rows].reverse().find(r=>r.fail===0&&Array.isArray(r.perFile));const s=g.perFile.filter(p=>p.file.startsWith("server/")).sort((a,b)=>b.durationMs-a.durationMs||(a.file<b.file?-1:1));process.stdout.write(s.map(p=>p.durationMs+"\t"+p.file).join("\n")+"\n")' /data/home/yale/work/claudecodeui/.quay/verification-round.jsonl
+
+#   and the voice-realtime-model-reply-narrator / voice-realtime-tts-local rows by
+#   the MODEL_TEXT_REPLY narration and local-Kokoro-TTS tasks (2026-10-19),
+#   and the voice-realtime-summary row by gap-voice-run-end-summary-side-model, measured one file
+#   at a time on 2026-10-20 (its own new criterion; no green round contains it yet).
+1403	server/modules/voice-realtime/tests/voice-realtime-summary.test.ts
+1614	server/modules/voice-realtime/tests/voice-realtime-model-reply-narrator.test.ts
+1361	server/modules/voice-realtime/tests/voice-realtime-tts-local.test.ts
+128905	server/modules/voice/tests/voice-error-classification.false-forms.test.ts
+52109	server/modules/voice/tests/voice-capture-secrets.false-forms.test.ts
+46082	server/modules/voice/tests/voice-capture-audio.false-forms.test.ts
+42431	server/modules/voice/tests/voice-error-contract.false-forms.test.ts
+38891	server/modules/voice/tests/voice-capture-isolation.false-forms.test.ts
+37791	server/modules/voice/tests/voice-capture-text.false-forms.test.ts
+35861	server/modules/debug-agent/tests/debug-agent-external-write.test.ts
+35696	server/modules/voice/tests/voice-capture-off.false-forms.test.ts
+22718	server/modules/providers/tests/claude-resident-control-queue.test.ts
+19588	server/modules/mcp-gateway/tests/mcp-session-lifecycle.test.ts
+18479	server/modules/providers/tests/claude-resident-name-mirror-latency.test.ts
+17867	server/modules/providers/tests/model-gateway-end-to-end.test.ts
+16779	server/modules/debug-agent/tests/debug-agent-control-plane.test.ts
+16531	server/modules/providers/tests/claude-resident-process.test.ts
+16379	server/modules/providers/tests/claude-peer-name-follows-ai-title.test.ts
+16063	server/modules/mcp-gateway/tests/mcp-session-send.test.ts
+15448	server/modules/providers/tests/claude-resident-name-live-mirror.test.ts
+15321	server/modules/voice/tests/voice-dashscope-settings.test.ts
+14319	server/modules/providers/tests/sessions-watcher-mode.test.ts
+14214	server/modules/mcp-gateway/tests/mcp-cancel-queued.test.ts
+13441	server/modules/voice-realtime/tests/voice-realtime-diagnose.test.ts
+13202	server/modules/session-hosts/tests/session-host-per-run-parity.test.ts
+13049	server/modules/session-hosts/tests/resident-server-restart.test.ts
+12817	server/modules/websocket/tests/activity-heartbeat.process.test.ts
+12191	server/modules/providers/tests/claude-sessions.test.ts
+11992	server/modules/projects/tests/session-filter-realdata.test.ts
+11505	server/modules/debug-agent/tests/debug-agent-control-queue.test.ts
+10878	server/modules/providers/tests/claude-resident-busy-input.test.ts
+10534	server/modules/providers/tests/claude-peer-name-title-guard.test.ts
+10122	server/modules/debug-agent/tests/debug-agent-gate.test.ts
+9144	server/modules/providers/tests/claude-resident-addressable.test.ts
+8219	server/modules/providers/tests/session-ai-title.test.ts
+8115	server/modules/providers/tests/claude-session-name-authority.test.ts
+7977	server/modules/scheduled-messages/tests/scheduled-messages.test.ts
+7336	server/modules/session-hosts/tests/session-host-default-wrap.test.ts
+7282	server/modules/debug-agent/tests/debug-agent-frames.test.ts
+7177	server/modules/websocket/tests/chat-run-registry.test.ts
+6894	server/modules/providers/tests/claude-resident-peer-name-refresh.test.ts
+6894	server/modules/voice-realtime/tests/voice-realtime-segmented-protocol.test.ts
+6822	server/modules/mcp-gateway/tests/mcp-gateway-wiring.test.ts
+6751	server/modules/providers/tests/claude-resident-remote-control-isolation.test.ts
+6744	server/modules/voice-realtime/tests/voice-realtime-streaming-stages.test.ts
+6668	server/modules/database/tests/sessions-name-source.integration.test.ts
+6740	server/modules/mcp-gateway/tests/mcp-correlation-id.test.ts
+6628	server/modules/mcp-gateway/tests/mcp-overview.test.ts
+6516	server/modules/providers/tests/codex-message-editing.test.ts
+6342	server/modules/oauth/tests/access-tokens.routes.test.ts
+6297	server/modules/mcp-gateway/tests/mcp-resolve-target.test.ts
+6277	server/modules/mcp-gateway/tests/mcp-usage-stats.test.ts
+6189	server/modules/oauth/tests/oauth-provider.test.ts
+6155	server/modules/mcp-gateway/tests/oauth-flow.e2e.test.ts
+6110	server/modules/mcp-gateway/tests/mcp-session-background.test.ts
+6095	server/modules/session-hosts/tests/lifecycle-mode.test.ts
+6059	server/modules/mcp-gateway/tests/mcp-session-host-control.test.ts
+6042	server/modules/websocket/tests/chat-edit-send.test.ts
+6006	server/modules/debug-agent/tests/debug-agent-typed-turn.test.ts
+5944	server/modules/providers/tests/codex-sessions.test.ts
+5936	server/modules/mcp-gateway/tests/mcp-read-tools.test.ts
+5912	server/modules/providers/tests/sessions.service.test.ts
+5885	server/modules/oauth/tests/oauth-dcr.test.ts
+5865	server/modules/mcp-gateway/tests/mcp-approvals.test.ts
+5758	server/modules/providers/tests/claude-resident-unattended-turn.test.ts
+5720	server/modules/mcp-gateway/tests/mcp-run-get.test.ts
+5697	server/modules/debug-agent/tests/debug-agent-host-driver.test.ts
+5621	server/modules/providers/tests/session-fork.test.ts
+5612	server/modules/database/tests/sessions.db.integration.test.ts
+5600	server/modules/mcp-gateway/tests/mcp-pending-interaction.test.ts
+5597	server/modules/voice-realtime/tests/voice-realtime-upstream-pool.test.ts
+5593	server/modules/providers/tests/model-spawn-env.test.ts
+5547	server/modules/oauth/tests/oauth-consent-page.test.ts
+5498	server/modules/mcp-gateway/tests/mcp-session-reconfigure.test.ts
+5411	server/modules/voice-realtime/tests/voice-realtime-spend-guard.test.ts
+5335	server/modules/oauth/tests/oauth-settings.routes.test.ts
+5320	server/modules/providers/tests/claude-host-per-run.test.ts
+5308	server/modules/mcp-gateway/tests/mcp-self-target.test.ts
+5258	server/modules/providers/tests/session-window-around.test.ts
+5244	server/modules/websocket/tests/session-upsert-broadcast.test.ts
+5219	server/modules/websocket/tests/chat-permission-mode.test.ts
+5206	server/modules/debug-agent/tests/debug-agent-permission-popup.test.ts
+5197	server/modules/providers/tests/claude-session-title-source.test.ts
+5140	server/modules/websocket/tests/chat-run-by-id.test.ts
+5136	server/modules/providers/tests/provider.routes.test.ts
+5059	server/modules/session-hosts/tests/session-hosts-routes.test.ts
+5057	server/modules/providers/tests/claude-session-title-mirror.test.ts
+5007	server/modules/providers/tests/opencode-sessions.test.ts
+4817	server/modules/oauth/tests/access-token-scopes.test.ts
+4798	server/modules/providers/tests/model-config-write-path.test.ts
+4764	server/modules/mcp-gateway/tests/mcp-oauth-challenge.test.ts
+4756	server/modules/database/tests/user-preferences.db.integration.test.ts
+4723	server/modules/oauth/tests/oauth-store.test.ts
+4721	server/modules/providers/tests/model-launch-spec.test.ts
+4696	server/modules/mcp-gateway/tests/mcp-auth.test.ts
+4561	server/modules/mcp-gateway/tests/mcp-audit.test.ts
+4459	server/modules/database/tests/voice-settings.db.integration.test.ts
+4306	server/shared/tests/quay-test-script.test.ts
+4230	server/modules/voice/tests/voice-config.routes.test.ts
+4218	server/modules/projects/tests/projects-session-filter.integration.test.ts
+4209	server/modules/providers/tests/session-rename-writeback.test.ts
+4178	server/modules/providers/tests/model-secret-write-only.test.ts
+4152	server/modules/providers/tests/session-rename-route.test.ts
+4147	server/modules/cli/tests/cli-environment-bootstrap.test.ts
+4086	server/modules/oauth/tests/access-tokens.service.test.ts
+4019	server/modules/websocket/tests/chat-control-source.test.ts
+4014	server/modules/websocket/tests/chat-control-busy.test.ts
+4013	server/modules/voice-realtime/tests/voice-realtime-cost-replay.test.ts
+3985	server/modules/voice-realtime/tests/voice-realtime-ws-proxy.real-transport.test.ts
+3980	server/modules/voice-realtime/tests/voice-realtime-log-wiring.test.ts
+3966	server/modules/voice-realtime/tests/voice-realtime-replay.test.ts
+3958	server/modules/voice-realtime/tests/voice-realtime-segmented-default.test.ts
+3879	server/modules/providers/tests/model-context-window.test.ts
+3879	server/modules/voice/tests/voice-provider-dispatch-falsify.test.ts
+3811	server/modules/providers/tests/session-history-incremental-cache.test.ts
+3788	server/modules/mcp-gateway/tests/mcp-production-session-wiring.test.ts
+3666	server/modules/voice-realtime/tests/voice-realtime-live-executor.false-forms.test.ts
+3641	server/modules/oauth/tests/token-info.routes.test.ts
+3605	server/modules/voice-realtime/tests/voice-realtime-live-executor.test.ts
+3588	server/modules/providers/tests/sessions-details.test.ts
+3553	server/modules/websocket/tests/chat-background-task.test.ts
+3527	server/modules/websocket/tests/chat-stop-task.test.ts
+3516	server/modules/providers/tests/session-turn-outline.test.ts
+3516	server/modules/websocket/tests/chat-control-ownership.test.ts
+3506	server/modules/websocket/tests/chat-control-send.test.ts
+3505	server/modules/websocket/tests/chat-control-access.test.ts
+3466	server/modules/voice/tests/voice-dashscope-settings.false-forms.test.ts
+3445	server/modules/providers/tests/claude-session-scope.test.ts
+3324	server/modules/providers/tests/session-orphan-prune.test.ts
+3251	server/modules/database/tests/sessions-provider-mapping.test.ts
+3230	server/modules/debug-agent/tests/debug-agent-fixture-isolation.test.ts
+3218	server/modules/database/tests/projects.db.integration.test.ts
+3207	server/modules/websocket/tests/chat-control-wiring.test.ts
+3082	server/modules/mcp-gateway/tests/oauth-metadata-mount.test.ts
+3077	server/modules/mcp-gateway/tests/mcp-transport.test.ts
+2967	server/modules/session-hosts/tests/resident-ondemand-start-route.test.ts
+2952	server/modules/voice/tests/voice-lexicon.test.ts
+2933	server/modules/websocket/tests/claude-stop-task-capability.test.ts
+2845	server/modules/providers/tests/session-synchronizer-coalescing.test.ts
+2817	server/modules/providers/tests/claude-resident-ondemand-start.test.ts
+2589	server/modules/mcp-gateway/tests/mcp-loopback-guard.test.ts
+2575	server/modules/providers/tests/cursor-session-name-preserve.test.ts
+2468	server/modules/browser-use/tests/browser-use.service.test.ts
+2413	server/modules/providers/tests/claude-session-title-corpus.test.ts
+2361	server/modules/database/tests/provider-models.db.integration.test.ts
+2337	server/modules/database/tests/launch-profiles-drop-migration.test.ts
+2248	server/modules/database/tests/api-keys-drop-migration.test.ts
+2235	server/modules/providers/tests/claude-activity-schedules.test.ts
+2233	server/modules/providers/tests/claude-activity-task-reducer.test.ts
+2169	server/modules/providers/tests/claude-resident-idle.test.ts
+2127	server/modules/providers/tests/claude-activity-lease-parity.test.ts
+2122	server/modules/providers/tests/claude-stream-block-key.test.ts
+2112	server/modules/providers/tests/claude-runtime-frame-forwarding.test.ts
+2102	server/modules/oauth/tests/agent-retirement.test.ts
+2099	server/modules/providers/tests/claude-resident-turn-phase-app-id.test.ts
+2097	server/modules/websocket/tests/shell-resume-launch-spec.test.ts
+2092	server/modules/websocket/tests/activity-protocol.test.ts
+2092	server/modules/websocket/tests/chat-attachment-filter.test.ts
+2086	server/modules/providers/tests/claude-stream-event-unwrap.test.ts
+2082	server/modules/websocket/tests/shell-websocket.service.test.ts
+2080	server/modules/voice-realtime/tests/voice-realtime-context-injection.test.ts
+2075	server/modules/voice-realtime/tests/voice-realtime-context-and-settings.test.ts
+2068	server/modules/providers/tests/claude-turn-phase.test.ts
+2031	server/modules/session-hosts/tests/process-containment.test.ts
+2017	server/modules/websocket/tests/websocket-heartbeat.service.test.ts
+2012	server/modules/providers/tests/claude-cross-session-message.test.ts
+2009	server/modules/taskmaster/tests/taskmaster.routes.test.ts
+1995	server/modules/providers/tests/passthrough-parity.test.ts
+1982	server/modules/session-hosts/tests/record-per-run-frame-baseline.test.ts
+1970	server/modules/providers/tests/provider-runtime.service.test.ts
+1820	server/modules/providers/tests/mcp.test.ts
+1804	server/modules/providers/tests/skills.test.ts
+1799	server/modules/oauth/tests/oauth-consent-ratelimit.test.ts
+1779	server/modules/providers/tests/opencode-models.test.ts
+1777	server/modules/voice-realtime/tests/voice-realtime-dashscope-transport.false-forms.test.ts
+1695	server/modules/providers/tests/provider-models.service.test.ts
+1680	server/modules/voice-realtime/tests/voice-realtime-log.test.ts
+1653	server/modules/notifications/tests/notification-orchestrator.integration.test.ts
+1619	server/modules/providers/tests/claude-per-run-occupied-session.test.ts
+1616	server/modules/providers/tests/claude-resident-permissions.test.ts
+1510	server/modules/providers/tests/claude-background-work.test.ts
+1505	server/modules/providers/list/opencode/opencode-runtime.provider.test.js
+1489	server/modules/providers/tests/claude-subagent-echo.test.ts
+1452	server/modules/settings/tests/settings.service.test.ts
+1427	server/modules/providers/tests/claude-token-budget.test.ts
+1420	server/modules/voice-realtime/tests/voice-realtime-dashscope-transport.test.ts
+1334	server/modules/database/tests/db-file-permissions.test.ts
+1319	server/modules/providers/tests/claude-compaction.test.ts
+1313	server/modules/projects/tests/projects-has-taskmaster.service.test.ts
+1320	server/modules/voice-realtime/tests/voice-realtime-ws-proxy.protocol-simulation.test.ts
+1310	server/modules/providers/tests/claude-models.test.ts
+1297	server/modules/providers/tests/provider-token-usage.service.test.ts
+1291	server/modules/voice/tests/voiceTranscribeGaps.test.ts
+1289	server/modules/voice-realtime/tests/voice-realtime-connection-resilience.test.ts
+1281	server/modules/providers/tests/codex-runtime.test.ts
+1280	server/modules/projects/tests/project-star.service.test.ts
+1269	server/modules/providers/tests/provider-attachment-history.test.ts
+1266	server/modules/projects/tests/project-management.service.test.ts
+1258	server/modules/voice/tests/voice-data.test.ts
+1248	server/modules/file-tree/tests/file-tree.service.test.ts
+1245	server/modules/projects/tests/project-clone.service.test.ts
+1226	server/modules/git/tests/git-init.routes.test.ts
+1204	server/modules/commands/tests/commands.test.ts
+1200	server/modules/voice/tests/voice-error-contract.test.ts
+1195	server/modules/voice/tests/voice-provider-dispatch.test.ts
+1185	server/modules/worktrees/tests/worktrees.routes.test.ts
+1174	server/modules/providers/tests/claude-auth.test.ts
+1167	server/modules/voice/tests/voice-capture-raw.routes.test.ts
+1166	server/modules/session-hosts/tests/backgroundTaskLeaseSince.test.ts
+1156	server/modules/session-hosts/tests/session-host-lifecycle.test.ts
+1151	server/modules/static-assets/tests/static-assets.test.ts
+1149	server/modules/file-tree/tests/file-tree.routes.test.ts
+1127	server/modules/cli/tests/cli.service.test.ts
+1125	server/shared/tests/message-unification.test.ts
+1118	server/modules/providers/tests/claude-session-occupancy.test.ts
+1115	server/modules/voice/tests/voice-capture-secrets.test.ts
+1110	server/modules/cli/tests/sandbox.service.test.ts
+1110	server/modules/user/tests/user.service.test.ts
+1109	server/modules/worktrees/tests/worktree-git.service.test.ts
+1106	server/modules/voice/tests/voice-dashscope-default-model.test.ts
+1106	server/modules/worktrees/tests/worktree-create.service.test.ts
+1103	server/modules/session-hosts/tests/session-host-bindings.test.ts
+1099	server/modules/voice/tests/voiceHealth.test.ts
+1098	server/modules/worktrees/tests/worktree-merge.service.test.ts
+1092	server/shared/tests/claude-cli-path.test.ts
+1088	server/modules/worktrees/tests/worktree-remove.service.test.ts
+1088	server/shared/tests/slice-tail-page.test.ts
+1086	server/modules/voice/tests/voice-error-classification.test.ts
+1085	server/modules/worktrees/tests/worktree-create-and-open.service.test.ts
+1084	server/modules/voice/tests/voice-capture-isolation.test.ts
+1084	server/modules/worktrees/tests/worktree-open.service.test.ts
+1083	server/modules/voice/tests/voice-capture-text.test.ts
+1082	server/modules/providers/tests/codex-session-fork.test.ts
+1081	server/modules/plugins/tests/plugins.service.test.ts
+1078	server/modules/projects/tests/session-name-filter.service.test.ts
+1074	server/modules/voice/tests/voice.service.test.ts
+1074	server/modules/worktrees/tests/worktree-list.service.test.ts
+1072	server/shared/tests/strip-ansi-sequences.test.ts
+1071	server/modules/voice/tests/voice-capture-audio.test.ts
+1059	server/modules/auth/tests/auth.service.test.ts
+1059	server/modules/voice/tests/voice-dashscope-usage.test.ts
+1057	server/modules/voice/tests/voice-capture-off.test.ts
+1050	server/modules/mcp-gateway/tests/dependency-declaration.test.ts
+1048	server/modules/voice/tests/voice-capture-raw.false-forms.test.ts
+1043	server/shared/tests/transcript-last-activity.test.ts
+1041	server/modules/git/tests/git-branch.service.test.ts
+1033	server/modules/voice/tests/voice-capture-raw.test.ts
+1032	server/modules/assets/tests/image-assets.service.test.ts
+1027	server/modules/providers/tests/session-history-cache.service.test.ts
+1024	server/modules/debug-agent/tests/debug-agent-vocabulary-guard.test.ts
+1014	server/shared/tests/image-attachments.test.ts
+1006	server/modules/session-hosts/tests/resident-idle-timeout-config.test.ts
+1000	server/modules/quay/tests/quay.service.test.ts
+994	server/modules/git/tests/git.test.ts
+994	server/modules/quay/tests/quay-process.test.ts
+989	server/modules/session-hosts/tests/resident-host-service.test.ts
+968	server/modules/system/tests/system.service.test.ts
+958	server/modules/taskmaster/tests/taskmaster.service.test.ts
+1150	server/modules/voice-realtime/tests/voice-realtime-follow-up-credit.test.ts
+4300	server/modules/voice-realtime/tests/voice-realtime-turn-detection.test.ts
+4806	server/modules/voice-realtime/tests/voice-realtime-audio-capture-wiring.test.ts
+2902	server/modules/voice-realtime/tests/voice-realtime-audio-capture.test.ts
+2108	server/modules/voice-realtime/tests/voice-realtime-audio-capture-alignment.test.ts
+1800	server/modules/voice-realtime/tests/voice-realtime-bounded-queue.test.ts
+1400	server/modules/voice-realtime/tests/voice-realtime-empty-transcript-guard.test.ts
+520	server/modules/voice-realtime/tests/voice-realtime-teardown-races.test.ts
+1500	server/modules/mcp-gateway/tests/mcp-resolve-target-precedence.test.ts
+5200	server/modules/mcp-gateway/tests/mcp-session-search-pruning.test.ts
+4652	server/modules/voice-realtime/tests/voice-realtime-interrupt.test.ts
+4897	server/modules/mcp-gateway/tests/mcp-changes.test.ts
+12312	server/modules/voice-realtime/tests/voice-realtime-status-injection.test.ts
+4893	server/modules/voice-realtime/tests/voice-realtime-status-tool.test.ts
+3856	server/modules/logging/tests/timestamped-console.test.ts
+6651	server/modules/voice-realtime/tests/voice-realtime-upstream-audio-heartbeat.test.ts
+2535	server/modules/voice-realtime/tests/voice-realtime-local-speech.test.ts
+1135	server/modules/voice-realtime/tests/voice-realtime-interrupt-audit.test.ts
+1500	server/modules/voice-realtime/tests/voice-realtime-queue-depth-truth.test.ts
+2000	server/modules/voice-realtime/tests/voice-realtime-queue-depth-drain-refresh.test.ts
+1300	server/modules/voice-realtime/tests/voice-realtime-instructions-no-stop-words.test.ts
+1500	server/modules/voice-realtime/tests/voice-realtime-interrupt-fence.test.ts
+375	server/modules/voice-realtime/tests/voice-realtime-interrupt-revision-order.test.ts
+5133	server/modules/mcp-gateway/tests/mcp-changes-session-paging.test.ts
+950	server/modules/providers/tests/provider-capabilities-cancel-queued.test.ts
+1094	server/modules/mcp-gateway/tests/mcp-changes-quay-index.test.ts
+1220	server/modules/mcp-gateway/tests/mcp-changes-cursor-bounds.test.ts
+2042	server/modules/voice-realtime/tests/voice-realtime-manual-vad-session-update.test.ts
+2312	server/modules/voice-realtime/tests/voice-realtime-interrupt-aftermath.test.ts
+550	server/modules/voice-realtime/tests/voice-realtime-scripted-upstream-state.test.ts
+412	server/modules/voice-realtime/tests/voice-realtime-fake-vad-upstream.test.ts
+4000	server/modules/voice-realtime/tests/voice-realtime-caption-item-attribution.test.ts
+830	server/modules/voice-realtime/tests/voice-realtime-delivery-boundary.test.ts
+2893	server/modules/voice-realtime/tests/voice-realtime-silence-tail-suppression.test.ts
+2614	server/modules/voice-realtime/tests/voice-realtime-transport-opt-in.test.ts
+3721	server/modules/voice-realtime/tests/voice-realtime-unforwarded-disposition.test.ts
+2733	server/modules/voice-realtime/tests/voice-realtime-function-call-output-receipt.test.ts
+1142	server/modules/voice-realtime/tests/voice-realtime-continuous-empty-guard-span.test.ts
+2347	server/modules/voice-realtime/tests/voice-realtime-interrupt-missing-intent.test.ts
+2929	server/modules/voice-realtime/tests/voice-realtime-uplink-vad-seam.test.ts
+892	server/modules/voice-realtime/tests/voice-realtime-silence-tail-deprecated.test.ts
+2429	server/modules/voice-realtime/tests/voice-realtime-uplink-vad-arm-point.test.ts
+953	server/modules/voice-realtime/tests/voice-realtime-single-pending-message.test.ts
+12668	server/modules/providers/tests/claude-resident-merged-queued-turn.test.ts
+8139	server/modules/mcp-gateway/tests/mcp-audit-route.test.ts
+7791	server/modules/mcp-gateway/tests/mcp-session-search.test.ts
+6721	server/modules/mcp-gateway/tests/mcp-insufficient-scope.test.ts
+6533	server/modules/mcp-gateway/tests/mcp-not-found-semantics.test.ts
+6002	server/modules/mcp-gateway/tests/mcp-write-notification.test.ts
+5584	server/modules/mcp-gateway/tests/mcp-ui-last-opened.test.ts
+5444	server/modules/mcp-gateway/tests/mcp-draft.test.ts
+5118	server/modules/mcp-gateway/tests/mcp-ui-visible-context.test.ts
+5034	server/modules/mcp-gateway/tests/mcp-ui-open-session.test.ts
+5019	server/modules/mcp-gateway/tests/mcp-english-only.test.ts
+4936	server/modules/mcp-gateway/tests/mcp-error-envelope.test.ts
+4892	server/modules/mcp-gateway/tests/mcp-error-vocabulary.test.ts
+4849	server/modules/mcp-gateway/tests/mcp-ui-open-task.test.ts
+4843	server/modules/mcp-gateway/tests/mcp-ui-focus-turn.test.ts
+4748	server/modules/mcp-gateway/tests/mcp-ui-show-diff.test.ts
+4611	server/modules/providers/tests/session-creation-selection.test.ts
+3928	server/modules/mcp-gateway/tests/mcp-invalid-argument.test.ts
+3841	server/modules/voice/tests/voice-sensevoice-real.test.ts
+3711	server/modules/mcp-gateway/tests/mcp-ui-clients-list.test.ts
+3707	server/modules/mcp-gateway/tests/mcp-tool-annotations.test.ts
+3643	server/modules/auth/tests/auth-request-log.test.ts
+3317	server/modules/providers/tests/session-selection-launch-spec.test.ts
+3195	server/modules/voice-realtime/tests/voice-realtime-browser-keepalive.test.ts
+3166	server/modules/voice-realtime/tests/voice-realtime-queue-reconcile-poll.test.ts
+3162	server/modules/voice-realtime/tests/voice-realtime-scripted-scenarios.test.ts
+3118	server/modules/voice-realtime/tests/voice-realtime-bridge.test.ts
+3025	server/modules/voice-realtime/tests/voice-realtime-unclaimed-utterance-relay.test.ts
+2917	server/modules/voice-realtime/tests/voice-realtime-bridge.false-forms.test.ts
+2580	server/modules/voice-realtime/tests/voice-realtime-queue-lifecycle-completion.test.ts
+2190	server/modules/websocket/tests/ui-client-registry.test.ts
+1496	server/modules/oauth/tests/oauth-request-log.test.ts
+1362	server/modules/voice-realtime/tests/voice-realtime-uplink-vad.test.ts
+1224	server/modules/voice/tests/voice-sensevoice-adapter.test.ts
+1152	server/modules/voice/tests/voice-sensevoice-health.routes.test.ts
+1140	server/modules/voice-realtime/tests/voice-realtime-uplink-vad-hold-open.test.ts
+913	server/modules/session-hosts/tests/live-host-for-session.test.ts
+841	server/modules/static-assets/tests/service-worker-transient-failure.test.ts
+3491	server/modules/mcp-gateway/tests/mcp-session-create-library-model.test.ts
+3743	server/modules/voice-realtime/tests/voice-realtime-busy-quiet-window.test.ts
+2621	server/shared/tests/server-import-cycle-budget.test.ts
+2607	server/modules/voice-realtime/tests/voice-realtime-omission-fill-params-source.test.ts
+1782	server/modules/voice-realtime/tests/voice-realtime-announce-phrases.test.ts
+1504	server/modules/voice-realtime/tests/voice-realtime-tts-cache.test.ts
+2072	server/modules/providers/tests/claude-transcript-format.test.ts

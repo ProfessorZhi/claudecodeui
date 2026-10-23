@@ -1,0 +1,25 @@
+{
+  "engine": {
+    "name": "sherpa-onnx",
+    "version": "1.13.8",
+    "capabilityMarker": "sv-logprobs-v1",
+    "patch": {
+      "path": "experiments/voice-index-loop/sherpa-patch/sv-logprobs-v1.13.8.patch",
+      "sha256": "062c339aca74573f62a9d39862acb3f9dfdeec154ec48b737fee340b587b7792"
+    }
+  },
+  "model": {
+    "files": [
+      {
+        "name": "model.int8.onnx",
+        "sha256": "c71f0ce00bec95b07744e116345e33d8cbbe08cef896382cf907bf4b51a2cd51"
+      },
+      {
+        "name": "tokens.txt",
+        "sha256": "f449eb28dc567533d7fa59be34e2abca8784f771850c78a47fb731a31429a1dc"
+      }
+    ]
+  },
+  "sampleRate": 16000,
+  "buildId": "sensevoice-1.13.8-c71f0ce00bec-sv-logprobs-v1"
+}

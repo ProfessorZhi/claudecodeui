@@ -1,0 +1,407 @@
+{
+  "codeBlock": {
+    "copy": "Copia",
+    "copied": "Copiato",
+    "copyCode": "Copia codice"
+  },
+  "copyMessage": {
+    "copy": "Copia messaggio",
+    "copied": "Messaggio copiato",
+    "selectFormat": "Seleziona formato copia",
+    "copyAsMarkdown": "Copia come markdown",
+    "copyAsText": "Copia come testo"
+  },
+  "messageTypes": {
+    "user": "U",
+    "error": "Errore",
+    "tool": "Strumento",
+    "claude": "Claude",
+    "cursor": "Cursor",
+    "codex": "Codex",
+    "debug": "Debug Agent"
+  },
+  "tools": {
+    "settings": "Impostazioni strumento",
+    "error": "Errore strumento",
+    "result": "Risultato strumento",
+    "viewParams": "Vedi parametri input",
+    "viewRawParams": "Vedi parametri grezzi",
+    "viewDiff": "Vedi differenze per",
+    "creatingFile": "Creazione nuovo file:",
+    "updatingTodo": "Aggiornamento lista attività",
+    "read": "Leggi",
+    "readFile": "Leggi file",
+    "updateTodo": "Aggiorna lista attività",
+    "readTodo": "Leggi lista attività",
+    "searchResults": "risultati"
+  },
+  "search": {
+    "found": "Trovati {{count}} {{type}}",
+    "file": "file",
+    "files": "file",
+    "pattern": "pattern:",
+    "in": "in:"
+  },
+  "fileOperations": {
+    "updated": "File aggiornato con successo",
+    "created": "File creato con successo",
+    "written": "File scritto con successo",
+    "diff": "Differenze",
+    "newFile": "Nuovo file",
+    "viewContent": "Vedi contenuto file",
+    "viewFullOutput": "Vedi output completo ({{count}} caratteri)",
+    "contentDisplayed": "Il contenuto del file è visualizzato nella vista differenze sopra"
+  },
+  "thinking": {
+    "title": "Sto pensando...",
+    "emoji": "💭 Sto pensando..."
+  },
+  "json": {
+    "response": "Risposta JSON"
+  },
+  "permissions": {
+    "grant": "Concedi permesso per {{tool}}",
+    "added": "Permesso aggiunto",
+    "addTo": "Aggiunge {{entry}} agli strumenti consentiti.",
+    "retry": "Permesso salvato. Riprova la richiesta per usare lo strumento.",
+    "error": "Impossibile aggiornare i permessi. Riprova.",
+    "openSettings": "Apri impostazioni"
+  },
+  "todo": {
+    "updated": "Lista attività aggiornata con successo",
+    "current": "Lista attività corrente"
+  },
+  "plan": {
+    "viewPlan": "📋 Vedi piano di implementazione",
+    "title": "Piano di implementazione"
+  },
+  "usageLimit": {
+    "resetAt": "Limite di utilizzo Claude raggiunto. Il tuo limite verrà ripristinato alle **{{time}} {{timezone}}** - {{date}}"
+  },
+  "codex": {
+    "permissionMode": "Modalità permessi",
+    "modes": {
+      "default": "Modalità predefinita",
+      "auto": "Auto Mode",
+      "acceptEdits": "Accetta modifiche",
+      "bypassPermissions": "Ignora permessi",
+      "plan": "Modalità piano"
+    },
+    "descriptions": {
+      "default": "Solo i comandi attendibili (ls, cat, grep, git status, ecc.) vengono eseguiti automaticamente. Gli altri comandi vengono saltati. Può scrivere nell'area di lavoro.",
+      "auto": "A model classifier decides per tool call whether to approve or deny. Hands-off, but safer than Bypass — denials still happen.",
+      "acceptEdits": "Tutti i comandi vengono eseguiti automaticamente nell'area di lavoro. Modalità completamente automatica con esecuzione sandboxed.",
+      "bypassPermissions": "Accesso completo al sistema senza restrizioni. Tutti i comandi vengono eseguiti automaticamente con accesso completo a disco e rete. Usa con cautela.",
+      "plan": "Modalità pianificazione - nessun comando viene eseguito"
+    },
+    "technicalDetails": "Dettagli tecnici"
+  },
+  "voice": {
+    "realtime": {
+      "exit": "Esci da Live Voice",
+      "mute": "Disattiva microfono",
+      "unmute": "Riattiva microfono",
+      "listening": "In ascolto…",
+      "connecting": "Connessione della voce…",
+      "muted": "Microfono disattivato",
+      "failed": "Controllo vocale interrotto",
+      "errors": {
+        "connectionFailed": "Connessione vocale non riuscita — esci e riavvia Live Voice.",
+        "spendLimit": "Questa sessione vocale ha raggiunto il limite di spesa — esci e riavvia Live Voice.",
+        "missingCredential": "Il server non ha credenziali configurate per il servizio vocale.",
+        "micUnavailable": "Impossibile usare il microfono.",
+        "generic": "Errore vocale — esci e riavvia Live Voice."
+      },
+      "disconnected": "Voce disconnessa",
+      "reconnecting": "Connessione vocale persa — riconnessione ({{attempt}}/{{of}})…",
+      "disconnectedAlert": "Voce disconnessa — ciò che dici ora non viene ascoltato. Esci e riavvia Live Voice.",
+      "queueFull": "Claude è ancora occupato — questa frase non è stata aggiunta.",
+      "enter": "Avvia Live Voice",
+      "unavailable": "Live Voice non è disponibile in questo momento.",
+      "needsSession": "Live Voice richiede una conversazione. Invia prima un messaggio, poi avvia Live Voice."
+    },
+    "errors": {
+      "ACCOUNT_ACCESS": "L'account non può usare questo servizio vocale — verifica che il piano e l'accesso al modello siano attivi, poi riprova.",
+      "UNAUTHORIZED": "Il servizio vocale ha rifiutato la sua chiave — controlla le credenziali del fornitore vocale nelle impostazioni, poi riprova.",
+      "QUOTA_EXHAUSTED": "La quota del servizio vocale è esaurita — ricarica l'account o passa a un altro fornitore vocale.",
+      "RATE_LIMITED": "Troppe trascrizioni contemporaneamente — attendi un momento e registra di nuovo.",
+      "MODEL_NOT_FOUND": "Il modello di trascrizione non è disponibile per questo account — scegli un altro modello nelle impostazioni del fornitore vocale.",
+      "AUDIO_REJECTED": "Il servizio ha rifiutato questa registrazione — registra di nuovo o carica un altro file audio.",
+      "CONTENT_FLAGGED": "Il servizio ha segnalato il contenuto di questa registrazione — controlla l'audio e prova un altro estratto.",
+      "NO_SPEECH_DETECTED": "Nella registrazione non è stata rilevata voce — registra di nuovo parlando più vicino al microfono.",
+      "UPSTREAM_UNAVAILABLE": "Il servizio vocale non risponde in questo momento — attendi un momento e riprova.",
+      "NOT_CONFIGURED": "Nessun fornitore vocale è configurato — configurane uno nelle impostazioni per trascrivere le registrazioni.",
+      "INVALID_BASE_URL": "L'URL di base del fornitore vocale non è valido — correggilo nelle impostazioni del fornitore vocale.",
+      "OVERSIZE": "La registrazione è troppo grande per il caricamento — registra un estratto più breve e riprova.",
+      "UNSUPPORTED_MIME": "Questo formato audio non è supportato — prova un altro file o registra con il microfono.",
+      "ENGINE_UNAVAILABLE": "Il motore vocale locale non è disponibile su questo server — verifica che sia installato o scegli un altro fornitore vocale.",
+      "unknown": "La trascrizione non è riuscita — riprova o controlla le impostazioni del fornitore vocale."
+    }
+  },
+  "input": {
+    "placeholder": "Digita / per i comandi, @ per i file, o chiedi qualcosa a {{provider}}...",
+    "placeholderDefault": "Scrivi il tuo messaggio...",
+    "disabled": "Input disabilitato",
+    "attachFiles": "Allega file",
+    "attachImages": "Allega immagini",
+    "send": "Invia",
+    "stop": "Ferma",
+    "hintText": {
+      "ctrlEnter": "Ctrl+Invio per inviare • Shift+Invio per nuova riga • Tab per cambiare modalità • / per comandi",
+      "enter": "Invio per inviare • Shift+Invio per nuova riga • Tab per cambiare modalità • / per comandi"
+    },
+    "clickToChangeMode": "Clicca per cambiare modalità permessi (o premi Tab nell'input)",
+    "showAllCommands": "Mostra tutti i comandi",
+    "moreTools": "Altri strumenti",
+    "clearInput": "Cancella input",
+    "scrollToBottom": "Scorri in basso",
+    "queue": {
+      "sendNext": "Metti in coda il messaggio successivo",
+      "update": "Aggiorna il messaggio in coda",
+      "label": "In coda",
+      "willSend": "Verrà inviato al termine",
+      "edit": "Modifica il messaggio in coda",
+      "delete": "Elimina il messaggio in coda"
+    }
+  },
+  "providerSelection": {
+    "title": "Scegli il tuo assistente AI",
+    "description": "Seleziona un provider per iniziare una nuova conversazione",
+    "selectModel": "Seleziona modello",
+    "providerInfo": {
+      "anthropic": "di Anthropic",
+      "openai": "di OpenAI",
+      "cursorEditor": "Editor codice AI",
+      "google": "di Google"
+    },
+    "readyPrompt": {
+      "claude": "Pronto a usare Claude con {{model}}. Inizia a digitare il tuo messaggio qui sotto.",
+      "cursor": "Pronto a usare Cursor con {{model}}. Inizia a digitare il tuo messaggio qui sotto.",
+      "codex": "Pronto a usare Codex con {{model}}. Inizia a digitare il tuo messaggio qui sotto.",
+      "default": "Seleziona un provider sopra per iniziare"
+    },
+    "pressToSearch": "Premi <kbd>{{shortcut}}</kbd> per cercare sessioni, file e commit"
+  },
+  "session": {
+    "continue": {
+      "title": "Continua la tua conversazione",
+      "description": "Fai domande sul tuo codice, richiedi modifiche o chiedi aiuto con le attività di sviluppo"
+    },
+    "loading": {
+      "olderMessages": "Caricamento messaggi precedenti...",
+      "sessionMessages": "Caricamento messaggi della sessione..."
+    },
+    "messages": {
+      "showingOf": "Visualizzati {{shown}} di {{total}} messaggi",
+      "scrollToLoad": "Scorri in alto per caricare altri",
+      "showingLast": "Visualizzati ultimi {{count}} messaggi ({{total}} totali)",
+      "loadEarlier": "Carica messaggi precedenti",
+      "loadAll": "Carica tutti i messaggi",
+      "loadingAll": "Caricamento di tutti i messaggi...",
+      "allLoaded": "Tutti i messaggi caricati",
+      "perfWarning": "Tutti i messaggi caricati — lo scorrimento potrebbe essere più lento. Clicca \"Scorri in basso\" per ripristinare le prestazioni."
+    }
+  },
+  "shell": {
+    "selectProject": {
+      "title": "Seleziona un progetto",
+      "description": "Scegli un progetto per aprire una shell interattiva in quella directory"
+    },
+    "status": {
+      "newSession": "Nuova sessione",
+      "initializing": "Inizializzazione...",
+      "restarting": "Riavvio..."
+    },
+    "actions": {
+      "disconnect": "Disconnetti",
+      "disconnectTitle": "Disconnetti dalla shell",
+      "restart": "Riavvia",
+      "restartTitle": "Riavvia shell (disconnetti prima)",
+      "connect": "Continua nella shell",
+      "connectTitle": "Connetti alla shell",
+      "bypass": "Bypass",
+      "bypassOnTitle": "Bypass dei permessi attivo — clicca per disattivarlo (riavvia la CLI)",
+      "bypassOffTitle": "Bypass dei permessi disattivato — clicca per attivarlo (riavvia la CLI)"
+    },
+    "loading": "Caricamento terminale...",
+    "connecting": "Connessione alla shell...",
+    "startSession": "Avvia una nuova sessione Claude",
+    "resumeSession": "Riprendi sessione: {{displayName}}...",
+    "runCommand": "Esegui {{command}} in {{projectName}}",
+    "startCli": "Avvio Claude CLI in {{projectName}}",
+    "defaultCommand": "comando"
+  },
+  "claudeStatus": {
+    "actions": {
+      "thinking": "Ragionamento",
+      "processing": "Elaborazione",
+      "analyzing": "Analisi",
+      "working": "In lavorazione",
+      "computing": "Calcolo",
+      "reasoning": "Ragionamento"
+    },
+    "phases": {
+      "thinking": "Elaborazione",
+      "writing": "Scrittura",
+      "tool": "Esecuzione di {{tool}}",
+      "toolGeneric": "Esecuzione di uno strumento",
+      "compacting": "Compattazione",
+      "awaitingPermission": "In attesa di approvazione"
+    },
+    "state": {
+      "live": "Attivo",
+      "paused": "In pausa"
+    },
+    "dock": {
+      "idleLabel": "Inattivo",
+      "toggle": "Dettagli del processo residente"
+    },
+    "elapsed": {
+      "seconds": "{{count}}s",
+      "minutesSeconds": "{{minutes}}m {{seconds}}s",
+      "label": "{{time}} trascorsi",
+      "startingNow": "Avvio in corso"
+    },
+    "controls": {
+      "stopGeneration": "Interrompi generazione",
+      "pressEscToStop": "Premi Esc in qualsiasi momento per interrompere",
+      "stopTask": "Interrompi attività",
+      "backgroundTool": "Sposta in background"
+    },
+    "providers": {
+      "assistant": "Assistente"
+    },
+    "unreachable": {
+      "title": "Connessione persa · riconnessione…",
+      "stopReason": "Interrompi non è disponibile finché il server è irraggiungibile"
+    },
+    "awaitingServer": {
+      "title": "In attesa del server"
+    },
+    "sendFailed": {
+      "title": "Invio non riuscito · il server non risponde",
+      "reason": "Il messaggio non è stato inviato. La bozza è ancora nel campo: riprova.",
+      "retry": "Reinvia"
+    }
+  },
+  "projectSelection": {
+    "startChatWithProvider": "Seleziona un progetto per iniziare a chattare con {{provider}}"
+  },
+  "tasks": {
+    "nextTaskPrompt": "Inizia l'attività successiva"
+  },
+  "message": {
+    "editAndResend": "Modifica e reinvia",
+    "forkFromHere": "Dirama da qui",
+    "voiceUnrecognized": "Non riconosciuto — questa parte del parlato non è stata trascritta.",
+    "voiceSegmentRetrying": "Connessione interrotta — nuovo tentativo per questa parte.",
+    "voiceSegmentLostUpstream": "Questa parte non è mai arrivata al modello — ripetila, per favore.",
+    "voiceSegmentLostConnection": "La connessione vocale è stata chiusa — questa parte non è stata inviata."
+  },
+  "composer": {
+    "editing": {
+      "title": "Sostituzione di un messaggio precedente",
+      "filesNotReverted": "i file già modificati non vengono ripristinati",
+      "cancel": "Annulla"
+    }
+  },
+  "export": {
+    "trigger": "Esporta conversazione",
+    "heading": "Esporta come",
+    "untitled": "Conversazione",
+    "html": {
+      "label": "Pagina web (.html)",
+      "description": "Autonoma, uguale all’app, stampabile in PDF."
+    },
+    "markdown": {
+      "label": "Markdown (.md)",
+      "description": "Testo semplice con chiamate agli strumenti e diff."
+    },
+    "json": {
+      "label": "JSON (.json)",
+      "description": "Tutti i messaggi, non formattati, per gli strumenti."
+    }
+  },
+  "schedule": {
+    "trigger": "Programma questo messaggio",
+    "heading": "Invia più tardi",
+    "customLabel": "Oppure scegli un orario",
+    "confirm": "Programma",
+    "in": {
+      "15": "Tra 15 minuti",
+      "60": "Tra un’ora",
+      "480": "Tra 8 ore",
+      "1440": "Domani"
+    },
+    "pending": "Programmato per {{when}}",
+    "failed": "Non inviato — {{reason}}",
+    "cancel": "Annulla messaggio programmato",
+    "dismiss": "Ignora l'avviso di errore"
+  },
+  "resident": {
+    "pending": {
+      "annotation": "Verrà gestito al termine di questa risposta",
+      "started": "Elaborazione avviata",
+      "withdraw": "Ritira",
+      "withdrawn": "Ritirato"
+    },
+    "occupied": {
+      "notice": "Questa sessione è occupata da un job in background di Claude Code (job {{jobId}}, pid {{pid}}). Esegui `claude stop {{jobId}}` per liberarla, oppure fai un fork della sessione.",
+      "copyCommand": "Copia comando",
+      "copied": "Copiato"
+    },
+    "badge": {
+      "label": "Residente",
+      "aria": "Sessione residente ({{state}}): mostra dettagli",
+      "state": {
+        "running": "processo in esecuzione",
+        "stopped": "processo non in esecuzione",
+        "exited": "processo terminato",
+        "unknown": "stato sconosciuto"
+      }
+    },
+    "statusBar": {
+      "unstarted": "Residente · Non in esecuzione ({{reason}})",
+      "idle": "Residente · Inattivo",
+      "busy": "Residente · In esecuzione",
+      "exited": "Il processo residente è terminato ({{detail}})",
+      "unknown": "Residente · Stato sconosciuto",
+      "start": "Avvia",
+      "restart": "Riavvia",
+      "close": "Chiudi il processo residente",
+      "copyAddress": "Copia indirizzo",
+      "copied": "Copiato",
+      "address": "Indirizzo",
+      "activeCount": "{{count}} attivi"
+    },
+    "divider": {
+      "cron": "⏰ Attività pianificata · {{time}}",
+      "crossSession": "✉ Messaggio tra sessioni da {{sender}} · {{time}}",
+      "backgroundTask": "📡 Notifica di monitoraggio · {{time}}",
+      "unknown": "Non avviata dall’utente"
+    },
+    "stopResident": "Ferma questa risposta (il processo e le attività pianificate restano)",
+    "backgroundTasks": {
+      "count": "{{n}} attività"
+    }
+  },
+  "workspaceMenu": {
+    "trigger": "Altre azioni"
+  },
+  "uiNavigate": {
+    "title": "Un client esterno vuole aprire una sessione",
+    "requester": "Da {{name}}",
+    "targetSession": "Sessione: {{title}}",
+    "unknownSession": "Un'altra sessione",
+    "atLatest": "Messaggi più recenti",
+    "atMessage": "Un messaggio specifico",
+    "atTurn": "Un turno specifico",
+    "atDiff": "Un diff di file",
+    "atTask": "Un'attività",
+    "jump": "Vai",
+    "ignore": "Ignora",
+    "settingsHint": "Gli ultimi due modificano l'impostazione di questo dispositivo",
+    "alwaysAccept": "Accetta sempre",
+    "alwaysReject": "Rifiuta sempre"
+  }
+}

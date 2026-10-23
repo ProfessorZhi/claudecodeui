@@ -1,0 +1,7 @@
+{
+  "currency": "CNY",
+  "budgetCny": 2.0,
+  "inputPerMillionCny": 0.8,
+  "outputPerMillionCny": 2.7,
+  "note": "T4 budget. Prices are for qwen3.8-omni-flash as given by the account owner (yale) on 2026-10-04 from the provider console: input 0.8 CNY/M tokens, output 2.7 CNY/M tokens (input with cache hit 0.1 CNY/M, not modelled: every measured call so far had cached_tokens = 0). A null, non-numeric or <= 0 price is a placeholder and aborts the run on purpose (the worker must not guess a price)."
+}

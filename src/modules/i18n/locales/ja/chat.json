@@ -1,0 +1,394 @@
+{
+  "codeBlock": {
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "copyCode": "コードをコピー"
+  },
+  "copyMessage": {
+    "copy": "メッセージをコピー",
+    "copied": "メッセージをコピーしました",
+    "selectFormat": "コピー形式を選択",
+    "copyAsMarkdown": "Markdownとしてコピー",
+    "copyAsText": "テキストとしてコピー"
+  },
+  "messageTypes": {
+    "user": "U",
+    "error": "エラー",
+    "tool": "ツール",
+    "claude": "Claude",
+    "cursor": "Cursor",
+    "codex": "Codex",
+    "debug": "Debug Agent"
+  },
+  "tools": {
+    "settings": "ツール設定",
+    "error": "ツールエラー",
+    "result": "ツール結果",
+    "viewParams": "入力パラメータを表示",
+    "viewRawParams": "生パラメータを表示",
+    "viewDiff": "編集差分を表示:",
+    "creatingFile": "新規ファイルを作成:",
+    "updatingTodo": "Todoリストを更新中",
+    "read": "読み取り",
+    "readFile": "ファイルを読み取り",
+    "updateTodo": "Todoリストを更新",
+    "readTodo": "Todoリストを読み取り",
+    "searchResults": "件の結果"
+  },
+  "search": {
+    "found": "{{count}}件の{{type}}が見つかりました",
+    "file": "ファイル",
+    "files": "ファイル",
+    "pattern": "パターン:",
+    "in": "場所:"
+  },
+  "fileOperations": {
+    "updated": "ファイルを更新しました",
+    "created": "ファイルを作成しました",
+    "written": "ファイルを書き込みました",
+    "diff": "差分",
+    "newFile": "新規ファイル",
+    "viewContent": "ファイルの内容を表示",
+    "viewFullOutput": "全出力を表示（{{count}}文字）",
+    "contentDisplayed": "ファイルの内容は上の差分ビューに表示されています"
+  },
+  "thinking": {
+    "title": "思考中...",
+    "emoji": "💭 思考中..."
+  },
+  "json": {
+    "response": "JSONレスポンス"
+  },
+  "permissions": {
+    "grant": "{{tool}}に権限を付与",
+    "added": "権限を追加しました",
+    "addTo": "{{entry}}を許可されたツールに追加します。",
+    "retry": "権限を保存しました。ツールを使用するにはリクエストを再試行してください。",
+    "error": "権限を更新できませんでした。もう一度お試しください。",
+    "openSettings": "設定を開く"
+  },
+  "todo": {
+    "updated": "Todoリストを更新しました",
+    "current": "現在のTodoリスト"
+  },
+  "plan": {
+    "viewPlan": "📋 実装プランを表示",
+    "title": "実装プラン"
+  },
+  "usageLimit": {
+    "resetAt": "Claudeの使用制限に達しました。制限は**{{time}} {{timezone}}** - {{date}}にリセットされます"
+  },
+  "codex": {
+    "permissionMode": "権限モード",
+    "modes": {
+      "default": "デフォルトモード",
+      "auto": "Auto Mode",
+      "acceptEdits": "編集を許可",
+      "bypassPermissions": "権限をバイパス",
+      "plan": "プランモード"
+    },
+    "descriptions": {
+      "default": "信頼されたコマンド（ls、cat、grep、git statusなど）のみ自動実行。その他のコマンドはスキップ。ワークスペースへの書き込みは可能。",
+      "auto": "A model classifier decides per tool call whether to approve or deny. Hands-off, but safer than Bypass — denials still happen.",
+      "acceptEdits": "ワークスペース内ですべてのコマンドを自動実行。サンドボックス環境での完全自動モード。",
+      "bypassPermissions": "制限なしの完全なシステムアクセス。すべてのコマンドがディスクとネットワークへの完全なアクセスで自動実行されます。注意して使用してください。",
+      "plan": "プランニングモード - コマンドは実行されません"
+    },
+    "technicalDetails": "技術的な詳細"
+  },
+  "voice": {
+    "realtime": {
+      "exit": "Live Voice を終了",
+      "mute": "ミュート",
+      "unmute": "ミュート解除",
+      "listening": "聞き取り中…",
+      "connecting": "音声を接続中…",
+      "muted": "ミュート中",
+      "failed": "音声コントロールを停止しました",
+      "errors": {
+        "connectionFailed": "音声接続に失敗しました。終了して Live Voice を開始し直してください。",
+        "spendLimit": "この音声セッションは利用上限に達しました。終了して Live Voice を開始し直してください。",
+        "missingCredential": "サーバーに音声サービスの認証情報が設定されていません。",
+        "micUnavailable": "マイクを使用できません。",
+        "generic": "音声エラーが発生しました。終了して Live Voice を開始し直してください。"
+      },
+      "disconnected": "音声が切断されました",
+      "reconnecting": "音声接続が切れました — 再接続中（{{attempt}}/{{of}}）…",
+      "disconnectedAlert": "音声が切断されました — 今話しても聞き取られません。終了して Live Voice をもう一度開始してください。",
+      "queueFull": "Claude はまだ処理中です — この文は追加されませんでした。",
+      "enter": "Live Voice を開始",
+      "unavailable": "Live Voice は現在利用できません。",
+      "needsSession": "Live Voice には会話が必要です。先にメッセージを送信してから Live Voice を開始してください。"
+    },
+    "errors": {
+      "ACCOUNT_ACCESS": "このアカウントではこの音声サービスを利用できません — プランとモデルの利用権限が有効か確認してから、もう一度お試しください。",
+      "UNAUTHORIZED": "音声サービスがキーを受け付けませんでした — 設定で音声プロバイダーの認証情報を確認してから、もう一度お試しください。",
+      "QUOTA_EXHAUSTED": "音声サービスの利用枠を使い切りました — アカウントを補充するか、別の音声プロバイダーに切り替えてください。",
+      "RATE_LIMITED": "同時に文字起こしする量が多すぎます — 少し待ってから録音し直してください。",
+      "MODEL_NOT_FOUND": "このアカウントではこの文字起こしモデルを利用できません — 音声プロバイダーの設定で別のモデルを選んでください。",
+      "AUDIO_REJECTED": "サービスがこの録音を受け付けませんでした — 録音し直すか、別の音声ファイルをアップロードしてください。",
+      "CONTENT_FLAGGED": "サービスがこの録音の内容に印を付けました — 音声を確認して、別の箇所を試してください。",
+      "NO_SPEECH_DETECTED": "録音から音声を検出できませんでした — マイクに近づいて録音し直してください。",
+      "UPSTREAM_UNAVAILABLE": "音声サービスが現在応答していません — 少し待ってからもう一度お試しください。",
+      "NOT_CONFIGURED": "音声プロバイダーが設定されていません — 録音を文字起こしするには、設定で構成してください。",
+      "INVALID_BASE_URL": "音声プロバイダーのベース URL が正しくありません — 音声プロバイダーの設定で修正してください。",
+      "OVERSIZE": "録音が大きすぎてアップロードできません — もっと短く録音してからもう一度お試しください。",
+      "UNSUPPORTED_MIME": "この音声形式には対応していません — 別のファイルを使うか、マイクで録音してください。",
+      "ENGINE_UNAVAILABLE": "ローカル音声エンジンはこのサーバーで利用できません — インストールされているか確認するか、別の音声プロバイダーを選んでください。",
+      "unknown": "文字起こしに失敗しました — もう一度お試しいただくか、音声プロバイダーの設定を確認してください。"
+    }
+  },
+  "input": {
+    "placeholder": "/ でコマンド、@ でファイル指定、または {{provider}} に何でも聞いてください...",
+    "placeholderDefault": "メッセージを入力...",
+    "disabled": "入力無効",
+    "attachFiles": "ファイルを添付",
+    "attachImages": "画像を添付",
+    "send": "送信",
+    "stop": "停止",
+    "hintText": {
+      "ctrlEnter": "Ctrl+Enterで送信 • Shift+Enterで改行 • Tabでモード切替 • / でスラッシュコマンド",
+      "enter": "Enterで送信 • Shift+Enterで改行 • Tabでモード切替 • / でスラッシュコマンド"
+    },
+    "clickToChangeMode": "クリックで権限モードを変更（または入力欄でTab）",
+    "showAllCommands": "すべてのコマンドを表示",
+    "moreTools": "その他のツール",
+    "queue": {
+      "sendNext": "次のメッセージを送信待ちにする",
+      "update": "送信待ちのメッセージを更新",
+      "label": "送信待ち",
+      "willSend": "この処理が完了すると送信されます",
+      "edit": "送信待ちのメッセージを編集",
+      "delete": "送信待ちのメッセージを削除"
+    }
+  },
+  "providerSelection": {
+    "title": "AIアシスタントを選択",
+    "description": "新しい会話を始めるプロバイダーを選択してください",
+    "selectModel": "モデルを選択",
+    "providerInfo": {
+      "anthropic": "by Anthropic",
+      "openai": "by OpenAI",
+      "cursorEditor": "AIコードエディタ"
+    },
+    "readyPrompt": {
+      "claude": "{{model}}でClaudeを使用する準備ができました。下にメッセージを入力してください。",
+      "cursor": "{{model}}でCursorを使用する準備ができました。下にメッセージを入力してください。",
+      "codex": "{{model}}でCodexを使用する準備ができました。下にメッセージを入力してください。",
+      "default": "上からプロバイダーを選択して開始してください"
+    },
+    "pressToSearch": "<kbd>{{shortcut}}</kbd> を押してセッション、ファイル、コミットを検索"
+  },
+  "session": {
+    "continue": {
+      "title": "会話を続ける",
+      "description": "コードについて質問したり、変更をリクエストしたり、開発タスクのサポートを受けられます"
+    },
+    "loading": {
+      "olderMessages": "過去のメッセージを読み込んでいます...",
+      "sessionMessages": "セッションメッセージを読み込んでいます..."
+    },
+    "messages": {
+      "showingOf": "{{total}}件中{{shown}}件を表示",
+      "scrollToLoad": "上にスクロールしてさらに読み込む",
+      "showingLast": "最新{{count}}件を表示（全{{total}}件）",
+      "loadEarlier": "過去のメッセージを読み込む"
+    }
+  },
+  "shell": {
+    "selectProject": {
+      "title": "プロジェクトを選択",
+      "description": "プロジェクトを選択してそのディレクトリでシェルを開きます"
+    },
+    "status": {
+      "newSession": "新しいセッション",
+      "initializing": "初期化中...",
+      "restarting": "再起動中..."
+    },
+    "actions": {
+      "disconnect": "切断",
+      "disconnectTitle": "シェルから切断",
+      "restart": "再起動",
+      "restartTitle": "シェルを再起動（先に切断してください）",
+      "connect": "シェルで続行",
+      "connectTitle": "シェルに接続",
+      "bypass": "バイパス",
+      "bypassOnTitle": "権限バイパスが有効 — クリックで無効化（CLIを再起動）",
+      "bypassOffTitle": "権限バイパスが無効 — クリックで有効化（CLIを再起動）"
+    },
+    "loading": "ターミナルを読み込んでいます...",
+    "connecting": "シェルに接続しています...",
+    "startSession": "新しいClaudeセッションを開始",
+    "resumeSession": "セッションを再開: {{displayName}}...",
+    "runCommand": "{{projectName}}で{{command}}を実行",
+    "startCli": "{{projectName}}でClaude CLIを起動しています",
+    "defaultCommand": "コマンド"
+  },
+  "claudeStatus": {
+    "actions": {
+      "thinking": "Thinking",
+      "processing": "Processing",
+      "analyzing": "Analyzing",
+      "working": "Working",
+      "computing": "Computing",
+      "reasoning": "Reasoning"
+    },
+    "phases": {
+      "thinking": "考えています",
+      "writing": "書いています",
+      "tool": "{{tool}} を実行中",
+      "toolGeneric": "ツールを実行中",
+      "compacting": "圧縮中",
+      "awaitingPermission": "承認待ち"
+    },
+    "state": {
+      "live": "Live",
+      "paused": "Paused"
+    },
+    "dock": {
+      "idleLabel": "待機中",
+      "toggle": "常駐プロセスの詳細"
+    },
+    "elapsed": {
+      "seconds": "{{count}}s",
+      "minutesSeconds": "{{minutes}}m {{seconds}}s",
+      "label": "{{time}} elapsed",
+      "startingNow": "Starting now"
+    },
+    "controls": {
+      "stopGeneration": "Stop Generation",
+      "pressEscToStop": "Press Esc anytime to stop",
+      "stopTask": "タスクを停止",
+      "backgroundTool": "バックグラウンドへ"
+    },
+    "providers": {
+      "assistant": "Assistant"
+    },
+    "unreachable": {
+      "title": "接続が切れました · 再接続中…",
+      "stopReason": "サーバーに接続できないため停止できません"
+    },
+    "awaitingServer": {
+      "title": "サーバーの応答を待機中"
+    },
+    "sendFailed": {
+      "title": "送信に失敗 · サーバーが応答しません",
+      "reason": "メッセージは送信されませんでした。下書きは入力欄に残っています。もう一度お試しください。",
+      "retry": "再送"
+    }
+  },
+  "message": {
+    "editAndResend": "編集して再送信",
+    "forkFromHere": "ここから分岐",
+    "voiceUnrecognized": "認識できませんでした — この部分は文字起こしされませんでした。",
+    "voiceSegmentRetrying": "接続が中断しました — この部分を再送しています。",
+    "voiceSegmentLostUpstream": "この部分はモデルに届きませんでした — もう一度言ってください。",
+    "voiceSegmentLostConnection": "音声接続が切断されました — この部分は送信されませんでした。"
+  },
+  "composer": {
+    "editing": {
+      "title": "以前のメッセージを置き換えています",
+      "filesNotReverted": "変更済みのファイルは元に戻りません",
+      "cancel": "キャンセル"
+    }
+  },
+  "export": {
+    "trigger": "会話をエクスポート",
+    "heading": "エクスポート形式",
+    "untitled": "会話",
+    "html": {
+      "label": "Web ページ (.html)",
+      "description": "単一ファイル。アプリと同じ見た目で PDF 印刷も可能。"
+    },
+    "markdown": {
+      "label": "Markdown (.md)",
+      "description": "ツール呼び出しと差分を含むプレーンテキスト。"
+    },
+    "json": {
+      "label": "JSON (.json)",
+      "description": "全メッセージを未整形で。ツール連携向け。"
+    }
+  },
+  "schedule": {
+    "trigger": "このメッセージを予約",
+    "heading": "後で送信",
+    "customLabel": "または時刻を指定",
+    "confirm": "予約",
+    "in": {
+      "15": "15 分後",
+      "60": "1 時間後",
+      "480": "8 時間後",
+      "1440": "明日"
+    },
+    "pending": "{{when}} に送信予定",
+    "failed": "未送信 — {{reason}}",
+    "cancel": "予約を取り消す",
+    "dismiss": "失敗の通知を閉じる"
+  },
+  "resident": {
+    "pending": {
+      "annotation": "この回答の終了後に処理されます",
+      "started": "処理を開始しました",
+      "withdraw": "取り消す",
+      "withdrawn": "取り消しました"
+    },
+    "occupied": {
+      "notice": "このセッションは Claude Code のバックグラウンドジョブに占有されています（job {{jobId}}、pid {{pid}}）。`claude stop {{jobId}}` で停止するか、セッションを fork してください。",
+      "copyCommand": "コマンドをコピー",
+      "copied": "コピーしました"
+    },
+    "badge": {
+      "label": "常駐",
+      "aria": "常駐セッション（{{state}}）：詳細を表示",
+      "state": {
+        "running": "プロセス実行中",
+        "stopped": "プロセス停止中",
+        "exited": "プロセス終了",
+        "unknown": "状態不明"
+      }
+    },
+    "statusBar": {
+      "unstarted": "常駐 · 未起動（{{reason}}）",
+      "idle": "常駐 · 待機中",
+      "busy": "常駐 · 実行中",
+      "exited": "常駐プロセスが終了しました（{{detail}}）",
+      "unknown": "常駐 · 状態不明",
+      "start": "開始",
+      "restart": "再起動",
+      "close": "常駐プロセスを閉じる",
+      "copyAddress": "アドレスをコピー",
+      "copied": "コピーしました",
+      "address": "アドレス",
+      "activeCount": "{{count}} 件アクティブ"
+    },
+    "divider": {
+      "cron": "⏰ スケジュールタスク · {{time}}",
+      "crossSession": "✉ {{sender}} からのセッション間メッセージ · {{time}}",
+      "backgroundTask": "📡 モニター通知 · {{time}}",
+      "unknown": "ユーザー操作ではありません"
+    },
+    "stopResident": "この回答を停止（プロセスとスケジュールタスクは継続）",
+    "backgroundTasks": {
+      "count": "{{n}} 件のタスク"
+    }
+  },
+  "workspaceMenu": {
+    "trigger": "その他の操作"
+  },
+  "uiNavigate": {
+    "title": "外部クライアントがセッションを開こうとしています",
+    "requester": "{{name}} から",
+    "targetSession": "セッション: {{title}}",
+    "unknownSession": "別のセッション",
+    "atLatest": "最新のメッセージ",
+    "atMessage": "指定したメッセージ",
+    "atTurn": "指定したターン",
+    "atDiff": "ファイルの差分",
+    "atTask": "タスク",
+    "jump": "移動",
+    "ignore": "無視",
+    "settingsHint": "最後の 2 つはこのデバイスの設定を変更します",
+    "alwaysAccept": "常に許可",
+    "alwaysReject": "常に拒否"
+  }
+}

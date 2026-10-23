@@ -1,0 +1,138 @@
+{
+  "description": "Recovery corpus for AC-113: transcript shapes that were actually observed coming back from whisper-large-v3-turbo over the dictation corpus (Chinese edge-tts and English TTS). Each entry pairs the authored reference with the observed transcript, so identifier survival can be measured before and after repair on real failure shapes rather than on invented ones.",
+  "sources": {
+    "sentences": "仓库外验证工装的 logs/quality-en.log（英文 o65/o45 场景的并排逐字记录，对应语料脚本 e01-e04）与 logs/test6-bias.log（中文 d01-d04 的 plain 列）。",
+    "fragments": "同一批日志里逐字出现的标识符级渲染（logs/test3-final.log 的 critical-token 列表、logs/test5-noise-asr.log 的降噪场景）。",
+    "note": "句子条目的参考与转写是日志逐字；片段条目只保留被观测到的那个 token 形态，句框在日志里各自不同，故不补句子。"
+  },
+  "entries": [
+    {
+      "id": "en-e01",
+      "kind": "sentence",
+      "reference": "Change the timeout in voice.service.ts to thirty seconds",
+      "transcript": "Change the timeout in voice.service.ts to 30 seconds.",
+      "observedForm": "voice.service.ts 逐字存活",
+      "source": "logs/quality-en.log「WHAT THE RECOGNISER ACTUALLY RETURNED」e01"
+    },
+    {
+      "id": "en-e02",
+      "kind": "sentence",
+      "reference": "Update voice.service.ts, no wait, it should be voice.routes.ts",
+      "transcript": "Update voice.service.ts. But it should be voice.routes.ts.",
+      "observedForm": "两个点号路径均逐字存活，句读被改写",
+      "source": "logs/quality-en.log e02"
+    },
+    {
+      "id": "en-e03",
+      "kind": "sentence",
+      "reference": "Look at how the useVoiceInput hook handles recording",
+      "transcript": "Look at how the Use voice input hook handles recording.",
+      "observedForm": "useVoiceInput -> Use voice input（驼峰被拆成普通词，仅大小写/空格之差）",
+      "source": "logs/quality-en.log e03"
+    },
+    {
+      "id": "en-e04",
+      "kind": "sentence",
+      "reference": "Do not touch voice.service.ts, only change voice.module.ts",
+      "transcript": "Do not touch. Voice.service.ts Only change voice.module.t",
+      "observedForm": "Voice.service.ts（首字母大写）+ voice.module.t（末字符截断）",
+      "source": "logs/quality-en.log e04"
+    },
+    {
+      "id": "zh-d01",
+      "kind": "sentence",
+      "reference": "把 server 里的 voice.service.ts 的超时改成三十秒",
+      "transcript": "把Server里的voice.seluis.ts的超时改成30秒",
+      "observedForm": "voice.service.ts -> voice.seluis.ts（中段被识别器改写）",
+      "source": "logs/test6-bias.log 中文 d01 plain 列"
+    },
+    {
+      "id": "zh-d02",
+      "kind": "sentence",
+      "reference": "改一下 voice.service.ts，嗯不对，应该是 voice.routes.ts",
+      "transcript": "改一下。voice.seluis.ts嗯,不对。应该是。voice.rouse.ts",
+      "observedForm": "voice.seluis.ts 与 voice.rouse.ts（自我更正句里两个路径都被改写）",
+      "source": "logs/test6-bias.log 中文 d02 plain 列"
+    },
+    {
+      "id": "zh-d03",
+      "kind": "sentence",
+      "reference": "看一下 useVoiceInput 这个 hook 是怎么处理 recording 的",
+      "transcript": "看一下。Use voice.Input这个。Hook.是怎么处理。Recording.G的。",
+      "observedForm": "Use voice.Input（点号落进驼峰）与 Recording.G；本条模块无法还原，留作对照",
+      "source": "logs/test6-bias.log 中文 d03 plain 列"
+    },
+    {
+      "id": "zh-d04",
+      "kind": "sentence",
+      "reference": "不要动 voice.service.ts，只改 voice.module.ts",
+      "transcript": "不要动。voice.seLuis TS直改voicemodule TS",
+      "observedForm": "voice.seLuis TS 与 voicemodule TS（点号被读成空格，token 形状不成立）",
+      "source": "logs/test6-bias.log 中文 d04 plain 列；FINDINGS §10 记为未成功修复形态"
+    },
+    {
+      "id": "frag-case",
+      "kind": "identifier-fragment",
+      "reference": "voice.service.ts",
+      "transcript": "Voice.service.ts",
+      "observedForm": "仅首字母大小写之差",
+      "source": "logs/quality-en.log e04 raw 列"
+    },
+    {
+      "id": "frag-truncated",
+      "kind": "identifier-fragment",
+      "reference": "voice.module.ts",
+      "transcript": "voice.module.t",
+      "observedForm": "末字符被截断",
+      "source": "logs/quality-en.log e04 raw 列"
+    },
+    {
+      "id": "frag-garbled-dot",
+      "kind": "identifier-fragment",
+      "reference": "voice.service.ts",
+      "transcript": "voice.seluis.ts",
+      "observedForm": "点号路径的中段被改写",
+      "source": "logs/test6-bias.log d01 plain 列；logs/test3-final.log critical-token 列表 seluis.ts"
+    },
+    {
+      "id": "frag-garbled-route",
+      "kind": "identifier-fragment",
+      "reference": "voice.routes.ts",
+      "transcript": "voice.rouse.ts",
+      "observedForm": "点号路径的中段被改写（routes -> rouse）",
+      "source": "logs/test6-bias.log d02 plain 列；logs/test3-final.log critical-token 列表 rouse.ts"
+    },
+    {
+      "id": "frag-spaced-symbol",
+      "kind": "identifier-fragment",
+      "reference": "useVoiceInput",
+      "transcript": "Use voice input",
+      "observedForm": "驼峰符号被读成普通词（第二遍跨词匹配的对象）",
+      "source": "logs/quality-en.log e03 raw 列"
+    },
+    {
+      "id": "frag-exact",
+      "kind": "identifier-fragment",
+      "reference": "voice.service.ts",
+      "transcript": "voice.service.ts",
+      "observedForm": "逐字存活（对照：无需修复也不得被改坏）",
+      "source": "logs/quality-en.log e01/e02 raw 列"
+    },
+    {
+      "id": "frag-dot-as-space",
+      "kind": "identifier-fragment",
+      "reference": "voice.service.ts",
+      "transcript": "voice.seLuis TS",
+      "observedForm": "点号被读成空格、中段被改写；token 形状不成立，模块无法还原（已知限制，AC-113 不要求）",
+      "source": "logs/test6-bias.log d04 plain 列；FINDINGS §10"
+    },
+    {
+      "id": "frag-noise",
+      "kind": "identifier-fragment",
+      "reference": "voice.service.ts",
+      "transcript": "Luis.seLuis.ts",
+      "observedForm": "降噪场景下前缀也被改写（logs/test5-noise-asr.log）",
+      "source": "logs/test5-noise-asr.log 压缩后 列"
+    }
+  ]
+}

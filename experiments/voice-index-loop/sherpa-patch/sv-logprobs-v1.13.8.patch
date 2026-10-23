@@ -1,0 +1,185 @@
+diff --git a/sherpa-onnx/csrc/offline-ctc-decoder.h b/sherpa-onnx/csrc/offline-ctc-decoder.h
+index c9d1b36..ae61a1c 100644
+--- a/sherpa-onnx/csrc/offline-ctc-decoder.h
++++ b/sherpa-onnx/csrc/offline-ctc-decoder.h
+@@ -26,6 +26,16 @@ struct OfflineCtcDecoderResult {
+   ///
+   /// tokens.size() == timestamps.size()
+   std::vector<int32_t> timestamps;
++
++  /// token_log_probs[i] is the log-softmax probability of tokens[i] at the
++  /// frame it was emitted (the maximum over the frames of a repeated run).
++  /// Filled by the greedy search decoder.
++  std::vector<float> token_log_probs;
++
++  /// Optional: the full log-softmax matrix, row-major [num_frames, dim].
++  /// Only filled when SHERPA_ONNX_DUMP_LOG_PROBS=1 is set in the environment.
++  std::vector<float> frame_log_probs;
++  int32_t frame_log_probs_dim = 0;
+ };
+ 
+ class OfflineCtcDecoder {
+diff --git a/sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.cc b/sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.cc
+index 59d16f5..9ba8b85 100644
+--- a/sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.cc
++++ b/sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.cc
+@@ -5,6 +5,8 @@
+ #include "sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.h"
+ 
+ #include <algorithm>
++#include <cmath>
++#include <cstdlib>
+ #include <utility>
+ #include <vector>
+ 
+@@ -12,6 +14,12 @@
+ 
+ namespace sherpa_onnx {
+ 
++OfflineCtcGreedySearchDecoder::OfflineCtcGreedySearchDecoder(int32_t blank_id)
++    : blank_id_(blank_id) {
++  const char *e = std::getenv("SHERPA_ONNX_DUMP_LOG_PROBS");
++  keep_frame_log_probs_ = e != nullptr && e[0] == '1';
++}
++
+ std::vector<OfflineCtcDecoderResult> OfflineCtcGreedySearchDecoder::Decode(
+     Ort::Value log_probs, Ort::Value log_probs_length) {
+   std::vector<int64_t> shape = log_probs.GetTensorTypeAndShapeInfo().GetShape();
+@@ -31,17 +39,39 @@ std::vector<OfflineCtcDecoderResult> OfflineCtcGreedySearchDecoder::Decode(
+     OfflineCtcDecoderResult r;
+     int64_t prev_id = -1;
+ 
+-    for (int32_t t = 0; t != static_cast<int32_t>(p_log_probs_length[b]); ++t) {
++    const int32_t T = static_cast<int32_t>(p_log_probs_length[b]);
++    if (keep_frame_log_probs_) {
++      r.frame_log_probs.resize(static_cast<size_t>(T) * vocab_size);
++      r.frame_log_probs_dim = vocab_size;
++    }
++
++    for (int32_t t = 0; t != T; ++t) {
++      const float *row = p_log_probs;
+       auto y = static_cast<int64_t>(std::distance(
+-          static_cast<const float *>(p_log_probs),
+-          std::max_element(
+-              static_cast<const float *>(p_log_probs),
+-              static_cast<const float *>(p_log_probs) + vocab_size)));
++          row, std::max_element(row, row + vocab_size)));
+       p_log_probs += vocab_size;
+ 
+-      if (y != blank_id_ && y != prev_id) {
+-        r.tokens.push_back(y);
+-        r.timestamps.push_back(t);
++      // log-softmax is needed for emitted (non-blank) frames, and for every
++      // frame when the full matrix is requested.
++      const bool emit = y != blank_id_ && y != prev_id;
++      const bool run = y != blank_id_ && y == prev_id;
++      if (emit || run || keep_frame_log_probs_) {
++        const float mx = row[y];
++        double sum = 0;
++        for (int32_t v = 0; v != vocab_size; ++v) sum += std::exp(row[v] - mx);
++        const float lse = mx + static_cast<float>(std::log(sum));
++        if (keep_frame_log_probs_) {
++          float *dst = r.frame_log_probs.data() + static_cast<size_t>(t) * vocab_size;
++          for (int32_t v = 0; v != vocab_size; ++v) dst[v] = row[v] - lse;
++        }
++        const float lp = mx - lse;
++        if (emit) {
++          r.tokens.push_back(y);
++          r.timestamps.push_back(t);
++          r.token_log_probs.push_back(lp);
++        } else if (run && !r.token_log_probs.empty() && lp > r.token_log_probs.back()) {
++          r.token_log_probs.back() = lp;
++        }
+       }
+       prev_id = y;
+     }  // for (int32_t t = 0; ...)
+diff --git a/sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.h b/sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.h
+index ccc2f72..528c3fc 100644
+--- a/sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.h
++++ b/sherpa-onnx/csrc/offline-ctc-greedy-search-decoder.h
+@@ -13,14 +13,14 @@ namespace sherpa_onnx {
+ 
+ class OfflineCtcGreedySearchDecoder : public OfflineCtcDecoder {
+  public:
+-  explicit OfflineCtcGreedySearchDecoder(int32_t blank_id)
+-      : blank_id_(blank_id) {}
++  explicit OfflineCtcGreedySearchDecoder(int32_t blank_id);
+ 
+   std::vector<OfflineCtcDecoderResult> Decode(
+       Ort::Value log_probs, Ort::Value log_probs_length) override;
+ 
+  private:
+   int32_t blank_id_;
++  bool keep_frame_log_probs_ = false;
+ };
+ 
+ }  // namespace sherpa_onnx
+diff --git a/sherpa-onnx/csrc/offline-recognizer-sense-voice-impl.h b/sherpa-onnx/csrc/offline-recognizer-sense-voice-impl.h
+index 8b9cffa..dced936 100644
+--- a/sherpa-onnx/csrc/offline-recognizer-sense-voice-impl.h
++++ b/sherpa-onnx/csrc/offline-recognizer-sense-voice-impl.h
+@@ -52,6 +52,17 @@ OfflineRecognitionResult ConvertSenseVoiceResult(
+     r.timestamps.push_back(time);
+   }
+ 
++  for (int32_t i = start; i < static_cast<int32_t>(src.token_log_probs.size()); ++i) {
++    r.ys_log_probs.push_back(src.token_log_probs[i]);
++  }
++  if (src.frame_log_probs_dim > 0 && !src.frame_log_probs.empty()) {
++    size_t skip = static_cast<size_t>(start) * src.frame_log_probs_dim;
++    if (src.frame_log_probs.size() > skip) {
++      r.frame_log_probs.assign(src.frame_log_probs.begin() + skip, src.frame_log_probs.end());
++      r.frame_log_probs_dim = src.frame_log_probs_dim;
++    }
++  }
++
+   r.words = std::move(src.words);
+ 
+   if (!is_funasr_nano) {
+diff --git a/sherpa-onnx/csrc/offline-stream.h b/sherpa-onnx/csrc/offline-stream.h
+index 4ff7834..0101e6a 100644
+--- a/sherpa-onnx/csrc/offline-stream.h
++++ b/sherpa-onnx/csrc/offline-stream.h
+@@ -45,6 +45,12 @@ struct OfflineRecognitionResult {
+   /// ys_log_probs[i] contains the log probability (confidence) for tokens[i].
+   std::vector<float> ys_log_probs;
+ 
++  /// Optional (SenseVoice CTC only, SHERPA_ONNX_DUMP_LOG_PROBS=1): the full
++  /// log-softmax matrix after the 4 prefix frames, row-major
++  /// [frame_log_probs.size() / frame_log_probs_dim, frame_log_probs_dim].
++  std::vector<float> frame_log_probs;
++  int32_t frame_log_probs_dim = 0;
++
+   // Word IDs from FST decoding (CTC models with FST decoder only).
+   std::vector<int32_t> words;
+ 
+diff --git a/sherpa-onnx/python/csrc/offline-stream.cc b/sherpa-onnx/python/csrc/offline-stream.cc
+index 8a5848c..81142c0 100644
+--- a/sherpa-onnx/python/csrc/offline-stream.cc
++++ b/sherpa-onnx/python/csrc/offline-stream.cc
+@@ -4,8 +4,10 @@
+ 
+ #include "sherpa-onnx/python/csrc/offline-stream.h"
+ 
++#include <algorithm>
+ #include <vector>
+ 
++#include "pybind11/numpy.h"
+ #include "sherpa-onnx/csrc/offline-stream.h"
+ 
+ namespace sherpa_onnx {
+@@ -95,6 +97,14 @@ static void PybindOfflineRecognitionResult(py::module *m) {  // NOLINT
+         [](const PyClass &self) { return self.durations; })
+       .def_property_readonly("ys_log_probs",
+         [](const PyClass &self) { return self.ys_log_probs; })
++      .def_property_readonly("frame_log_probs",
++        [](const PyClass &self) {
++          int64_t d = self.frame_log_probs_dim;
++          int64_t n = d > 0 ? static_cast<int64_t>(self.frame_log_probs.size()) / d : 0;
++          py::array_t<float> a({n, d});
++          if (n > 0) std::copy(self.frame_log_probs.begin(), self.frame_log_probs.end(), a.mutable_data());
++          return a;
++        })
+       .def_property_readonly("segment_timestamps",
+         [](const PyClass &self) { return self.segment_timestamps; })
+       .def_property_readonly("segment_durations",

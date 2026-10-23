@@ -1,0 +1,652 @@
+{
+  "title": "Impostazioni",
+  "tabs": {
+    "account": "Account",
+    "permissions": "Permessi",
+    "mcpServers": "Server MCP",
+    "appearance": "Aspetto",
+    "models": "Models"
+  },
+  "account": {
+    "title": "Account",
+    "language": "Lingua",
+    "languageLabel": "Lingua dell'interfaccia",
+    "languageDescription": "Scegli la lingua preferita per l'interfaccia",
+    "username": "Nome utente",
+    "email": "Email",
+    "profile": "Profilo",
+    "changePassword": "Cambia password"
+  },
+  "mcp": {
+    "title": "Server MCP",
+    "addServer": "Aggiungi server",
+    "editServer": "Modifica server",
+    "deleteServer": "Elimina server",
+    "serverName": "Nome server",
+    "serverType": "Tipo server",
+    "config": "Configurazione",
+    "testConnection": "Testa connessione",
+    "status": "Stato",
+    "connected": "Connesso",
+    "disconnected": "Disconnesso",
+    "scope": {
+      "label": "Ambito",
+      "user": "Utente",
+      "project": "Progetto"
+    }
+  },
+  "appearance": {
+    "title": "Aspetto",
+    "theme": "Tema",
+    "codeEditor": "Editor codice",
+    "editorTheme": "Tema editor",
+    "wordWrap": "A capo automatico",
+    "showMinimap": "Mostra minimappa",
+    "lineNumbers": "Numeri di riga",
+    "fontSize": "Dimensione carattere"
+  },
+  "actions": {
+    "saveChanges": "Salva modifiche",
+    "resetToDefaults": "Ripristina predefiniti",
+    "cancelChanges": "Annulla modifiche"
+  },
+  "quickSettings": {
+    "title": "Impostazioni rapide",
+    "sections": {
+      "appearance": "Aspetto",
+      "toolDisplay": "Visualizzazione strumenti",
+      "inputSettings": "Impostazioni input"
+    },
+    "darkMode": "Modalità scura",
+    "showRawParameters": "Mostra parametri grezzi",
+    "showThinking": "Mostra ragionamento",
+    "sendByCtrlEnter": "Invia con Ctrl+Invio",
+    "sendByCtrlEnterDescription": "Se abilitato, premere Ctrl+Invio invierà il messaggio invece di Invio. Utile per gli utenti IME per evitare invii accidentali. Si applica solo ai dispositivi con tastiera: su un dispositivo solo touch, Invio aggiunge sempre una riga e l’invio avviene dal pulsante."
+  },
+  "terminalShortcuts": {
+    "title": "Scorciatoie terminale",
+    "sectionKeys": "Tasti",
+    "sectionNavigation": "Navigazione",
+    "escape": "Escape",
+    "tab": "Tab",
+    "shiftTab": "Shift+Tab",
+    "arrowUp": "Freccia su",
+    "arrowDown": "Freccia giù",
+    "scrollDown": "Scorri giù",
+    "handle": {
+      "closePanel": "Chiudi pannello scorciatoie",
+      "openPanel": "Apri pannello scorciatoie"
+    }
+  },
+  "mainTabs": {
+    "label": "Impostazioni",
+    "agents": "Agenti",
+    "appearance": "Aspetto",
+    "git": "Git",
+    "apiTokens": "API e Token",
+    "tasks": "Attività",
+    "notifications": "Notifiche",
+    "plugins": "Plugin",
+    "about": "Informazioni"
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "description": "Controlla quali notifiche ricevere.",
+    "webPush": {
+      "title": "Notifiche push web",
+      "enable": "Abilita notifiche push",
+      "disable": "Disabilita notifiche push",
+      "enabled": "Le notifiche push sono abilitate",
+      "loading": "Aggiornamento...",
+      "unsupported": "Le notifiche push non sono supportate in questo browser.",
+      "denied": "Le notifiche push sono bloccate. Abilitale nelle impostazioni del browser."
+    },
+    "sound": {
+      "title": "Suono",
+      "description": "Riproduci un breve tono quando termina un'esecuzione della chat.",
+      "enabled": "Attivato",
+      "test": "Prova suono"
+    },
+    "events": {
+      "title": "Tipi di evento",
+      "actionRequired": "Azione richiesta",
+      "stop": "Esecuzione interrotta",
+      "error": "Esecuzione fallita"
+    }
+  },
+  "appearanceSettings": {
+    "darkMode": {
+      "label": "Modalità scura",
+      "description": "Alterna tra tema chiaro e scuro"
+    },
+    "projectSorting": {
+      "label": "Ordinamento progetti",
+      "description": "Come vengono ordinati i progetti nella barra laterale",
+      "alphabetical": "Alfabetico",
+      "recentActivity": "Attività recente"
+    },
+    "codeEditor": {
+      "title": "Editor codice",
+      "theme": {
+        "label": "Tema editor",
+        "description": "Tema predefinito per l'editor di codice"
+      },
+      "wordWrap": {
+        "label": "A capo automatico",
+        "description": "Abilita il ritorno a capo automatico nell'editor"
+      },
+      "showMinimap": {
+        "label": "Mostra minimappa",
+        "description": "Visualizza una minimappa per facilitare la navigazione nella vista differenze"
+      },
+      "lineNumbers": {
+        "label": "Mostra numeri di riga",
+        "description": "Visualizza i numeri di riga nell'editor"
+      },
+      "fontSize": {
+        "label": "Dimensione carattere",
+        "description": "Dimensione del carattere dell'editor in pixel"
+      }
+    }
+  },
+  "mcpForm": {
+    "title": {
+      "add": "Aggiungi server MCP",
+      "edit": "Modifica server MCP"
+    },
+    "importMode": {
+      "form": "Input modulo",
+      "json": "Importa JSON"
+    },
+    "scope": {
+      "label": "Ambito",
+      "userGlobal": "Utente (globale)",
+      "projectLocal": "Progetto (locale)",
+      "userDescription": "Ambito utente: disponibile in tutti i progetti sulla tua macchina",
+      "projectDescription": "Ambito locale: disponibile solo nel progetto selezionato",
+      "cannotChange": "L'ambito non può essere modificato quando si modifica un server esistente"
+    },
+    "fields": {
+      "serverName": "Nome server",
+      "transportType": "Tipo di trasporto",
+      "command": "Comando",
+      "arguments": "Argomenti (uno per riga)",
+      "jsonConfig": "Configurazione JSON",
+      "url": "URL",
+      "envVars": "Variabili d'ambiente (CHIAVE=valore, una per riga)",
+      "headers": "Header (CHIAVE=valore, uno per riga)",
+      "selectProject": "Seleziona un progetto..."
+    },
+    "placeholders": {
+      "serverName": "mio-server"
+    },
+    "validation": {
+      "missingType": "Campo obbligatorio mancante: type",
+      "stdioRequiresCommand": "Il tipo stdio richiede un campo command",
+      "httpRequiresUrl": "Il tipo {{type}} richiede un campo url",
+      "invalidJson": "Formato JSON non valido",
+      "jsonHelp": "Incolla la configurazione del server MCP in formato JSON. Esempi di formato:",
+      "jsonExampleStdio": "• stdio: {\"type\":\"stdio\",\"command\":\"npx\",\"args\":[\"@upstash/context7-mcp\"]}",
+      "jsonExampleHttp": "• http/sse: {\"type\":\"http\",\"url\":\"https://api.example.com/mcp\"}"
+    },
+    "configDetails": "Dettagli configurazione (da {{configFile}})",
+    "projectPath": "Percorso: {{path}}",
+    "actions": {
+      "cancel": "Annulla",
+      "saving": "Salvataggio...",
+      "addServer": "Aggiungi server",
+      "updateServer": "Aggiorna server"
+    }
+  },
+  "saveStatus": {
+    "success": "Impostazioni salvate con successo!",
+    "error": "Impossibile salvare le impostazioni",
+    "saving": "Salvataggio..."
+  },
+  "footerActions": {
+    "save": "Salva impostazioni",
+    "cancel": "Annulla"
+  },
+  "git": {
+    "title": "Configurazione Git",
+    "description": "Configura la tua identità git per i commit. Queste impostazioni verranno applicate globalmente tramite git config --global",
+    "name": {
+      "label": "Nome Git",
+      "help": "Il tuo nome per i commit git"
+    },
+    "email": {
+      "label": "Email Git",
+      "help": "La tua email per i commit git"
+    },
+    "actions": {
+      "save": "Salva configurazione",
+      "saving": "Salvataggio..."
+    },
+    "status": {
+      "success": "Salvato con successo"
+    }
+  },
+  "apiKeys": {
+    "title": "Chiavi API",
+    "description": "Genera chiavi API per accedere all'API esterna da altre applicazioni.",
+    "newKey": {
+      "alertTitle": "⚠️ Salva la tua chiave API",
+      "alertMessage": "Questa è l'unica volta che vedrai questa chiave. Conservala in modo sicuro.",
+      "iveSavedIt": "L'ho salvata"
+    },
+    "form": {
+      "placeholder": "Nome chiave API (es. Server produzione)",
+      "createButton": "Crea",
+      "cancelButton": "Annulla"
+    },
+    "newButton": "Nuova chiave API",
+    "empty": "Nessuna chiave API creata.",
+    "list": {
+      "created": "Creata:",
+      "lastUsed": "Ultimo utilizzo:"
+    },
+    "confirmDelete": "Sei sicuro di voler eliminare questa chiave API?",
+    "status": {
+      "active": "Attiva",
+      "inactive": "Inattiva"
+    },
+    "github": {
+      "title": "Token GitHub",
+      "description": "Aggiungi token di accesso personale GitHub per clonare repository privati tramite l'API esterna.",
+      "descriptionAlt": "Aggiungi token di accesso personale GitHub per clonare repository privati. Puoi anche passare i token direttamente nelle richieste API senza salvarli.",
+      "addButton": "Aggiungi token",
+      "form": {
+        "namePlaceholder": "Nome token (es. Repository personali)",
+        "tokenPlaceholder": "Token di accesso personale GitHub (ghp_...)",
+        "descriptionPlaceholder": "Descrizione (opzionale)",
+        "addButton": "Aggiungi token",
+        "cancelButton": "Annulla",
+        "howToCreate": "Come creare un token di accesso personale GitHub →"
+      },
+      "empty": "Nessun token GitHub aggiunto.",
+      "added": "Aggiunto:",
+      "confirmDelete": "Sei sicuro di voler eliminare questo token GitHub?"
+    },
+    "apiDocsLink": "Documentazione API",
+    "documentation": {
+      "title": "Documentazione API esterna",
+      "description": "Scopri come usare l'API esterna per avviare sessioni Claude/Cursor dalle tue applicazioni.",
+      "viewLink": "Vedi documentazione API →"
+    },
+    "loading": "Caricamento...",
+    "version": {
+      "updateAvailable": "Aggiornamento disponibile: v{{version}}"
+    }
+  },
+  "tasks": {
+    "checking": "Verifica installazione TaskMaster...",
+    "notInstalled": {
+      "title": "TaskMaster AI CLI non installato",
+      "description": "TaskMaster CLI è necessario per usare le funzionalità di gestione attività. Installalo per iniziare:",
+      "installCommand": "npm install -g task-master-ai",
+      "viewOnGitHub": "Vedi su GitHub",
+      "afterInstallation": "Dopo l'installazione:",
+      "steps": {
+        "restart": "Riavvia questa applicazione",
+        "autoAvailable": "Le funzionalità TaskMaster saranno automaticamente disponibili",
+        "initCommand": "Usa task-master init nella directory del tuo progetto"
+      }
+    },
+    "settings": {
+      "enableLabel": "Abilita integrazione TaskMaster",
+      "enableDescription": "Mostra attività TaskMaster, banner e indicatori nella barra laterale nell'interfaccia"
+    }
+  },
+  "agents": {
+    "authStatus": {
+      "checking": "Verifica...",
+      "connected": "Connesso",
+      "notConnected": "Non connesso",
+      "disconnected": "Disconnesso",
+      "checkingAuth": "Verifica stato autenticazione...",
+      "loggedInAs": "Connesso come {{email}}",
+      "authenticatedUser": "utente autenticato"
+    },
+    "account": {
+      "claude": {
+        "description": "Assistente AI Anthropic Claude"
+      },
+      "cursor": {
+        "description": "Editor di codice potenziato da AI Cursor"
+      },
+      "codex": {
+        "description": "Assistente AI OpenAI Codex"
+      }
+    },
+    "connectionStatus": "Stato connessione",
+    "login": {
+      "title": "Accedi",
+      "reAuthenticate": "Ri-autenticati",
+      "description": "Accedi al tuo account {{agent}} per abilitare le funzionalità AI",
+      "reAuthDescription": "Accedi con un account diverso o aggiorna le credenziali",
+      "button": "Accedi",
+      "reLoginButton": "Ri-accedi"
+    },
+    "error": "Errore: {{error}}"
+  },
+  "permissions": {
+    "title": "Impostazioni permessi",
+    "skipPermissions": {
+      "label": "Salta richieste di permesso (usa con cautela)",
+      "claudeDescription": "Equivalente al flag --dangerously-skip-permissions",
+      "cursorDescription": "Equivalente al flag -f in Cursor CLI"
+    },
+    "allowedTools": {
+      "title": "Strumenti consentiti",
+      "description": "Strumenti automaticamente consentiti senza richiedere permesso",
+      "placeholder": "es. \"Bash(git log:*)\" o \"Write\"",
+      "quickAdd": "Aggiunta rapida strumenti comuni:",
+      "empty": "Nessuno strumento consentito configurato"
+    },
+    "blockedTools": {
+      "title": "Strumenti bloccati",
+      "description": "Strumenti automaticamente bloccati senza richiedere permesso",
+      "placeholder": "es. \"Bash(rm:*)\"",
+      "empty": "Nessuno strumento bloccato configurato"
+    },
+    "allowedCommands": {
+      "title": "Comandi shell consentiti",
+      "description": "Comandi shell automaticamente consentiti senza richiedere permesso",
+      "placeholder": "es. \"Shell(ls)\" o \"Shell(git status)\"",
+      "quickAdd": "Aggiunta rapida comandi comuni:",
+      "empty": "Nessun comando consentito configurato"
+    },
+    "blockedCommands": {
+      "title": "Comandi shell bloccati",
+      "description": "Comandi shell automaticamente bloccati",
+      "placeholder": "es. \"Shell(rm -rf)\" o \"Shell(sudo)\"",
+      "empty": "Nessun comando bloccato configurato"
+    },
+    "toolExamples": {
+      "title": "Esempi pattern strumenti:",
+      "bashGitLog": "- Consenti tutti i comandi git log",
+      "bashGitDiff": "- Consenti tutti i comandi git diff",
+      "write": "- Consenti tutti gli utilizzi dello strumento Write",
+      "bashRm": "- Blocca tutti i comandi rm (pericoloso)"
+    },
+    "shellExamples": {
+      "title": "Esempi comandi shell:",
+      "ls": "- Consenti comando ls",
+      "gitStatus": "- Consenti git status",
+      "npmInstall": "- Consenti npm install",
+      "rmRf": "- Blocca eliminazione ricorsiva"
+    },
+    "codex": {
+      "permissionMode": "Modalità permessi",
+      "description": "Controlla come Codex gestisce le modifiche ai file e l'esecuzione dei comandi",
+      "modes": {
+        "default": {
+          "title": "Predefinito",
+          "description": "Esegue i comandi nella sandbox dello spazio di lavoro. Codex decide quando è necessaria l’approvazione; le richieste non possono essere approvate in questa integrazione non interattiva."
+        },
+        "acceptEdits": {
+          "title": "Accetta modifiche",
+          "description": "Tutti i comandi vengono eseguiti automaticamente nell'area di lavoro. Modalità completamente automatica con esecuzione sandboxed."
+        },
+        "bypassPermissions": {
+          "title": "Ignora permessi",
+          "description": "Accesso completo al sistema senza restrizioni. Tutti i comandi vengono eseguiti automaticamente con accesso completo a disco e rete. Usa con cautela."
+        }
+      },
+      "technicalDetails": "Dettagli tecnici",
+      "technicalInfo": {
+        "default": "sandboxMode=workspace-write, approvalPolicy=on-request. Esegue i comandi nella sandbox dello spazio di lavoro. Codex decide quando è necessaria l’approvazione; le richieste non possono essere approvate in questa integrazione non interattiva.",
+        "acceptEdits": "sandboxMode=workspace-write, approvalPolicy=never. Tutti i comandi vengono auto-eseguiti nella directory del progetto.",
+        "bypassPermissions": "sandboxMode=danger-full-access, approvalPolicy=never. Accesso completo al sistema, usa solo in ambienti attendibili.",
+        "overrideNote": "Puoi sovrascrivere questa impostazione per sessione usando il pulsante modalità nell'interfaccia chat."
+      }
+    },
+    "actions": {
+      "add": "Aggiungi"
+    }
+  },
+  "mcpServers": {
+    "title": "Server MCP",
+    "description": {
+      "claude": "I server Model Context Protocol forniscono strumenti e fonti dati aggiuntive a Claude",
+      "cursor": "I server Model Context Protocol forniscono strumenti e fonti dati aggiuntive a Cursor",
+      "codex": "I server Model Context Protocol forniscono strumenti e fonti dati aggiuntive a Codex"
+    },
+    "addButton": "Aggiungi server MCP",
+    "empty": "Nessun server MCP configurato",
+    "serverType": "Tipo",
+    "scope": {
+      "local": "locale",
+      "user": "utente"
+    },
+    "config": {
+      "command": "Comando",
+      "url": "URL",
+      "args": "Argomenti",
+      "environment": "Ambiente"
+    },
+    "tools": {
+      "title": "Strumenti",
+      "count": "({{count}}):",
+      "more": "+{{count}} altri"
+    },
+    "actions": {
+      "edit": "Modifica server",
+      "delete": "Elimina server"
+    },
+    "help": {
+      "title": "Informazioni su Codex MCP",
+      "description": "Codex supporta server MCP basati su stdio. Puoi aggiungere server che estendono le capacità di Codex con strumenti e risorse aggiuntive."
+    }
+  },
+  "pluginSettings": {
+    "title": "Plugin",
+    "description": "Estendi l'interfaccia con plugin personalizzati. Installa da git o inserisci una cartella in ~/.claude-code-ui/plugins/",
+    "installPlaceholder": "https://github.com/utente/mio-plugin",
+    "installButton": "Installa",
+    "installing": "Installazione…",
+    "securityWarning": "Installa solo plugin di cui hai verificato il codice sorgente o di autori di cui ti fidi.",
+    "scanningPlugins": "Scansione plugin…",
+    "noPluginsInstalled": "Nessun plugin installato",
+    "pullLatest": "Aggiorna da git",
+    "noGitRemote": "Nessun remote git — aggiornamento non disponibile",
+    "uninstallPlugin": "Disinstalla plugin",
+    "confirmUninstall": "Clicca di nuovo per confermare",
+    "confirmUninstallMessage": "Rimuovere {{name}}? Questa azione non può essere annullata.",
+    "cancel": "Annulla",
+    "remove": "Rimuovi",
+    "updateFailed": "Aggiornamento fallito",
+    "installFailed": "Installazione fallita",
+    "uninstallFailed": "Disinstallazione fallita",
+    "toggleFailed": "Attivazione/disattivazione fallita",
+    "starterPluginLabel": "Plugin iniziale",
+    "starter": "Iniziale",
+    "docs": "Documentazione",
+    "starterPlugin": {
+      "name": "Statistiche progetto",
+      "badge": "iniziale",
+      "description": "Conteggio file, righe di codice, ripartizione per tipo di file e attività recente per il tuo progetto.",
+      "install": "Installa"
+    },
+    "terminalPlugin": {
+      "name": "Terminale",
+      "badge": "ufficiale",
+      "description": "Terminale integrato con accesso completo alla shell direttamente nell'interfaccia.",
+      "install": "Installa"
+    },
+    "morePlugins": "Altri",
+    "enable": "Abilita",
+    "disable": "Disabilita",
+    "installAriaLabel": "URL repository git del plugin",
+    "tab": "scheda",
+    "runningStatus": "in esecuzione"
+  },
+  "modelLibrary": {
+    "loadFailed": "Could not load models: {{message}}",
+    "duplicate": {
+      "name": "{{source}} (copy)",
+      "title": "Copy custom model",
+      "description": "Copies the base URL, secret and unset rows of {{source}}. The model ID and endpoint aliases are not adjusted.",
+      "idHint": "Suggested ID only — replace it with the identifier your gateway accepts and update the endpoint alias rows to match, or the copy will fail at launch.",
+      "submit": "Create copy",
+      "notice": "{{source}} was copied to {{name}}.",
+      "idTaken": "A model with the ID {{id}} already exists. Choose another ID.",
+      "actionLabel": "Duplicate {{name}}"
+    },
+    "env": {
+      "title": "Environment variables",
+      "addRow": "+ Add",
+      "gatewayTemplate": "Gateway template",
+      "empty": "No environment variables. This model uses the provider's defaults.",
+      "key": "Variable name",
+      "kind": "Row type",
+      "value": "Value",
+      "removeRow": "Remove variable",
+      "kinds": {
+        "value": "Value",
+        "secret": "Secret",
+        "envref": "Env reference",
+        "unset": "Unset"
+      },
+      "kindsHelp": {
+        "value": "Stored as a literal value and passed to the spawned process unchanged.",
+        "secret": "Write-only: once saved, only whether it is set is shown.",
+        "envref": "Uses a variable already present in the CloudCLI server environment instead of a value saved with this model.",
+        "unset": "Removes this variable from the spawned process environment."
+      },
+      "secretSet": "Set",
+      "secretValue": "Secret value",
+      "secretReplace": "Type to replace the stored secret",
+      "secretEnter": "Enter secret",
+      "envrefName": "Server environment variable name",
+      "envrefSet": "Set on server",
+      "envrefUnset": "Not set on server",
+      "envrefHelp": "Reads this variable from the CloudCLI server process environment; restart the server after changing it.",
+      "warningEnvrefUnset": "Environment variable {{name}} is not set on the server; this row will send nothing.",
+      "unsavedRow": "Non verrà salvato: il valore è vuoto.",
+      "unsavedSummary": "Queste righe non verranno salvate perché il loro valore è vuoto:"
+    }
+  },
+  "accessTokens": {
+    "title": "Token di accesso personale",
+    "description": "Crea token di accesso personale per autenticare client MCP e altre applicazioni all'API CloudCLI.",
+    "newButton": "Nuovo token",
+    "form": {
+      "namePlaceholder": "Nome del token (es. Il mio client MCP)",
+      "expiryLabel": "Scade tra",
+      "expiryOption": "{{days}} giorni",
+      "createButton": "Crea token",
+      "cancelButton": "Annulla",
+      "scopesLabel": "Ambiti",
+      "writeScopeRisk": "Questo token può inviare, creare e controllare sessioni. Tienilo segreto.",
+      "defaultName": "Token MCP · {{date}}"
+    },
+    "newToken": {
+      "alertTitle": "⚠️ Salva il tuo token di accesso",
+      "alertMessage": "Questa è l'unica volta che vedrai questo token. Conservalo al sicuro.",
+      "copy": "Copia",
+      "iveSavedIt": "L'ho salvato"
+    },
+    "list": {
+      "empty": "Nessun token di accesso creato.",
+      "unnamed": "Token senza nome",
+      "expires": "Scade:",
+      "lastUsed": "Ultimo utilizzo:",
+      "never": "Mai",
+      "active": "Attivo",
+      "revoked": "Revocato",
+      "revokeButton": "Revoca",
+      "revokeConfirm": "Vuoi davvero revocare questo token? L'operazione non può essere annullata.",
+      "created": "Creato:",
+      "expired": "Scaduto"
+    },
+    "scopes": {
+      "read": "Lettura (cloudcli:read)",
+      "sessionSend": "Invia alle sessioni (cloudcli:session:send)",
+      "sessionCreate": "Crea sessioni (cloudcli:session:create)",
+      "sessionControl": "Controlla sessioni (cloudcli:session:control)",
+      "approve": "Approva (cloudcli:approve)",
+      "navigate": "Apri una sessione in uno dei tuoi browser (cloudcli:navigate)"
+    },
+    "oauthTokens": {
+      "title": "Avanzate: token OAuth (sola lettura)",
+      "description": "Token emessi dai flussi OAuth (app connesse e client MCP). Sono gestiti da quei flussi e non possono essere creati o revocati qui.",
+      "empty": "Nessun token OAuth emesso finora.",
+      "showInactive": "Mostra revocati e scaduti",
+      "unknownClient": "Client sconosciuto",
+      "kind": "Tipo:",
+      "kindAccess": "Token di accesso",
+      "kindRefresh": "Token di aggiornamento",
+      "scopes": "Ambiti:"
+    }
+  },
+  "mcpGateway": {
+    "title": "CloudCLI MCP",
+    "description": "Collega un client MCP locale a questo server CloudCLI.",
+    "status": {
+      "enabled": "Attivato",
+      "disabled": "Non attivato"
+    },
+    "copy": "Copia",
+    "copied": "Copiato",
+    "connectLabel": "Comando di connessione",
+    "enableHint": "Il gateway MCP non è attivato. Imposta MCP_ENABLED=true nell'ambiente del server e riavvia CloudCLI per attivarlo."
+  },
+  "mcpNavigation": {
+    "title": "Richieste di navigazione",
+    "description": "Come risponde questo dispositivo quando un client MCP chiede di aprire una sessione nel tuo browser.",
+    "deviceOnly": "Questa impostazione vale solo per questo dispositivo.",
+    "policy": {
+      "label": "Risposta",
+      "accept": "Consenti",
+      "ask": "Chiedi ogni volta",
+      "reject": "Rifiuta"
+    },
+    "deviceName": {
+      "label": "Nome del dispositivo",
+      "description": "Il nome che questo dispositivo comunica al client MCP. Lascia vuoto per usare un nome predefinito derivato dal browser."
+    }
+  },
+  "connectedApps": {
+    "title": "App collegate",
+    "description": "Applicazioni che hai autorizzato ad agire per tuo conto tramite il gateway MCP di CloudCLI. Revocare un'autorizzazione rifiuta immediatamente tutti i token emessi sotto di essa.",
+    "list": {
+      "empty": "Nessuna app collegata.",
+      "redirectHost": "Host di callback:",
+      "scopes": "Ambiti:",
+      "createdAt": "Autorizzata:",
+      "lastUsed": "Ultimo utilizzo:",
+      "never": "Mai",
+      "revokeButton": "Revoca",
+      "revokeConfirm": "Vuoi davvero revocare questa autorizzazione? I suoi token smettono subito di funzionare. L'operazione non è reversibile."
+    }
+  },
+  "oauthClients": {
+    "title": "Client OAuth (avanzato)",
+    "description": "Applicazioni registrate per ottenere token da questo server CloudCLI. Un client disabilitato qui vede immediatamente rifiutate tutte le sue autorizzazioni e i suoi token.",
+    "newButton": "Nuovo client",
+    "form": {
+      "namePlaceholder": "Nome del client (es. La mia integrazione)",
+      "redirectUrisPlaceholder": "URI di reindirizzamento (es. http://127.0.0.1:5173/callback)",
+      "createButton": "Crea client",
+      "cancelButton": "Annulla"
+    },
+    "newClient": {
+      "alertTitle": "⚠️ Salva il segreto del client",
+      "alertMessage": "Questa è l'unica volta che vedrai questo segreto. Conservalo al sicuro.",
+      "copy": "Copia",
+      "iveSavedIt": "L'ho salvato"
+    },
+    "list": {
+      "empty": "Nessun client OAuth registrato.",
+      "redirectHost": "Host di callback:",
+      "createdVia": "Registrato tramite:",
+      "dcr": "Registrazione dinamica",
+      "manual": "Manuale",
+      "active": "Attivo",
+      "disabled": "Disabilitato",
+      "disableButton": "Disabilita",
+      "disableConfirm": "Vuoi davvero disabilitare questo client? Ogni autorizzazione e token sotto di esso viene rifiutato immediatamente. L'operazione non è reversibile."
+    }
+  }
+}

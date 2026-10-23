@@ -1,0 +1,92 @@
+{
+ "computedAt": "2026-09-24T09:31:43.035Z",
+ "cap": 8000,
+ "windows": {
+  "turn1": "assistant text of the last turn before the prompt",
+  "turn3": "last three turns"
+ },
+ "note": "aggregate counts only; no transcript text",
+ "sessions": 123,
+ "humanPrompts": 526,
+ "promptsWithIds": 83,
+ "promptsWithIdsAndPriorTurn": 62,
+ "targets": 150,
+ "byWindow": {
+  "turn1": {
+   "targetOnly": 68,
+   "targetAndCompetitor": 10,
+   "competitorOnly": 6,
+   "neither": 66
+  },
+  "turn3": {
+   "targetOnly": 83,
+   "targetAndCompetitor": 13,
+   "competitorOnly": 7,
+   "neither": 47
+  }
+ },
+ "byClass": {
+  "turn1:camel": {
+   "targetOnly": 39,
+   "targetAndCompetitor": 0,
+   "competitorOnly": 2,
+   "neither": 44
+  },
+  "turn3:camel": {
+   "targetOnly": 50,
+   "targetAndCompetitor": 1,
+   "competitorOnly": 2,
+   "neither": 32
+  },
+  "turn1:kebab": {
+   "targetOnly": 12,
+   "targetAndCompetitor": 7,
+   "competitorOnly": 4,
+   "neither": 7
+  },
+  "turn3:kebab": {
+   "targetOnly": 13,
+   "targetAndCompetitor": 9,
+   "competitorOnly": 3,
+   "neither": 5
+  },
+  "turn1:file": {
+   "targetOnly": 17,
+   "targetAndCompetitor": 3,
+   "competitorOnly": 0,
+   "neither": 15
+  },
+  "turn3:file": {
+   "targetOnly": 20,
+   "targetAndCompetitor": 3,
+   "competitorOnly": 2,
+   "neither": 10
+  }
+ },
+ "bySurface": {
+  "turn1:terminal": {
+   "targetOnly": 19,
+   "targetAndCompetitor": 1,
+   "competitorOnly": 1,
+   "neither": 9
+  },
+  "turn3:terminal": {
+   "targetOnly": 19,
+   "targetAndCompetitor": 2,
+   "competitorOnly": 0,
+   "neither": 9
+  },
+  "turn1:cloudcli-ui": {
+   "targetOnly": 49,
+   "targetAndCompetitor": 9,
+   "competitorOnly": 5,
+   "neither": 57
+  },
+  "turn3:cloudcli-ui": {
+   "targetOnly": 64,
+   "targetAndCompetitor": 11,
+   "competitorOnly": 7,
+   "neither": 38
+  }
+ }
+}

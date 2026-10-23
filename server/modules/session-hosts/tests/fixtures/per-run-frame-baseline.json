@@ -1,0 +1,545 @@
+{
+  "recordedAtCommit": "53739649d1c6c953338561fef0d67e6327bbadc0",
+  "recordedAt": "2026-09-26T12:13:25.240Z",
+  "providers": [
+    "claude",
+    "codex",
+    "cursor",
+    "opencode"
+  ],
+  "scenarios": [
+    "turn",
+    "abort",
+    "busy",
+    "replay"
+  ],
+  "records": [
+    {
+      "provider": "claude",
+      "scenario": "turn",
+      "frames": [
+        {
+          "sessionId": "claude-turn-parity",
+          "provider": "claude",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "claude-turn-parity",
+          "provider": "claude",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "kind": "complete",
+          "provider": "claude",
+          "sessionId": "claude-turn-parity",
+          "actualSessionId": "claude-turn-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "claude",
+      "scenario": "abort",
+      "frames": [
+        {
+          "sessionId": "claude-abort-parity",
+          "provider": "claude",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "claude-abort-parity",
+          "provider": "claude",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "kind": "complete",
+          "provider": "claude",
+          "sessionId": "claude-abort-parity",
+          "actualSessionId": "claude-abort-parity",
+          "exitCode": 0,
+          "success": false,
+          "aborted": true,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "claude",
+      "scenario": "busy",
+      "frames": [
+        {
+          "sessionId": "claude-busy-parity",
+          "provider": "claude",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "claude-busy-parity",
+          "provider": "claude",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "kind": "protocol_error",
+          "code": "RUN_IN_PROGRESS",
+          "error": "Session \"claude-busy-parity\" already has a run in progress.",
+          "sessionId": "claude-busy-parity"
+        },
+        {
+          "kind": "complete",
+          "provider": "claude",
+          "sessionId": "claude-busy-parity",
+          "actualSessionId": "claude-busy-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "claude",
+      "scenario": "replay",
+      "frames": [
+        {
+          "kind": "chat_subscribed",
+          "sessionId": "claude-replay-parity",
+          "isProcessing": true,
+          "lastSeq": 2,
+          "pendingPermissions": []
+        },
+        {
+          "sessionId": "claude-replay-parity",
+          "provider": "claude",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "kind": "complete",
+          "provider": "claude",
+          "sessionId": "claude-replay-parity",
+          "actualSessionId": "claude-replay-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "codex",
+      "scenario": "turn",
+      "frames": [
+        {
+          "sessionId": "codex-turn-parity",
+          "provider": "codex",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "codex-turn-parity",
+          "provider": "codex",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "sessionId": "codex-turn-parity",
+          "provider": "codex",
+          "kind": "complete",
+          "seq": 3,
+          "actualSessionId": "codex-turn-parity"
+        }
+      ]
+    },
+    {
+      "provider": "codex",
+      "scenario": "abort",
+      "frames": [
+        {
+          "sessionId": "codex-abort-parity",
+          "provider": "codex",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "codex-abort-parity",
+          "provider": "codex",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "kind": "complete",
+          "provider": "codex",
+          "sessionId": "codex-abort-parity",
+          "actualSessionId": "codex-abort-parity",
+          "exitCode": 0,
+          "success": false,
+          "aborted": true,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "codex",
+      "scenario": "busy",
+      "frames": [
+        {
+          "sessionId": "codex-busy-parity",
+          "provider": "codex",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "codex-busy-parity",
+          "provider": "codex",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "kind": "protocol_error",
+          "code": "RUN_IN_PROGRESS",
+          "error": "Session \"codex-busy-parity\" already has a run in progress.",
+          "sessionId": "codex-busy-parity"
+        },
+        {
+          "sessionId": "codex-busy-parity",
+          "provider": "codex",
+          "kind": "complete",
+          "seq": 3,
+          "actualSessionId": "codex-busy-parity"
+        }
+      ]
+    },
+    {
+      "provider": "codex",
+      "scenario": "replay",
+      "frames": [
+        {
+          "kind": "chat_subscribed",
+          "sessionId": "codex-replay-parity",
+          "isProcessing": true,
+          "lastSeq": 2,
+          "pendingPermissions": []
+        },
+        {
+          "sessionId": "codex-replay-parity",
+          "provider": "codex",
+          "kind": "text",
+          "role": "assistant",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "sessionId": "codex-replay-parity",
+          "provider": "codex",
+          "kind": "complete",
+          "seq": 3,
+          "actualSessionId": "codex-replay-parity"
+        }
+      ]
+    },
+    {
+      "provider": "cursor",
+      "scenario": "turn",
+      "frames": [
+        {
+          "kind": "stream_delta",
+          "content": "parity barri.er alpha",
+          "sessionId": "cursor-turn-parity",
+          "provider": "cursor",
+          "seq": 1
+        },
+        {
+          "kind": "stream_delta",
+          "content": "parity barri.er omega",
+          "sessionId": "cursor-turn-parity",
+          "provider": "cursor",
+          "seq": 2
+        },
+        {
+          "kind": "complete",
+          "provider": "cursor",
+          "sessionId": "cursor-turn-parity",
+          "actualSessionId": "cursor-turn-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "cursor",
+      "scenario": "abort",
+      "frames": [
+        {
+          "kind": "stream_delta",
+          "content": "parity barri.er alpha",
+          "sessionId": "cursor-abort-parity",
+          "provider": "cursor",
+          "seq": 1
+        },
+        {
+          "kind": "stream_delta",
+          "content": "parity barri.er omega",
+          "sessionId": "cursor-abort-parity",
+          "provider": "cursor",
+          "seq": 2
+        },
+        {
+          "kind": "complete",
+          "provider": "cursor",
+          "sessionId": "cursor-abort-parity",
+          "actualSessionId": "cursor-abort-parity",
+          "exitCode": 0,
+          "success": false,
+          "aborted": true,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "cursor",
+      "scenario": "busy",
+      "frames": [
+        {
+          "kind": "stream_delta",
+          "content": "parity barri.er alpha",
+          "sessionId": "cursor-busy-parity",
+          "provider": "cursor",
+          "seq": 1
+        },
+        {
+          "kind": "stream_delta",
+          "content": "parity barri.er omega",
+          "sessionId": "cursor-busy-parity",
+          "provider": "cursor",
+          "seq": 2
+        },
+        {
+          "kind": "protocol_error",
+          "code": "RUN_IN_PROGRESS",
+          "error": "Session \"cursor-busy-parity\" already has a run in progress.",
+          "sessionId": "cursor-busy-parity"
+        },
+        {
+          "kind": "complete",
+          "provider": "cursor",
+          "sessionId": "cursor-busy-parity",
+          "actualSessionId": "cursor-busy-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "cursor",
+      "scenario": "replay",
+      "frames": [
+        {
+          "kind": "chat_subscribed",
+          "sessionId": "cursor-replay-parity",
+          "isProcessing": true,
+          "lastSeq": 2,
+          "pendingPermissions": []
+        },
+        {
+          "kind": "stream_delta",
+          "content": "parity barri.er omega",
+          "sessionId": "cursor-replay-parity",
+          "provider": "cursor",
+          "seq": 2
+        },
+        {
+          "kind": "complete",
+          "provider": "cursor",
+          "sessionId": "cursor-replay-parity",
+          "actualSessionId": "cursor-replay-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "opencode",
+      "scenario": "turn",
+      "frames": [
+        {
+          "sessionId": "opencode-turn-parity",
+          "provider": "opencode",
+          "kind": "stream_delta",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "opencode-turn-parity",
+          "provider": "opencode",
+          "kind": "stream_delta",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "sessionId": "opencode-turn-parity",
+          "provider": "opencode",
+          "kind": "stream_end",
+          "seq": 3
+        },
+        {
+          "kind": "complete",
+          "provider": "opencode",
+          "sessionId": "opencode-turn-parity",
+          "actualSessionId": "opencode-turn-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 4
+        }
+      ]
+    },
+    {
+      "provider": "opencode",
+      "scenario": "abort",
+      "frames": [
+        {
+          "sessionId": "opencode-abort-parity",
+          "provider": "opencode",
+          "kind": "stream_delta",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "opencode-abort-parity",
+          "provider": "opencode",
+          "kind": "stream_delta",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "kind": "complete",
+          "provider": "opencode",
+          "sessionId": "opencode-abort-parity",
+          "actualSessionId": "opencode-abort-parity",
+          "exitCode": 0,
+          "success": false,
+          "aborted": true,
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "provider": "opencode",
+      "scenario": "busy",
+      "frames": [
+        {
+          "sessionId": "opencode-busy-parity",
+          "provider": "opencode",
+          "kind": "stream_delta",
+          "content": "parity barri.er alpha",
+          "seq": 1
+        },
+        {
+          "sessionId": "opencode-busy-parity",
+          "provider": "opencode",
+          "kind": "stream_delta",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "kind": "protocol_error",
+          "code": "RUN_IN_PROGRESS",
+          "error": "Session \"opencode-busy-parity\" already has a run in progress.",
+          "sessionId": "opencode-busy-parity"
+        },
+        {
+          "sessionId": "opencode-busy-parity",
+          "provider": "opencode",
+          "kind": "stream_end",
+          "seq": 3
+        },
+        {
+          "kind": "complete",
+          "provider": "opencode",
+          "sessionId": "opencode-busy-parity",
+          "actualSessionId": "opencode-busy-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 4
+        }
+      ]
+    },
+    {
+      "provider": "opencode",
+      "scenario": "replay",
+      "frames": [
+        {
+          "kind": "chat_subscribed",
+          "sessionId": "opencode-replay-parity",
+          "isProcessing": true,
+          "lastSeq": 2,
+          "pendingPermissions": []
+        },
+        {
+          "sessionId": "opencode-replay-parity",
+          "provider": "opencode",
+          "kind": "stream_delta",
+          "content": "parity barri.er omega",
+          "seq": 2
+        },
+        {
+          "sessionId": "opencode-replay-parity",
+          "provider": "opencode",
+          "kind": "stream_end",
+          "seq": 3
+        },
+        {
+          "kind": "complete",
+          "provider": "opencode",
+          "sessionId": "opencode-replay-parity",
+          "actualSessionId": "opencode-replay-parity",
+          "exitCode": 0,
+          "success": true,
+          "aborted": false,
+          "seq": 4
+        }
+      ]
+    }
+  ]
+}

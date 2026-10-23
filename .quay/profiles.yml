@@ -1,0 +1,84 @@
+# plugin/.quay/profiles.yml — shipped fallback profile carrier (AC154 profile 抽层）。
+# 裸机 / 未迁移目标没有 dev-tree 根 .quay/profiles.yml 时，quay-launch.sh 回退到本文件（同 settings 的
+# plugin/.claude/launch.settings.json 回退手法，见 gap-manager-layer-no-verified-install-vector）。
+# 通用默认：launcher=claude、model=null——消费者按自己的栈编辑（dev-tree 用 claude-fjdac +
+# deepseek-v4-pro-anthropic，见根 .quay/profiles.yml；两份 profiles 结构一致，只差 launcher/model 取值）。
+version: 1
+
+# flag-only 启动参数（对全部 role 生效；与 dev-tree 根 profiles.yml 一致）。
+excludeDynamicSystemPromptSections: true
+promptSuggestions: false
+
+profiles:
+  worker-default:
+    # 2026-09-20 按本机栈编辑。原值是出厂默认（launcher=claude / model=null，见本文件头部「消费者按自己
+    # 的栈编辑」）；本机把网关收口在 ~/.local/bin/claude-fjdac 里（该 wrapper 自己 export
+    # ANTHROPIC_BASE_URL + ANTHROPIC_AUTH_TOKEN + 三个 DEFAULT_*_MODEL=v4.1flash，再 exec claude）。
+    # 不改这里 ⇒ worker 拿到裸 claude、没有任何网关 env ⇒ 走公网 api.anthropic.com 请求 v4.1flash
+    # ⇒ 404 model_not_found，首次调用即死（worker「连续 3 次 <60000ms 快速死亡」，任务被 park）。
+    # ⛔ 网关/env 的落点是【这里或 launcher】，⛔ 不是 launch.settings.json——按本仓库约定后者只留
+    #   Claude Code 键，且把凭据抄进去会造成第二个会漂移的副本。
+    launcher: claude-fjdac
+    model: v4.1flash       # 须与 wrapper export 的 DEFAULT_*_MODEL 一致
+    bare: false
+    auth: token            # claude-fjdac 只提供 ANTHROPIC_AUTH_TOKEN，不置 ANTHROPIC_API_KEY
+    # ⛔ 此处刻意【不】声明 env.ANTHROPIC_DEFAULT_{HAIKU,SONNET,OPUS}_MODEL（2026-09-20 清理）：
+    #   实测 settings.env 会【覆盖】wrapper 的进程环境 ⇒ 两处都写时 wrapper 那三行对「驱动派发的
+    #   worker」静默不生效，且两份值可各自漂移（本仓库反复出现的形状）。既然 launcher 已经是那个
+    #   wrapper，模型映射就由 wrapper 单一承载：本文件只留「换哪套网关/哪个模型」这一层。
+    #   ⚠️ 若把 launcher 换成【不 export 这三者】的启动器（如 quay 自己的 claude-deepseek 那类），
+    #   必须在此把 env.ANTHROPIC_DEFAULT_*_MODEL 补回来，否则 worker 会拿到网关不认识的默认模型名。
+  manager-local:
+    launcher: claude
+    model: null
+    bare: false
+    auth: key
+    # 无 unset：出厂 settings（plugin/.claude/launch.settings.json）的 env 本就没有 917k 三件套
+    # （裸机通用模板），manager 直接继承文件逐字。dev-tree 根的 manager-local 才需要 unset 917k
+    # （dev settings env 含 917k）。
+
+roles:
+  manager:
+    profile: manager-local
+    name: claudecodeui-manager
+  outer:
+    profile: worker-default
+    name: claudecodeui-outer
+  # 三个 worker role + pool-judge/meta-driver 与 dev-tree 根 profiles.yml 同构：共享 worker-default，
+  # 只声明 name 差异（launcher/model 从 profile 继承）。role 键集一致是 DoD——worker-driver 派发
+  # `launchArgv("task-worker", …)` 经 profile-policy.ts resolveRole，缺失 role 抛 `role not found`
+  # （fail-closed，无回退）⇒ 第三方项目永不派发（gap-shipped-profiles-missing-worker-roles）。
+  # ⚠️ mcpBlacklist 同样必须在【两份 carrier】上都落地（gap-worker-mcp-blacklist-strict-config）：
+  #   本文件是 quay-init 逐字铺进消费者 .quay/ 的那一份；只改 dev-tree 根 ⇒ 第三方项目功能静默失效
+  #   ——这正是 profiles-role-coverage-check.ts 存在的那个「修了一份、init 铺的是另一份」缺陷形状。
+  task-worker:
+    profile: worker-default
+    name: claudecodeui-task-worker
+    env:
+      CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: "0"    # 驱动的外部超时是唯一兜底（无此键 claude -p 有 600s end_turn 后台任务宽限）
+    # 角色层（⛔ 非 profile 层）：outer 与它们共享 worker-default，挂 profile 会连坐 outer。
+    # 三个 role 各写一份（⛔ 不用 YAML 锚点——本文件被 quay-launch.sh 的 python3+yaml 与 TS 的
+    # profile-policy.ts 两条路径读，保持与两份 carrier 既有写法一致的朴素形状）。
+    mcpBlacklist:
+      - chrome-devtools
+      - playwright
+  selector:
+    profile: worker-default
+    name: claudecodeui-selector
+    mcpBlacklist:
+      - chrome-devtools
+      - playwright
+  fix-worker:
+    profile: worker-default
+    name: claudecodeui-fix-worker
+    env:
+      CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: "0"    # 同 task-worker
+    mcpBlacklist:
+      - chrome-devtools
+      - playwright
+  pool-judge:
+    profile: worker-default
+    name: claudecodeui-pool-judge
+  meta-driver:
+    profile: worker-default
+    name: claudecodeui-meta-driver

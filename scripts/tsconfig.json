@@ -1,0 +1,34 @@
+{
+  // scripts/ is the operator/CI surface: plain `node` entrypoints plus the shell gates. It is
+  // deliberately SEPARATE from the root tsconfig (which owns src/, shared/ and vite.config.js)
+  // and from server/tsconfig.json, because the constraints are different:
+  //
+  //   · .mjs ONLY. The `.js` files here (release/*.js, fix-node-pty.js) are CommonJS-era
+  //     release tooling that does not typecheck under strict without a rewrite; they are covered
+  //     by oxlint instead. The `.mjs` files are the ones run by bare `node`, so they are the ones
+  //     worth checking from day one.
+  //   · strict. A new tool must land under the same rules as the rest of the repo, not under a
+  //     relaxed tier that it can never be promoted out of.
+  //
+  // Wired into `npm run typecheck`, so `scripts/test.sh`'s typecheck stage (which runs
+  // `npm run typecheck`) fails closed on a type error here — see the anti-fake variant in
+  // tasks/gap-scripts-static-gates-and-mint-token.md.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    // The whole point of this file: type-check JavaScript, not just parse it.
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    // These are bare-`node` scripts; the only ambient types they may rely on are Node's.
+    "types": ["node"],
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["**/*.mjs"]
+}

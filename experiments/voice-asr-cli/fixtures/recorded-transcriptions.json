@@ -1,0 +1,57 @@
+{
+  "schema": "asr-cli-recording/v1",
+  "provenance": {
+    "recordedAt": "2026-09-22T16:39:16.240Z",
+    "recordedFromCommit": "0a04cff30b9c32a9f4fdebff53365aab3be0abb1",
+    "source": "synthetic:data-url transport, not a live service (ADR-004 decision 8)",
+    "recordedBy": "experiments/voice-asr-cli/transcribe.ts --record"
+  },
+  "audio": {
+    "name": "clip.wav",
+    "mimeType": "audio/wav",
+    "bytes": 1068,
+    "sha256": "9afc98ec9aceae723cba01daa55ffde09df7833243e621bc39dea2ba27425871"
+  },
+  "entries": [
+    {
+      "id": "asr-invalid-openai-v1-audio-transcriptions",
+      "provider": "openai-compatible",
+      "baseUrl": "https://asr.invalid/openai/v1",
+      "url": "https://asr.invalid/openai/v1/audio/transcriptions",
+      "requestSha256": "a00ad34321b94d87abb9f6b46c7ae73b61b35fca4b1293067d02fe43b45c3360",
+      "status": 200,
+      "contentType": "application/json",
+      "body": "{\"text\":\"  Ask not what your country can do for you  \"}",
+      "expect": {
+        "strict": {
+          "kind": "text",
+          "text": "  Ask not what your country can do for you  "
+        },
+        "lenient": {
+          "kind": "text",
+          "text": "  Ask not what your country can do for you  "
+        }
+      }
+    },
+    {
+      "id": "asr-invalid-openai-v2-audio-transcriptions",
+      "provider": "openai-compatible",
+      "baseUrl": "https://asr.invalid/openai/v2",
+      "url": "https://asr.invalid/openai/v2/audio/transcriptions",
+      "requestSha256": "734eab56b4b08463015241314ea56c2c0ffb5ec81ce42feab887b78f82d373ed",
+      "status": 200,
+      "contentType": "text/html",
+      "body": "\n  <html><body><h1>502 Bad Gateway</h1></body></html>\n",
+      "expect": {
+        "strict": {
+          "kind": "error",
+          "code": "non-json-response"
+        },
+        "lenient": {
+          "kind": "text",
+          "text": "\n  <html><body><h1>502 Bad Gateway</h1></body></html>\n"
+        }
+      }
+    }
+  ]
+}

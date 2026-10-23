@@ -1,0 +1,337 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { expect, test } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+
+// Real Chromium against the real backend + Vite client started by playwright.config.ts (isolated data dir).
+//
+// The subject is the Conversations feed — the sidebar's recents list, `GET /api/providers/sessions/recent` —
+// and what it does with a transcript that appears on disk *while the user is sitting on it*. That feed is
+// patched in place from `session_upserted` deltas, and a reload of the same feed is filtered server-side by
+// the owning project's session-name rules. The reported bug is the gap between the two: the reload dropped a
+// worker session, the live list kept it, so a rule the user had already saved looked broken until they
+// navigated away and back. This spec drives that exact sequence and judges the live list against a real
+// reload of itself, so what is asserted is an equivalence between what the app shows and what the app's own
+// server would return — not a restatement of the client's rule code.
+//
+// Why this is not a case inside e2e/session-filter.spec.ts: that spec is about the *Projects* list, and the
+// two lists do not answer the same question. The Projects list judges with exemptions — the session the user
+// has selected, the sessions flagged as needing attention — because those rows are the user's own working set.
+// The Conversations feed has no selection and deliberately applies none of them, because the reload it has to
+// match applies none: `/sessions/recent` filters on the project's rules and nothing else. A live view that
+// kept a row the reload drops is the bug; being the more permissive of the two is precisely how it happened.
+//
+// Every session this spec filters on is written by the spec itself, mid-run, through the file watcher — that
+// is the path under test. The one exception is the seed: a row has to be on screen before the first write, or
+// there would be no way to tell "never appeared" from "not loaded yet". It is seeded before the server boots
+// by playwright.config.ts, in its own workspace.
+//
+// Nothing here stubs a request. The rule is entered through the sidebar's own filter editor and saved through
+// the app's own PUT — never over the API, because the value of the case is that the entry point really works.
+
+/** The rule, in the shape the editor stores: one regex per line, unanchored, case-insensitive. */
+const RULE = '-live-worker$';
+
+/** Seeded before boot (playwright.config.ts): the row already in the feed, which round B renames into the rule. */
+const SEED = 'live-seed-human';
+/** Written mid-run and matching nothing: the positive control for round A. */
+const CONTROL = 'live-new-human';
+/** Written mid-run in the same burst as the control, and a match: it must not appear at all. */
+const MATCHING = 'live-new-live-worker';
+/** Written mid-run with no readable name at all, then named into a match. */
+const LATE = 'live-late-session';
+
+/** What round B renames the two rows into. Both match RULE. */
+const SEED_RENAMED = 'live-seed-live-worker';
+const LATE_RENAMED = 'live-late-live-worker';
+
+/** Namespaced i18n keys leak into the UI as literals like "sidebar.sessionFilter" when a translation is missing. */
+const UNTRANSLATED_KEY = /\b(?:mainTabs|settings|chat|common|sidebar)\.[a-z][A-Za-z]+\b/;
+
+/** The workspace playwright.config.ts seeds; every transcript this spec writes goes in its directory. */
+const LIVE_WORKSPACE_DIR = 'session-filter-live-workspace';
+
+/** Transcripts are keyed by session id, which is how the app addresses a session everywhere else. */
+const sessionIdOf = (name: string) => `e2e-${name}`;
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const transcriptPath = (dataDir: string, sessionId: string): string =>
+  path.join(dataDir, '.claude', 'projects', LIVE_WORKSPACE_DIR, `${sessionId}.jsonl`);
+
+type TranscriptRecord = Record<string, unknown>;
+
+/** The two record shapes the synchronizer reads: an id-bearing turn, and the custom title that names it. */
+const turn = (
+  sessionId: string,
+  workspace: string,
+  message: TranscriptRecord,
+  extra: TranscriptRecord = {},
+): TranscriptRecord => ({
+  type: 'user',
+  sessionId,
+  cwd: workspace,
+  timestamp: new Date().toISOString(),
+  message,
+  ...extra,
+});
+
+const customTitle = (sessionId: string, workspace: string, title: string): TranscriptRecord => ({
+  type: 'custom-title',
+  sessionId,
+  cwd: workspace,
+  timestamp: new Date().toISOString(),
+  customTitle: title,
+});
+
+/**
+ * Writes a transcript: the file watcher sees a new file, indexes it, and the server broadcasts the upsert.
+ *
+ * The whole file goes down in one call, so the watcher never reads a half-written transcript.
+ */
+const writeTranscript = (dataDir: string, workspace: string, sessionId: string, records: TranscriptRecord[]): string => {
+  const filePath = transcriptPath(dataDir, sessionId);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${records.map((record) => JSON.stringify(record)).join('\n')}\n`, 'utf8');
+  return filePath;
+};
+
+/** Appends a record to a transcript the spec already wrote or seeded. */
+const appendTranscript = (filePath: string, record: TranscriptRecord): void => {
+  fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`, 'utf8');
+};
+
+/**
+ * How long a watcher-driven change is given to reach the list.
+ *
+ * The watcher uses native filesystem events where it can and otherwise polls on a 6s floor, and the flush on
+ * top of either is debounced (500ms, capped at 2s). 30s clears the poll floor several times over; a healthy
+ * run lands in well under a second, because the file's own `add` event is what wakes the watcher here.
+ */
+const WATCHER_SETTLE_MS = 30_000;
+
+/**
+ * A bounded client warm-up: the shell, the app entry, and one optimized dependency.
+ *
+ * Why the dependency is the point, and not just "warm the cache": a transformed module's imports carry
+ * `/@fs/<cache>/deps/<dep>.js?v=<hash>` urls, and a url whose hash belongs to a superseded run answers
+ * `504 Outdated Optimize Dep`. Vite answers a re-optimization committed while it is serving by pushing
+ * `full-reload` to every client, which replaces the document whole — the other way this run can lose a page
+ * mid-case. A 200 here means the optimizer has committed and the page below will not race it.
+ *
+ * Taken from e2e/session-filter.spec.ts, where it exists for the same measured reason. Every step is bounded:
+ * a client that accepts a connection and then never answers ends the run by name, with the url and the status,
+ * instead of waiting out a timeout inside a case.
+ */
+const CLIENT_WARM_DEADLINE_MS = 20_000;
+const OPTIMIZED_DEP_IN_TEXT = /["'](\/@fs\/[^"']*\/deps\/[^"']+\.js\?v=[0-9a-f]+)["']/;
+
+const warmClientStartup = async (clientUrl: string): Promise<void> => {
+  const deadline = Date.now() + CLIENT_WARM_DEADLINE_MS;
+  const fetchWithin = async (url: string): Promise<Response> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(1, deadline - Date.now()));
+    try {
+      return await fetch(url, { signal: controller.signal });
+    } catch (error) {
+      throw new Error(
+        `the client did not answer ${url} inside the ${CLIENT_WARM_DEADLINE_MS}ms startup budget `
+        + `(${error instanceof Error ? error.message : String(error)})`,
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const shellUrl = new URL('/', clientUrl).href;
+  const shell = await fetchWithin(shellUrl);
+  if (!shell.ok) throw new Error(`the client's shell did not load: ${shellUrl} answered HTTP ${shell.status}`);
+  await shell.text();
+
+  const entryUrl = new URL('/src/main.tsx', clientUrl).href;
+  const entry = await fetchWithin(entryUrl);
+  if (!entry.ok) throw new Error(`the app entry did not transform: ${entryUrl} answered HTTP ${entry.status}`);
+  const entryText = await entry.text();
+
+  const specifier = OPTIMIZED_DEP_IN_TEXT.exec(entryText)?.[1];
+  if (!specifier) return;
+  const dep = await fetchWithin(new URL(specifier, clientUrl).href);
+  if (!dep.ok) {
+    throw new Error(`this run's dependency pre-bundle is not current: it answered HTTP ${dep.status}, not 200`);
+  }
+  await dep.text();
+};
+
+test.describe.configure({ mode: 'serial', timeout: 120_000 });
+
+test.describe('the Conversations feed under a saved session-name rule', () => {
+  let page: Page;
+  let dataDir = '';
+  let workspace = '';
+
+  /** One row of the recents list, addressed by the session id it links to — never by its rendered title. */
+  const conversationRow = (name: string): Locator =>
+    page.locator(`[data-testid="recent-conversation-row"][href="/session/${sessionIdOf(name)}"]`);
+
+  /** The project row this spec saves its rule on, scoped by the seeded workspace's own display name. */
+  const projectRow = () =>
+    page.getByRole('button', { name: new RegExp(`^${escapeRegExp(path.basename(workspace))}`) }).first();
+
+  /** Switches the sidebar's search mode, which is what mounts and unmounts the recents list. */
+  const switchMode = async (label: 'Projects' | 'Conversations') => {
+    await page.getByRole('button', { name: label, exact: true }).click();
+  };
+
+  /**
+   * The members of the feed, as the ids their rows point at, sorted.
+   *
+   * Membership is the property under test; the order the feed renders in is recency, which this run changes
+   * on purpose by writing transcripts. Titles are deliberately not compared: the live row and the reloaded
+   * row derive a title for a nameless session from different places (the delta carries the stored name, the
+   * endpoint falls back to the session id), and neither is what the rule is judged on.
+   */
+  const memberIds = async (): Promise<string[]> => {
+    const hrefs = await page
+      .locator('[data-testid="recent-conversation-row"]')
+      .evaluateAll((rows) => rows.map((row) => row.getAttribute('href') ?? ''));
+    return hrefs.map((href) => href.replace(/^\/session\//, '')).sort();
+  };
+
+  /** Reloads the feed the way a user does — by leaving the mode and coming back — and reads it again. */
+  const membersAfterSwitchingAwayAndBack = async (): Promise<string[]> => {
+    await switchMode('Projects');
+    // The recents list is only mounted in the conversations mode, so its absence is what proves the switch
+    // landed before the reload below is asked for. Without this the read could still be the old render.
+    await expect(page.locator('[data-testid="recent-conversations-list"]')).toHaveCount(0);
+    await switchMode('Conversations');
+    await expect(page.locator('[data-testid="recent-conversations-list"]')).toBeVisible({ timeout: 15_000 });
+    await expect(conversationRow(CONTROL)).toBeVisible({ timeout: 15_000 });
+    return memberIds();
+  };
+
+  test.beforeAll(async ({ browser }) => {
+    test.setTimeout(120_000);
+    dataDir = process.env.QUAY_E2E_DATA_DIR!;
+    workspace = path.join(dataDir, LIVE_WORKSPACE_DIR);
+    // The seeded transcript is the one row the feed starts with; failing to find it means the seed drifted.
+    const seeded = transcriptPath(dataDir, sessionIdOf(SEED));
+    if (!fs.existsSync(seeded)) {
+      throw new Error(`the seeded transcript ${seeded} is missing — playwright.config.ts seeds it before boot.`);
+    }
+
+    const clientUrl = test.info().project.use.baseURL;
+    if (!clientUrl) {
+      throw new Error('playwright.config.ts must give this project a baseURL for the startup warm-up to address');
+    }
+    await warmClientStartup(clientUrl);
+
+    page = await browser.newPage();
+
+    // Fresh database: create the single account, then finish onboarding.
+    await page.goto('/');
+    await page.locator('#username').fill('e2euser');
+    await page.locator('input[type=password]').nth(0).fill('e2epassword');
+    await page.locator('input[type=password]').nth(1).fill('e2epassword');
+    await page.getByRole('button', { name: 'Create Account' }).click();
+    await page.getByPlaceholder('John Doe').fill('E2E User');
+    await page.getByPlaceholder('john@example.com').fill('e2e@example.com');
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Complete Setup' }).click();
+
+    // Indexing a session auto-registers its project, so the seeded workspace is already a project here —
+    // it is created by the boot scan, not over the API and not through the UI, and the sidebar is the proof.
+    await expect(projectRow()).toBeVisible({ timeout: 30_000 });
+  });
+
+  test.afterAll(async () => {
+    await page.close();
+  });
+
+  test('a session that arrives matching a saved rule never enters the feed, and one that does not arrives', async () => {
+    // The rule is entered through the sidebar's own editor and saved through the app's own PUT.
+    await projectRow().getByTitle('Session filter…').click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText(`Session filter · ${path.basename(workspace)}`);
+    await page.getByRole('textbox', { name: 'Session filter' }).fill(RULE);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
+
+    // Park on the feed, with the rule live on the project it belongs to.
+    await switchMode('Conversations');
+    await expect(page.locator('[data-testid="recent-conversations-list"]')).toBeVisible({ timeout: 15_000 });
+    await expect(conversationRow(SEED)).toBeVisible({ timeout: 15_000 });
+    expect(await memberIds()).toContain(sessionIdOf(SEED));
+
+    // ── round A: one burst, four effects ─────────────────────────────────────────────────────────────────
+    //
+    // Written inside one debounce window, so the watcher's flush carries them together and "the same time
+    // window" is a property of the fixture rather than of how the assertions happen to be ordered.
+    //
+    //   control  — a new transcript matching nothing: it must appear.
+    //   matching — a new transcript matching the rule: it must not.
+    //   seed     — the row already on screen, renamed into a match: it must leave.
+    //   late     — a new transcript with no readable name: it is *not* a match yet, so it must appear here,
+    //              and round B names it into one.
+    writeTranscript(dataDir, workspace, sessionIdOf(MATCHING), [
+      turn(sessionIdOf(MATCHING), workspace, { role: 'user', content: [{ type: 'text', text: 'a worker turn' }] }),
+      customTitle(sessionIdOf(MATCHING), workspace, MATCHING),
+    ]);
+    writeTranscript(dataDir, workspace, sessionIdOf(CONTROL), [
+      turn(sessionIdOf(CONTROL), workspace, { role: 'user', content: [{ type: 'text', text: 'a human turn' }] }),
+      customTitle(sessionIdOf(CONTROL), workspace, CONTROL),
+    ]);
+    appendTranscript(transcriptPath(dataDir, sessionIdOf(SEED)), customTitle(sessionIdOf(SEED), workspace, SEED_RENAMED));
+    const latePath = writeTranscript(dataDir, workspace, sessionIdOf(LATE), [
+      // `isMeta` is a real record shape and the ladder skips it on purpose, so this session has no readable
+      // prompt and the app falls back to its own placeholder name. A session whose name is empty is not
+      // reachable from disk at all — the ladder always yields the prompt or the placeholder — which is why
+      // the literal empty-name case lives in the unit test and this leg is "arrives undecided, named later".
+      turn(sessionIdOf(LATE), workspace, { role: 'user', isMeta: true, content: [{ type: 'text', text: 'session metadata' }] }),
+      { type: 'assistant', sessionId: sessionIdOf(LATE), cwd: workspace, timestamp: new Date().toISOString(), message: { role: 'assistant', content: [{ type: 'text', text: 'working' }] } },
+    ]);
+
+    // Wait for every effect of the burst that *should* land before judging the one that should not — that
+    // is what makes the absence below a reading about the rule and not about the watcher still being busy.
+    await expect(conversationRow(CONTROL)).toBeVisible({ timeout: WATCHER_SETTLE_MS });
+    await expect(conversationRow(LATE)).toBeVisible({ timeout: WATCHER_SETTLE_MS });
+    await expect(conversationRow(SEED)).toHaveCount(0, { timeout: WATCHER_SETTLE_MS });
+
+    // The matching session never entered the feed. Held for a settle window after the burst's other deltas
+    // landed, so a delayed insert would still be caught.
+    await expect(conversationRow(MATCHING)).toHaveCount(0);
+    await page.waitForTimeout(1_500);
+    await expect(conversationRow(MATCHING)).toHaveCount(0);
+    await expect(conversationRow(CONTROL)).toBeVisible();
+
+    // ── round B: the row that arrived undecided is renamed into the rule ──────────────────────────────────
+    appendTranscript(latePath, customTitle(sessionIdOf(LATE), workspace, LATE_RENAMED));
+    await expect(conversationRow(LATE)).toHaveCount(0, { timeout: WATCHER_SETTLE_MS });
+    await expect(conversationRow(CONTROL)).toBeVisible();
+
+    // ── the live list is the list a reload returns ────────────────────────────────────────────────────────
+    //
+    // A rename does not change a session's id, so the seed's row is still addressed by the id it was seeded
+    // under; what changed is that the rule now hides it. Every id this spec wrote is accounted for here, and
+    // the equality below carries the run's other fixtures along without naming them.
+    const live = await memberIds();
+    expect(live).toContain(sessionIdOf(CONTROL));
+    expect(live).not.toContain(sessionIdOf(MATCHING));
+    expect(live).not.toContain(sessionIdOf(SEED));
+    expect(live).not.toContain(sessionIdOf(LATE));
+
+    expect(await membersAfterSwitchingAwayAndBack()).toEqual(live);
+
+    // A full page reload is the other way the feed is re-read — a fresh document, the server's own list.
+    await page.reload();
+    await expect(projectRow()).toBeVisible({ timeout: 30_000 });
+    await switchMode('Conversations');
+    await expect(page.locator('[data-testid="recent-conversations-list"]')).toBeVisible({ timeout: 15_000 });
+    await expect(conversationRow(CONTROL)).toBeVisible({ timeout: 15_000 });
+    expect(await memberIds()).toEqual(live);
+
+    // No untranslated i18n literal anywhere on the page, the feed included.
+    expect(await page.locator('body').innerText()).not.toMatch(UNTRANSLATED_KEY);
+  });
+});

@@ -1,0 +1,134 @@
+{
+  "schema": "asr-extraction-parity-baseline/v1",
+  "provenance": {
+    "recordedFromCommit": "2506f8d3a5d4f69ed648419c32da403a9a2ed58d",
+    "recordedAt": "2026-09-22T15:34:20.870Z",
+    "recordedInWorktree": false,
+    "recordedBy": "scripts/asr-extraction-parity-check.mjs --record"
+  },
+  "audio": {
+    "source": "synthetic",
+    "name": "clip.webm",
+    "mimeType": "audio/webm",
+    "bytes": 43,
+    "sha256": "9b49e8e09085c4dd0c8c27b525d484fa67b88d7c0073c56cfc19caabbb365d67"
+  },
+  "readings": {
+    "direct-outbound": {
+      "url": "https://asr.invalid/v1/audio/transcriptions",
+      "method": "POST",
+      "headers": [
+        [
+          "authorization",
+          "Bearer k-reader-key"
+        ]
+      ],
+      "body": {
+        "kind": "multipart",
+        "boundary": "BOUNDARY",
+        "text": "--BOUNDARY\r\nContent-Disposition: form-data; name=\"file\"; filename=\"clip.webm\"\r\nContent-Type: audio/webm\r\n\r\nk-asr-parity-fixture-audio-0123456789abcdef\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nk-reader-stt\r\n--BOUNDARY--\r\n",
+        "sha256": "52c976510584ed4716366b9b5a42168e0659b04544c85173a3c55e7e7853e615"
+      }
+    },
+    "inbound": {
+      "url": "/api/voice/transcribe",
+      "method": "POST",
+      "headers": [
+        [
+          "authorization",
+          "Bearer k-reader-token"
+        ],
+        [
+          "x-voice-api-key",
+          "k-reader-key"
+        ],
+        [
+          "x-voice-stt-model",
+          "k-reader-stt"
+        ]
+      ],
+      "body": {
+        "kind": "multipart",
+        "boundary": "BOUNDARY",
+        "text": "--BOUNDARY\r\nContent-Disposition: form-data; name=\"audio\"; filename=\"clip.webm\"\r\nContent-Type: audio/webm\r\n\r\nk-asr-parity-fixture-audio-0123456789abcdef\r\n--BOUNDARY--\r\n",
+        "sha256": "90e1ff0aa5bb8e22699eb46265adea04a9b475748ea97442ee4478bc90292282"
+      }
+    },
+    "response-tolerance": {
+      "direct": {
+        "cases": [
+          {
+            "name": "non-json-body",
+            "outcome": "throws"
+          },
+          {
+            "name": "json-text",
+            "outcome": "value",
+            "text": "k-asr-answer"
+          },
+          {
+            "name": "json-numeric-text",
+            "outcome": "value",
+            "text": ""
+          },
+          {
+            "name": "json-without-text",
+            "outcome": "value",
+            "text": ""
+          },
+          {
+            "name": "json-null",
+            "outcome": "value",
+            "text": ""
+          }
+        ]
+      },
+      "proxy": {
+        "cases": [
+          {
+            "name": "non-json-body",
+            "outcome": "ok",
+            "text": "k-asr-not-json"
+          },
+          {
+            "name": "json-text",
+            "outcome": "ok",
+            "text": "k-asr-answer"
+          },
+          {
+            "name": "json-numeric-text",
+            "outcome": "ok",
+            "text": ""
+          },
+          {
+            "name": "json-without-text",
+            "outcome": "ok",
+            "text": ""
+          },
+          {
+            "name": "json-null",
+            "outcome": "ok",
+            "text": "null"
+          }
+        ]
+      }
+    },
+    "proxy-outbound": {
+      "url": "https://voice.backend.invalid/v1/audio/transcriptions",
+      "method": "POST",
+      "headers": [
+        [
+          "authorization",
+          "Bearer k-server-key"
+        ]
+      ],
+      "body": {
+        "kind": "multipart",
+        "boundary": "BOUNDARY",
+        "text": "--BOUNDARY\r\nContent-Disposition: form-data; name=\"file\"; filename=\"clip.webm\"\r\nContent-Type: audio/webm\r\n\r\nk-asr-parity-fixture-audio-0123456789abcdef\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nk-server-stt\r\n--BOUNDARY--\r\n",
+        "sha256": "f6b3bbf267779e8fd5eecf09c100a99e8cef65501251241b10e54fdcc94dda5f"
+      }
+    }
+  },
+  "sha256": "81f24ac8852349d3cefead3eb3d40dd461e6773d73778f8cbb48465afc7730a6"
+}

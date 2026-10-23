@@ -1,0 +1,354 @@
+{
+  "provenance": {
+    "generatedAt": "2026-09-23",
+    "runIds": [
+      "2026-09-23T10:27:39.515Z"
+    ],
+    "endpoints": {
+      "openai-compatible": "https://api.groq.com/openai/v1 (via the shipping 'openai-compatible' adapter)",
+      "multimodal": "https://generativelanguage.googleapis.com (via the shipping 'multimodal' adapter)"
+    },
+    "request": "Every condition goes through the adapter the shipping registry resolves for its provider id, with the global fetch and the request body the adapter builds. The multimodal conditions carry the reference-context conditions as `hints.context` (the adapter declares honors.context: true) and nothing else; its own verbatim transcription instruction is the adapter's, not this runner's.",
+    "throttle": "3200 ms minimum interval between calls, one call in flight (serial)",
+    "recipe": "For every clip × condition: decode the sibling experiment's fixtures/<clip> with the runner's decodeWav, encode the column with the runner's encodeWav (raw = encodeWav(decodeWav(file)); trimFrozen = trimVoiceAudio(samples, rate) — the shipping module), hand the buffer to the shipping adapter, keep the returned text verbatim. `--live` then `--freeze`; the cache is out/quality-cache.json.",
+    "corpus": "Reused, not copied: the eight Chinese clips at o65 occupancy (d01..d08-o65) live in ../voice-provider-paired-quality/fixtures/ — a contiguous prefix of the out-of-tree dictation corpus, **TTS 合成** (tools/dictation-corpus.mjs SCRIPTS). Same eight clips as the previous record, so the two records' numbers are on the same corpus.",
+    "referenceSource": "Read from ../voice-provider-paired-quality/fixtures/paired.json — the authored scripts from the out-of-tree corpus generator, verbatim, so the reference is ground truth by construction.",
+    "conditions": [
+      {
+        "key": "turbo|raw|none",
+        "providerId": "openai-compatible",
+        "model": "whisper-large-v3-turbo",
+        "trim": "raw",
+        "context": "none",
+        "note": "上一份记录的参照条件（不裁剪、无上下文）；本轮同样由出货适配器发出，供同批并列"
+      },
+      {
+        "key": "g25lite|raw|none",
+        "providerId": "multimodal",
+        "model": "gemini-2.5-flash-lite",
+        "trim": "raw",
+        "context": "none",
+        "note": "出货默认模型 + 出货适配器，不裁剪、无上下文"
+      },
+      {
+        "key": "g25lite|trim|none",
+        "providerId": "multimodal",
+        "model": "gemini-2.5-flash-lite",
+        "trim": "trimFrozen",
+        "context": "none",
+        "note": "pauseCues 轴：出货 trimVoiceAudio 之后再送（裁掉停顿对 Gemini 是伤害还是帮助）"
+      },
+      {
+        "key": "g35lite|raw|none",
+        "providerId": "multimodal",
+        "model": "gemini-3.5-flash-lite",
+        "trim": "raw",
+        "context": "none",
+        "note": "模型轴：同一条线上更大的那一个（`g25lite` 的上下文对齐）"
+      },
+      {
+        "key": "g25lite|raw|punct",
+        "providerId": "multimodal",
+        "model": "gemini-2.5-flash-lite",
+        "trim": "raw",
+        "context": "punct",
+        "note": "带句末标点的上下文（`honors.context: true`，出货适配器会把它放上请求）"
+      },
+      {
+        "key": "g25lite|raw|flat",
+        "providerId": "multimodal",
+        "model": "gemini-2.5-flash-lite",
+        "trim": "raw",
+        "context": "flat",
+        "note": "**负对照**：同一个上下文，只去掉句末标点"
+      }
+    ],
+    "prompts": {
+      "punct": "把 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+      "flat": "把 voice.service.ts 的超时改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+    },
+    "knownGaps": "Token usage is not readable through the shipping adapters: `AsrSuccess.meta.usage` exists in the contract but neither adapter populates it, so this record reports the axis as n/a rather than substituting a number from elsewhere."
+  },
+  "entries": [
+    {
+      "clip": "d01-o65.wav",
+      "language": "zh",
+      "reference": "把 server 里的 voice.service.ts 的超时改成三十秒",
+      "audio": {
+        "baselineSec": 15.544625,
+        "rawSha256": "2c52b72bef21b81e51722c47bf549f027cbf52bba2817cf153663c9b66435f39",
+        "trimFrozenSha256": "a73d14695e59bd86abc9d5857966a38961a421423a266f9eb346bca33a00278a",
+        "trimFrozenSavedRatio": 0.2569778942882186
+      },
+      "transcripts": {
+        "turbo|raw|none": "把Server里的voice.seluis.ts的超时改成30秒",
+        "g25lite|raw|none": "服务器的 .se RPS 的超时改为30秒",
+        "g25lite|trim|none": "server的超时改成30秒",
+        "g35lite|raw|none": "把 server",
+        "g25lite|raw|punct": "把 server 的 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+        "g25lite|raw|flat": "把 server 的里 的 voice.service.ts voice.ps 的超时改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|trim|none": "2026-09-23T10:27:39.515Z",
+        "g35lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|punct": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|flat": "2026-09-23T10:27:39.515Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 1279,
+        "g25lite|raw|none": 3874,
+        "g25lite|trim|none": 3735,
+        "g35lite|raw|none": 2592,
+        "g25lite|raw|punct": 2948,
+        "g25lite|raw|flat": 3122
+      }
+    },
+    {
+      "clip": "d02-o65.wav",
+      "language": "zh",
+      "reference": "改一下 voice.service.ts，嗯不对，应该是 voice.routes.ts",
+      "audio": {
+        "baselineSec": 20.16,
+        "rawSha256": "340ba7e323ae1a4d6871afb1fdbac8f8bd04662ca66dec4ac7c3453f53d989e3",
+        "trimFrozenSha256": "8c870c011bd3e08fe560139fd5b960adc61bec55c8b44dbab701757040f90ab3",
+        "trimFrozenSavedRatio": 0.23859126984126988
+      },
+      "transcripts": {
+        "turbo|raw|none": "改一下。voice.seLuis.ts嗯不对。应该是。voice.roUts.ts",
+        "g25lite|raw|none": "改一下 voice.se voice.ps 嗯不对 应该是 voice.ro use.ts",
+        "g25lite|trim|none": "改一下 voice.es voice.ps 嗯不对应该是 voice.ro use.ts",
+        "g35lite|raw|none": "改 一下 。 where S E where T S 嗯 不对 。 应 该 是 where RO use T S",
+        "g25lite|raw|punct": "改一下 voice.service.ts useTs 嗯不对 应该是 voice.ro useTs 把 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+        "g25lite|raw|flat": "改一下 voice.service voice.ts 嗯不对应该是 voice.route use.ts 把 voice.service.ts 的超时改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|trim|none": "2026-09-23T10:27:39.515Z",
+        "g35lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|punct": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|flat": "2026-09-23T10:27:39.515Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 3145,
+        "g25lite|raw|none": 6413,
+        "g25lite|trim|none": 3158,
+        "g35lite|raw|none": 2634,
+        "g25lite|raw|punct": 3173,
+        "g25lite|raw|flat": 3838
+      }
+    },
+    {
+      "clip": "d03-o65.wav",
+      "language": "zh",
+      "reference": "看一下 useVoiceInput 这个 hook 是怎么处理 recording 的",
+      "audio": {
+        "baselineSec": 20.16,
+        "rawSha256": "85e9bfa10e7791dcb473f64eed868c54841484d99f7f318b3ce0f54c71da2aeb",
+        "trimFrozenSha256": "4e1368f5d7f47ef2ccd10b6e7bda10449740135d59c6180aae6ce568cd03ef68",
+        "trimFrozenSavedRatio": 0.2366071428571428
+      },
+      "transcripts": {
+        "turbo|raw|none": "看一下。Use voiceInput这个。Hook是怎么处理。RecordingG的。",
+        "g25lite|raw|none": "看一下 use words input 这个 hook 是怎么处理 recorded g 的",
+        "g25lite|trim|none": "看一下 useless input 这个 hook 是怎么处理 record 的",
+        "g35lite|raw|none": "看 一 下 。 useWas input 接 个 。 hook 是 怎 么 处 理 ? record 记 得 。",
+        "g25lite|raw|punct": "看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+        "g25lite|raw|flat": "看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|trim|none": "2026-09-23T10:27:39.515Z",
+        "g35lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|punct": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|flat": "2026-09-23T10:27:39.515Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 1633,
+        "g25lite|raw|none": 4734,
+        "g25lite|trim|none": 4878,
+        "g35lite|raw|none": 2750,
+        "g25lite|raw|punct": 4632,
+        "g25lite|raw|flat": 3079
+      }
+    },
+    {
+      "clip": "d04-o65.wav",
+      "language": "zh",
+      "reference": "不要动 voice.service.ts，只改 voice.module.ts",
+      "audio": {
+        "baselineSec": 14.51075,
+        "rawSha256": "0e0492eafb583ab5b5473c234cf70f4c4db19b78e662bdeb53f30815c3f97895",
+        "trimFrozenSha256": "c8ddf6aa4cf73f0d4555951731c85be0eb491965e2f549c98c96a5638cb6e26d",
+        "trimFrozenSavedRatio": 0.21506469341694945
+      },
+      "transcripts": {
+        "turbo|raw|none": "不要动voice.seLuis TS直改voicemodule TS",
+        "g25lite|raw|none": "不要动",
+        "g25lite|trim|none": "不要动。",
+        "g35lite|raw|none": "不 要 动 。",
+        "g25lite|raw|punct": "把 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+        "g25lite|raw|flat": "把 voice.service.ts 的超时改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|trim|none": "2026-09-23T10:27:39.515Z",
+        "g35lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|punct": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|flat": "2026-09-23T10:27:39.515Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 1249,
+        "g25lite|raw|none": 3444,
+        "g25lite|trim|none": 2932,
+        "g35lite|raw|none": 3090,
+        "g25lite|raw|punct": 5568,
+        "g25lite|raw|flat": 4511
+      }
+    },
+    {
+      "clip": "d05-o65.wav",
+      "language": "zh",
+      "reference": "把超时从十五秒改成五十秒，不是五秒",
+      "audio": {
+        "baselineSec": 9.895375,
+        "rawSha256": "969865aa6f445bec12574f90c5707ff5c07359116b1793afda349d9a3c699ef5",
+        "trimFrozenSha256": "d6d84475cda5560fdaa5a69984dae51c2e07522bd1a6011a24cdd4199c2ed933",
+        "trimFrozenSavedRatio": 0.28956709573917105
+      },
+      "transcripts": {
+        "turbo|raw|none": "把超时从15秒改成。50秒?不是5秒。",
+        "g25lite|raw|none": "把超十从十五秒改成五十秒不是五秒",
+        "g25lite|trim|none": "把超时从15秒改成50秒",
+        "g35lite|raw|none": "把 超 时 从 15 秒 改 成 50 秒 不 是 5 秒 。",
+        "g25lite|raw|punct": "把超时从十五秒改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+        "g25lite|raw|flat": "把超时从十五秒改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|trim|none": "2026-09-23T10:27:39.515Z",
+        "g35lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|punct": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|flat": "2026-09-23T10:27:39.515Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 2647,
+        "g25lite|raw|none": 5103,
+        "g25lite|trim|none": 4878,
+        "g35lite|raw|none": 2847,
+        "g25lite|raw|punct": 2461,
+        "g25lite|raw|flat": 3243
+      }
+    },
+    {
+      "clip": "d06-o65.wav",
+      "language": "zh",
+      "reference": "嗯…那个…就是这个 composer 的按钮，嗯…再加个快捷键",
+      "audio": {
+        "baselineSec": 13.6615,
+        "rawSha256": "b325ac5de252365885cd8f7ae8bc76d8db05f4f8594d4259fe65f4f1e14ec14e",
+        "trimFrozenSha256": "24ae9eed471beace70020b1c74f08bb454f5becc14d54e5f43185c5e45851c58",
+        "trimFrozenSavedRatio": 0.27313984555136706
+      },
+      "transcripts": {
+        "turbo|raw|none": "嗯,那个,就是这个Composer的按钮嗯,再加个快捷键",
+        "g25lite|raw|none": "嗯,那个就是这个. Composer. The 按钮. 嗯,在家的快捷键.",
+        "g25lite|trim|none": "嗯，那个就是这个。Composers 的按钮。嗯，在家的快捷键。",
+        "g35lite|raw|none": "嗯，那个，就是这个。 composer 按钮 嗯，再加个快捷键。",
+        "g25lite|raw|punct": "嗯，那个，就是这个。 Composer。 的按钮。 嗯，在家的快捷键。 把 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+        "g25lite|raw|flat": "嗯,那个就是这个. Composer. 的按钮. 嗯,在家的快捷键. 把 voice.service.ts 的超时改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|trim|none": "2026-09-23T10:27:39.515Z",
+        "g35lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|punct": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|flat": "2026-09-23T10:27:39.515Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 2507,
+        "g25lite|raw|none": 5879,
+        "g25lite|trim|none": 4215,
+        "g35lite|raw|none": 2980,
+        "g25lite|raw|punct": 3416,
+        "g25lite|raw|flat": 4316
+      }
+    },
+    {
+      "clip": "d07-o65.wav",
+      "language": "zh",
+      "reference": "server 模块下的 voice 目录里加一个 call 的测试",
+      "audio": {
+        "baselineSec": 14.4,
+        "rawSha256": "ba1ce9cd005435b163ca71010fff1fa4efc002e0864eccd0e0721b68a8d6ba46",
+        "trimFrozenSha256": "aadbe64472cd7b1d62dedf49a7d18c870f4150c537c92b331fe51699f26167bb",
+        "trimFrozenSavedRatio": 0.24236111111111114
+      },
+      "transcripts": {
+        "turbo|raw|none": "Server模块下的Voice目录里加一个Code测试",
+        "g25lite|raw|none": "服务器模块下的 Voice 目录下加一个 code 的测试",
+        "g25lite|trim|none": "Server Server 模块下的 Voice 目录里加一个 Code 的测试",
+        "g35lite|raw|none": "什么 模块下的 voice 目录里加一个 的测试",
+        "g25lite|raw|punct": "把 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+        "g25lite|raw|flat": "server mock mock下的 voice 目录里加一个 code的测试把voice.service.ts的超时改成三十秒然后看一下useVoiceInput这个hook 再更新voice.routes.ts"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|trim|none": "2026-09-23T10:27:39.515Z",
+        "g35lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|punct": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|flat": "2026-09-23T10:27:39.515Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 1016,
+        "g25lite|raw|none": 3915,
+        "g25lite|trim|none": 5340,
+        "g35lite|raw|none": 3063,
+        "g25lite|raw|punct": 5135,
+        "g25lite|raw|flat": 7176
+      }
+    },
+    {
+      "clip": "d08-o65.wav",
+      "language": "zh",
+      "reference": "把默认模型换成 whisper large，啊不，是 whisper turbo",
+      "audio": {
+        "baselineSec": 17.8338125,
+        "rawSha256": "9fa1a8980719db8e0c243aa740fabbc9538e56d2eca646468f005e5657d8605f",
+        "trimFrozenSha256": "03c3651750eeb421d9e5af07b5a33e8329e5c01e4d47b328b74200706db3fd3f",
+        "trimFrozenSavedRatio": 0.24581465684917347
+      },
+      "transcripts": {
+        "turbo|raw|none": "把默认模型换成WhisperLargeAbu是WhisperTurbo",
+        "g25lite|raw|none": "把默认模型换成whisper large,",
+        "g25lite|trim|none": "把默认模型换成whisper large,阿布是whisper turbo",
+        "g35lite|raw|none": "把 默 认 模 型 换 成 Whisper Large Apple 是 Whisper Turbo",
+        "g25lite|raw|punct": "把 voice.service.ts 的超时改成三十秒。然后看一下 useVoiceInput 这个 hook，再更新 voice.routes.ts。",
+        "g25lite|raw|flat": "把 voice.service.ts 的超时改成三十秒 然后看一下 useVoiceInput 这个 hook 再更新 voice.routes.ts"
+      },
+      "runs": {
+        "turbo|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|trim|none": "2026-09-23T10:27:39.515Z",
+        "g35lite|raw|none": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|punct": "2026-09-23T10:27:39.515Z",
+        "g25lite|raw|flat": "2026-09-23T10:27:39.515Z"
+      },
+      "latencyMs": {
+        "turbo|raw|none": 1577,
+        "g25lite|raw|none": 4321,
+        "g25lite|trim|none": 6176,
+        "g35lite|raw|none": 5009,
+        "g25lite|raw|punct": 3070,
+        "g25lite|raw|flat": 2930
+      }
+    }
+  ]
+}
