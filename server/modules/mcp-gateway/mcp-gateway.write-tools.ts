@@ -47,6 +47,8 @@ import { readSessionTurn } from '@/modules/providers/index.js';
 import type { McpPrincipal } from './mcp-gateway.auth.js';
 import { registerMcpProjectCreateTool } from './mcp-project-create.js';
 import type { McpProjectCreateDeps } from './mcp-project-create.js';
+import { registerMcpProjectDeleteTool } from './mcp-project-delete.js';
+import type { McpProjectDeleteDeps } from './mcp-project-delete.js';
 import { McpToolError } from './mcp-error-envelope.js';
 import {
   DRAFT_SET_DESCRIPTION,
@@ -235,6 +237,12 @@ export type McpStage4WriteToolName = (typeof MCP_STAGE4_WRITE_TOOLS)[number]['na
 export type McpWriteToolDeps = McpSessionSendDeps & {
   /** Device-rooted project creation, supplied by the production composition. */
   projectCreate?: McpProjectCreateDeps;
+  /**
+   * Project archive/removal, supplied by the production composition. A mount
+   * that omits it keeps `project_delete`'s named refusal, exactly as an
+   * un-wired `project_create` does.
+   */
+  projectDelete?: McpProjectDeleteDeps;
   /**
    * The services `session_create` answers from (AC-250). Optional so a mount
    * that only exercises `session_send` — AC-240/244/245/249's criteria — stays a
@@ -521,6 +529,11 @@ export function registerMcpWriteTools(seam: McpWriteToolSeam, deps: McpWriteTool
   // A project has no existing session target, so the session self-target guard
   // does not apply. Authentication, scope, audit and notifications use the seam.
   registerMcpProjectCreateTool(seam, deps.projectCreate);
+  // Its destructive twin, registered on the same seam for the same reason: a
+  // project id is not a session target, so `protect` would refuse on a
+  // self-target that cannot exist. Archived-or-removed is the caller's choice,
+  // made explicitly with `force`.
+  registerMcpProjectDeleteTool(seam, deps.projectDelete);
 
   // gap-mcp-ui-open-session: a SIXTH write tool, registered alongside the five
   // above rather than in `MCP_STAGE4_WRITE_TOOLS` (whose length is AC-249's own

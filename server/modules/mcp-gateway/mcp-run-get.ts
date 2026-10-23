@@ -118,23 +118,34 @@ export type McpRunGetIdKind = 'run' | 'delivery';
  * `expired` covers both a run aged out of retention and a run belonging to a
  * previous boot; `never_issued` covers an id nothing ever handed out.
  */
-export type McpRunGetMissReason = 'expired' | 'unknown_in_current_process' | 'unknown_after_restart';
+export type McpRunGetMissReason =
+  | 'expired'
+  // The delivery ledger CAN prove a delivery id was never minted, so the two
+  // delivery-side causes report the coarse upstream word.
+  | 'never_issued'
+  // The run registry cannot prove it: an id absent from both the live index
+  // and the durable receipts is "no evidence here", which is a different claim
+  // from "never issued" — the request may have executed on a boot this process
+  // no longer has. Reporting `never_issued` there would invite a resend of work
+  // that already ran, which is the exact failure the receipt readback exists to
+  // prevent.
+  | 'unknown_in_current_process'
+  | 'unknown_after_restart';
 
 /**
  * The INTERNAL cause of a miss, which picks the sentence.
  *
- * Three causes, two reportable reasons: `restarted` is a fourth reading — a run
- * whose record still exists but belongs to another boot — and it reports
- * `'expired'` because the id no longer names anything this process has, while
- * its SENTENCE still says the service restarted. Keeping the cause separate
- * from the report lets the prose stay precise where the reason is coarse.
+ * Four causes, four reportable reasons, one to one. `unknown_delivery` is the
+ * only coarse one: the ledger minted the id, so it can say "never issued", while
+ * a run id absent from the live index and the receipts is only ever "no evidence
+ * here".
  */
 type McpRunGetMissCause = 'expired' | 'unknown' | 'unknown_delivery' | 'restarted';
 
-const EXPLANATION_EXPIRED = 'This run existed but is past its retention window; its result can no longer be retrieved.';
-const EXPLANATION_UNKNOWN = 'This runId was never issued.';
+const EXPLANATION_EXPIRED = 'Live run evidence expired after retention and no durable terminal receipt is available; reconcile before any resend.';
+const EXPLANATION_UNKNOWN = 'This process has no run evidence for this id; the request may have executed. Reconcile before any resend.';
 const EXPLANATION_UNKNOWN_DELIVERY = 'This deliveryId was never issued.';
-const EXPLANATION_RESTARTED = 'The service restarted; this run belongs to a previous boot.';
+const EXPLANATION_RESTARTED = 'The service restarted and this prior-boot run has no proven terminal receipt; it may have executed.';
 
 const EXPLANATION_BY_CAUSE: Record<McpRunGetMissCause, string> = {
   expired: EXPLANATION_EXPIRED,
@@ -146,9 +157,9 @@ const EXPLANATION_BY_CAUSE: Record<McpRunGetMissCause, string> = {
 /** The reportable reason each internal cause maps onto. */
 const REASON_BY_CAUSE: Record<McpRunGetMissCause, McpRunGetMissReason> = {
   expired: 'expired',
-  unknown: 'never_issued',
+  unknown: 'unknown_in_current_process',
   unknown_delivery: 'never_issued',
-  restarted: 'expired',
+  restarted: 'unknown_after_restart',
 };
 
 /** The note carried when a session's activity store has no snapshot for it. */
@@ -422,6 +433,11 @@ async function buildHit(
     lastAssistantMessage,
     note,
     explanation: null,
+    durability: evidence?.durability ?? 'process_local',
+    terminal,
+    queue: { queued: evidence?.queued ?? false, uuid: evidence?.queuedMessageUuid ?? null, state: evidence?.queueState ?? null },
+    resultAttribution: attribution,
+    resultSnapshot: snapshotResult,
   };
 }
 
@@ -478,11 +494,13 @@ async function buildDeliveryHit(
     lastAssistantMessage,
     note,
     explanation: null,
-    durability: evidence?.durability ?? 'process_local',
-    terminal,
-    queue: { queued: evidence?.queued ?? false, uuid: evidence?.queuedMessageUuid ?? null, state: evidence?.queueState ?? null },
-    resultAttribution: attribution,
-    resultSnapshot: snapshotResult,
+    // A delivery id is not a run id, so it has no run receipt behind it: the
+    // reading says so in values rather than by omitting keys.
+    durability: 'process_local',
+    terminal: null,
+    queue: { queued: false, uuid: null, state: null },
+    resultAttribution: 'unavailable',
+    resultSnapshot: null,
   };
 }
 
@@ -590,7 +608,7 @@ export async function buildRunGet(input: McpRunGetInput, deps: McpRunGetDeps): P
       // event-buffer retention or a new boot. Never resume an unfinished run.
       initial = { runId: evidence.runId, sessionId: evidence.sessionId, source: evidence.source,
         status: evidence.status, startedAt: evidence.startedAt, completedAt: evidence.completedAt, lastSeq: evidence.lastSeq };
-      return buildHit(input.runId, deps, initial, readWaitSeconds(input.waitSeconds) > 0 ? 'settled' : undefined);
+      return buildHit(runId, deps, initial, readWaitSeconds(input.waitSeconds) > 0 ? 'settled' : undefined);
     }
     return buildMiss(input, deps, evidence && evidence.bootId !== deps.bootId() ? 'restarted' : initial.reason, evidence?.sessionId);
   }

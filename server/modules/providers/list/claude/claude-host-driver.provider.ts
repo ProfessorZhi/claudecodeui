@@ -1907,6 +1907,16 @@ type ResidentRound = {
   fail(error: Error): void;
   settled: boolean;
   interrupted: boolean;
+  /**
+   * The message uuids THIS round queued while the process was busy.
+   *
+   * `queuedInputUuid`'s writer-scoped reading needs it: a run's receipt must
+   * name the queued message its own writer accepted, not whichever entry the
+   * process-level queue happens to hold last — two writers queuing into one
+   * resident process hold two different messages, and answering with the other
+   * run's uuid would report a withdrawal that can never match.
+   */
+  queuedUuids: string[];
 };
 
 /**
@@ -4634,6 +4644,7 @@ export class ClaudeResidentHostDriver implements IProviderHostDriver {
       done,
       settled: false,
       interrupted: false,
+      queuedUuids: [],
       settle(): void {
         if (round.settled) {
           return;
@@ -4696,6 +4707,7 @@ export class ClaudeResidentHostDriver implements IProviderHostDriver {
       const at = Date.now();
       for (const message of messages) {
         if (busy && typeof message?.uuid === 'string' && message.uuid) {
+          round.queuedUuids.push(message.uuid);
           state.queuedInputs.push({
             uuid: message.uuid,
             at,

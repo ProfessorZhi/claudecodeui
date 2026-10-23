@@ -161,6 +161,7 @@ type ChatRun = {
   resultSnapshot: ChatRunReceipt['resultSnapshot'];
   lastAssistantMessage: NormalizedMessage | null;
   receiptPersisted: boolean;
+};
 
 
 /**

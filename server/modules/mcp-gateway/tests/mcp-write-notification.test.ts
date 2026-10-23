@@ -272,6 +272,9 @@ type Harness = {
 /** The write-tool call plan: one SUCCESSFUL call per write tool, with expected title. */
 const WRITE_CALLS: Array<{ tool: string; args: AnyRecord; sessionTitle: string | null }> = [
   { tool: 'project_create', args: { projectPath: '/fixture-created' }, sessionTitle: null },
+  // A project delete has no session target, so it notifies with no title — the
+  // same shape as `project_create` one line above.
+  { tool: 'project_delete', args: { projectId: 'notification-deleted' }, sessionTitle: null },
   { tool: 'session_send', args: { session: SEND_SESSION, message: LONG_MESSAGE }, sessionTitle: SEND_TITLE },
   { tool: 'session_create', args: { project: PROJECT_ID }, sessionTitle: null },
   { tool: 'session_interrupt', args: { session: TARGET }, sessionTitle: TARGET_TITLE },
@@ -431,6 +434,10 @@ async function withHarness(options: HarnessOptions, run: (harness: Harness) => P
                 isArchived: false, isStarred: false, sessions: [], sessionMeta: { hasMore: false, total: 0 },
               },
             }),
+          },
+          projectDelete: {
+            readProject: (projectId: string) => ({ projectId, path: '/fixture-deleted', isArchived: false }),
+            deleteProject: async () => undefined,
           },
           runGet: { deps: runGetDeps, build: buildRunGet },
           sessionCreate: {

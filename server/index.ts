@@ -65,7 +65,7 @@ import {
 } from './modules/oauth/index.js';
 import { createSystemModule, readBuildInfo } from './modules/system/index.js';
 import projectModuleRoutes from './modules/projects/projects.routes.js';
-import { createProjectWithinWorkspaceRoot } from './modules/projects/index.js';
+import { createProjectWithinWorkspaceRoot, deleteOrArchiveProject } from './modules/projects/index.js';
 import notificationRoutes from './modules/notifications/notifications.routes.js';
 import { userRoutes } from './modules/user/index.js';
 import {
@@ -1779,6 +1779,20 @@ const mcpGateway = mountMcpGateway(
         writeTools: {
             projectCreate: {
                 createProject: (input) => createProjectWithinWorkspaceRoot(input, process.env.WORKSPACES_ROOT),
+            },
+            projectDelete: {
+                // One row read, then the service's own delete: the read is what
+                // the result echoes, so a caller learns which path it acted on
+                // even after the row is gone.
+                readProject: (projectId: string) => {
+                    const row = projectsDb.getProjectById(projectId);
+                    return row === null ? null : {
+                        projectId: row.project_id,
+                        path: row.project_path,
+                        isArchived: row.isArchived !== 0,
+                    };
+                },
+                deleteProject: deleteOrArchiveProject,
             },
             // AC-249/AC-272's send deps, shared with the voice control plane so a
             // spoken instruction and an MCP call open their runs through one path.

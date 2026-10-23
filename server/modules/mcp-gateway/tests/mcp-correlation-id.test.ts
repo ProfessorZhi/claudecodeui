@@ -295,6 +295,9 @@ async function withHarness(run: (harness: Harness) => Promise<void>): Promise<vo
     sessions: {
       listRecentSessions: () => ({ conversations: SESSION_ROWS, total: SESSION_ROWS.length }),
       readSessionLifecycle: () => ({ provider: 'claude', mode: 'per-run' }),
+      // Fork-added reader (permission readback). This fake stores no
+      // preference, and `null` is the documented "none recorded" answer.
+      readSessionPermissionMode: () => null,
     },
     hosts: { liveHostForSession: () => null },
     runs: { listRunningRuns: () => registry.listRunningRuns() },
@@ -512,7 +515,10 @@ test('(b) a labelled send stamps the run it opened and its own audit row; a labe
     // label-less send still answers exactly the pre-AC-337 fields PLUS that one.
     assert.deepEqual(
       Object.keys(plainPayload).sort(),
-      ['blockedBy', 'deliveryId', 'queued', 'queuedMessageUuid', 'runId', 'source'],
+      // `durability` rides every accepted send (fork readback): it says whether
+      // the receipt behind this run id is SQLite-backed or process-local, which
+      // is exactly the fact a caller needs before reconciling after a restart.
+      ['blockedBy', 'deliveryId', 'durability', 'queued', 'queuedMessageUuid', 'runId', 'source'],
       'a label-less send must answer the pre-AC-337 payload shape plus S3s deliveryId',
     );
     assert.equal(plainPayload.deliveryId, null, 'the flag-off world names no delivery');

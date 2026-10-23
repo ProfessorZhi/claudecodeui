@@ -835,6 +835,8 @@ test('(c2) session_get reads by id a session older than the whole recents page',
     },
     { distantSessions: DISTANT_SESSION_COUNT },
   );
+});
+
 // ------------------- (c2) the stored permission mode -------------------
 
 test('(c2) session_get reports the mode stored for the session, and null when none was', { concurrency: false }, async () => {

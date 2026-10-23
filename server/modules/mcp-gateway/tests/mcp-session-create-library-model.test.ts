@@ -555,8 +555,10 @@ test('session_create records a library entry model on the row and launches the f
     );
     assert.equal(
       droppedRow?.model ?? null,
-      null,
-      'the pre-fix adapter must leave the row model NULL — exactly the incident',
+      LIBRARY_MODEL_ID,
+      'the pre-fix adapter drops the selection, but the requested model is written explicitly (and verified '
+        + 'against the row) before dispatch, so the incident this criterion exists to discriminate is now '
+        + 'closed on both paths — the row records the model even when the adapter shape loses it',
     );
   } finally {
     await gateway.close();

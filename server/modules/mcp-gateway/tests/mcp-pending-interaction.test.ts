@@ -330,6 +330,9 @@ async function withHarness(label: string, run: (harness: Harness) => Promise<voi
         total: 2,
       }),
       readSessionLifecycle: () => null,
+      // Fork-added reader (permission readback). This fake stores no
+      // preference, and `null` is the documented "none recorded" answer.
+      readSessionPermissionMode: () => null,
       fetchHistory: async () => ({ messages: [], total: 0 }),
       fetchOutline: async () => ({ total: 0, turns: [] }),
       fetchWindowAround: async () => ({ messages: [], startIndex: 0, total: 0 }),

@@ -12,11 +12,19 @@ const { buildSessionCreate, buildSessionCreateDeps } = await import('../index.js
 await db.initializeDatabase();
 after(() => db.closeConnection());
 const ctx = { principal: { userId: 1, scopes: [], tokenId: 'fixture' } } as any;
+// The catalog reader arrived with 1.40 (`providerModelsService.assertSelectableModel`).
+// These cases exercise the PERSISTENCE mechanics, so they name fixture models that
+// no real catalog lists; the guard must stay out of their way and is proven by
+// `session_create`'s own argument tests instead.
+const fixtureModels = {
+  ...providerModelsService,
+  assertSelectableModel: async (_provider: string, model: string): Promise<string> => model,
+};
 let calls = 0;
 function wiring(overrides: Record<string, unknown> = {}) {
   return buildSessionCreateDeps({
     projects: { getProjectPaths: () => [{ project_id: 'fixture', custom_project_name: null, project_path: root }] as any },
-    sessions: sessionsService, capabilities: providerCapabilitiesService, models: providerModelsService,
+    sessions: sessionsService, capabilities: providerCapabilitiesService, models: fixtureModels,
     control: { send: async (_caller: unknown, input: any) => {
       calls++;
       const row = db.sessionsDb.getSessionById(input.sessionId)!;
@@ -85,8 +93,18 @@ test('explicit model without persistence and readback owner refuses before row c
 
 test('a setter echo without actual session persistence cannot claim model applied or start a run', async () => {
   const before = calls;
-  await assert.rejects(() => buildSessionCreate({ project: 'fixture', model: 'must-be-persisted', message: 'do not run' }, ctx, wiring({ models: {
-    ...providerModelsService,
+  // The row-writing adapter also drops the selection here, so the pre-fix
+  // three-parameter shape and the echoing setter together are the ONLY places
+  // the model could land — which is what this case is about. With the selection
+  // intact the create itself records the model, and an echoing setter would be
+  // merely redundant rather than load-bearing.
+  const droppingSessions = {
+    ...sessionsService,
+    createAppSession: (provider: string, projectPath: string, initialMessage: string) =>
+      sessionsService.createAppSession(provider as any, projectPath, initialMessage),
+  };
+  await assert.rejects(() => buildSessionCreate({ project: 'fixture', model: 'must-be-persisted', message: 'do not run' }, ctx, wiring({ sessions: droppingSessions as any, models: {
+    ...fixtureModels,
     setSessionModel: (provider: string, sessionId: string, model: string) => ({ provider, sessionId, model, source: 'session' }),
   } })), (e: any) => {
     assert.equal(e.code, 'SESSION_CONFIGURATION_FAILED'); assert.equal(e.details.mayHaveCreatedSession, true);
@@ -98,7 +116,7 @@ test('a setter echo without actual session persistence cannot claim model applie
 test('configuration write failure retains actual created identity and never sends', async () => {
   const before = calls;
   await assert.rejects(() => buildSessionCreate({ project: 'fixture', model: 'explicit', message: 'do not run' }, ctx, wiring({ models: {
-    ...providerModelsService, setSessionModel: () => { throw new Error('fixture write failure'); },
+    ...fixtureModels, setSessionModel: () => { throw new Error('fixture write failure'); },
   } })), (e: any) => e.code === 'SESSION_CONFIGURATION_FAILED' && !!db.sessionsDb.getSessionById(e.details.sessionId));
   assert.equal(calls, before);
 });

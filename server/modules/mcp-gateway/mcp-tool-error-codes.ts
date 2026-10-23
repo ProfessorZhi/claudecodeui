@@ -133,6 +133,10 @@ export const MCP_TOOL_ERROR_CODES: Record<McpGatewayToolName, readonly McpErrorC
   // Project service codes (including PROJECT_ALREADY_EXISTS and INVALID_PROJECT_PATH)
   // pass through unchanged, as the existing service-code contract specifies.
   project_create: [...WRAPPER_CODES, 'MCP_TOOL_NOT_IMPLEMENTED'],
+  // The handler refuses an unknown id itself with the same 404 the service
+  // raises, so a caller sees one code whether the miss was found in the pre-read
+  // or inside `deleteOrArchiveProject`.
+  project_delete: [...WRAPPER_CODES, 'PROJECT_NOT_FOUND', 'MCP_TOOL_NOT_IMPLEMENTED'],
 
   // -- stage-4 write tools ---------------------------------------------------
   // `session_send` normalizes the control service's `RUN_IN_PROGRESS` to the

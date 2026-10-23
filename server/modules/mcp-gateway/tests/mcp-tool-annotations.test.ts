@@ -260,6 +260,7 @@ test('(c) the read-only set is the seven read tools plus approvals_list and draf
     'draft_set',
     'draft_submit',
     'project_create',
+    'project_delete',
   ];
   for (const name of writes) {
     assert.equal(
@@ -275,7 +276,7 @@ test('(d) destructive tools are marked destructive, additive writes are not', as
   const destructive = (name: string): boolean | undefined =>
     listed.tools.find((tool) => tool.name === name)?.annotations?.destructiveHint;
 
-  for (const name of ['session_interrupt', 'session_close', 'session_cancel_queued', 'session_background', 'draft_set']) {
+  for (const name of ['session_interrupt', 'session_close', 'session_cancel_queued', 'session_background', 'draft_set', 'project_delete']) {
     assert.equal(destructive(name), true, `${name} terminates/discards held work and must be destructive`);
   }
   for (const name of ['session_send', 'session_create', 'session_reconfigure', 'approval_answer', 'draft_submit']) {

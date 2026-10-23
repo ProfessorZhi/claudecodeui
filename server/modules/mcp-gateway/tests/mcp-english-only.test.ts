@@ -405,6 +405,9 @@ const readTools = {
       total: 1,
     }),
     readSessionLifecycle: () => ({ provider: 'claude', mode: 'resident' }),
+    // Fork-added reader (permission readback). This fake stores no
+    // preference, and `null` is the documented "none recorded" answer.
+    readSessionPermissionMode: () => null,
     fetchHistory: async () => ({
       messages: [{ role: 'user', kind: 'message', content: ZH_MESSAGE_TEXT, timestamp: LAST_ACTIVITY_ISO }],
     }),
@@ -630,6 +633,10 @@ function makeWriteTools(control: ReturnType<typeof makeControl>): McpWriteToolDe
         outcome: 'created', freshDirectoryCreated: false,
         project: { projectId: 'proj-new', path: '/tmp/proj-new', displayName: 'New project', isArchived: false },
       }),
+    },
+    projectDelete: {
+      readProject: (projectId: string) => ({ projectId, path: '/tmp/proj-gone', isArchived: false }),
+      deleteProject: async () => undefined,
     },
     control,
     runs,
@@ -914,6 +921,9 @@ async function call(client: Client, tool: string, args: AnyRecord): Promise<Call
  */
 const SUCCESS_TABLE: Record<string, AnyRecord> = {
   project_create: { projectPath: '/tmp/proj-new' },
+  // The default mode archives the row, which the injected delete accepts; the
+  // payload echoes the id that was read before removal.
+  project_delete: { projectId: 'proj-archived' },
   overview: {},
   projects_list: {},
   sessions_list: {},
@@ -989,6 +999,7 @@ const SUCCESS_TABLE: Record<string, AnyRecord> = {
  */
 const FAILURE_TABLE: Record<string, { args: AnyRecord; expect: string }> = {
   project_create: { args: {}, expect: 'INVALID_ARGUMENT' },
+  project_delete: { args: {}, expect: 'INVALID_ARGUMENT' },
   overview: { args: { project: 5 }, expect: 'INVALID_ARGUMENT' },
   projects_list: { args: { includeArchived: 'yes' }, expect: 'INVALID_ARGUMENT' },
   sessions_list: { args: { state: 'bogus' }, expect: 'INVALID_ARGUMENT' },
@@ -1220,7 +1231,7 @@ test('(a) the success and failure tables cover exactly the tools the registry li
   const listed = await listClient.listTools();
   const registryNames = listed.tools.map((tool) => tool.name).sort();
 
-  assert.equal(registryNames.length, 29, `tools/list must return the full 29-tool set, got ${registryNames.join(', ')}`);
+  assert.equal(registryNames.length, 30, `tools/list must return the full 30-tool set, got ${registryNames.join(', ')}`);
   assert.deepEqual(
     Object.keys(SUCCESS_TABLE).sort(),
     registryNames,

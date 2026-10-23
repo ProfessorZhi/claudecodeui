@@ -313,6 +313,9 @@ async function withHarness(run: (harness: Harness) => Promise<void>): Promise<vo
     sessions: {
       listRecentSessions: () => ({ conversations: [], total: 0 }),
       readSessionLifecycle: () => null,
+      // Fork-added reader (permission readback). This fake stores no
+      // preference, and `null` is the documented "none recorded" answer.
+      readSessionPermissionMode: () => null,
       // The one reader leg (e) reaches: an empty transcript is a legitimate answer.
       fetchHistory: async () => ({ messages: [] }),
       fetchOutline: async () => ({ turns: [] }),

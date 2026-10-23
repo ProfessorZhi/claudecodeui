@@ -358,7 +358,7 @@ export async function buildSessionCreate(
   }
 
   const provider = input.provider ?? ('claude' as LLMProvider);
-  const model = input.model?.trim();
+  let model = input.model?.trim();
   if (input.model !== undefined && !model) {
     throw new McpToolError(MCP_ERROR_CODES.INVALID_ARGUMENT, 'An explicit model must not be empty.');
   }
@@ -390,7 +390,10 @@ export async function buildSessionCreate(
   // run launched with the CLI's account default instead. An unwired catalog
   // reader skips the check rather than the recording — the model still lands on
   // the row — because the guard is a typo check, not the fix.
-  let model = typeof input.model === 'string' ? input.model.trim() : '';
+  // `model` is the one declared above: the fork's catalog check below only
+  // REFINES the caller's value, so it must not shadow it (a second declaration
+  // is a compile error, and the later `setSessionModel` would write the
+  // untrimmed value).
   if (model && deps.models?.assertSelectableModel) {
     try {
       model = await deps.models.assertSelectableModel(provider, model);

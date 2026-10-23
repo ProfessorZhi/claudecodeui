@@ -295,6 +295,9 @@ const minimalReadDeps: McpReadToolDeps = {
   sessions: {
     listRecentSessions: () => ({ conversations: [], total: 0 }),
     readSessionLifecycle: () => null,
+    // Fork-added reader (permission readback): this fake stores no preference,
+    // and `null` is its documented "the row never recorded one" answer.
+    readSessionPermissionMode: () => null,
     fetchHistory: async () => ({ messages: [], total: 0 }),
     fetchOutline: async () => ({ total: 0, turns: [] }),
     fetchWindowAround: async () => ({ messages: [], startIndex: 0, total: 0 }),
