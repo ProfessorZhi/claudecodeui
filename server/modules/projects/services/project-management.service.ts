@@ -142,3 +142,106 @@ export function updateProjectDisplayName(projectId: string, newDisplayName: unkn
   const trimmed = typeof newDisplayName === 'string' ? newDisplayName.trim() : '';
   projectsDb.updateCustomProjectNameById(projectId, trimmed.length > 0 ? trimmed : null);
 }
+
+/**
+ * MCP composition uses an explicitly configured device root, never a caller root
+ * or the legacy HOME fallback. REST and Worktrees retain createProject defaults.
+ * Reject every descendant symlink, including one above multiple missing levels.
+ * This is containment validation, not a sandbox against privileged local races.
+ */
+export async function createProjectWithinWorkspaceRoot(
+  input: CreateProjectInput & { requireFresh?: boolean },
+  workspaceRoot: string | undefined,
+): Promise<CreateProjectServiceResult & { freshDirectoryCreated: boolean }> {
+  if (!workspaceRoot || !path.isAbsolute(workspaceRoot)) {
+    throw new AppError('Configure an absolute WORKSPACES_ROOT before creating projects through MCP.', {
+      code: 'PROJECT_WORKSPACE_ROOT_REQUIRED', statusCode: 403,
+    });
+  }
+  const invalidPath = (message: string): AppError => new AppError(message, {
+    code: 'INVALID_PROJECT_PATH', statusCode: 400,
+  });
+  if (!path.isAbsolute(input.projectPath) || input.projectPath.includes('\0')) {
+    throw invalidPath('Project path must be an absolute directory within WORKSPACES_ROOT.');
+  }
+  const configuredRoot = path.resolve(workspaceRoot);
+  const realRoot = await fs.realpath(configuredRoot);
+  if (!(await fs.stat(realRoot)).isDirectory()) {
+    throw invalidPath('Configured workspace root is not a directory.');
+  }
+  const requested = path.resolve(input.projectPath);
+  const isDescendant = (relative: string): boolean =>
+    relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+  // The configured root may itself be a device-owned symlink. Either spelling
+  // is accepted; symlinks supplied below that root are never followed.
+  let relative = path.relative(configuredRoot, requested);
+  if (!isDescendant(relative)) relative = path.relative(realRoot, requested);
+  if (!isDescendant(relative)) throw invalidPath('Project path must be a descendant of WORKSPACES_ROOT.');
+  const projectPath = path.join(realRoot, relative);
+  const segments = relative.split(path.sep);
+  const requireFresh = input.requireFresh === true;
+  const conflict = (reason: string): AppError => new AppError('Project path already exists; a fresh directory is required.', {
+    code: 'PROJECT_ALREADY_EXISTS', statusCode: 409, details: reason,
+  });
+  let freshDirectoryCreated = false;
+
+  const walk = async (createMissing: boolean): Promise<void> => {
+    if (await fs.realpath(realRoot) !== realRoot) throw invalidPath('Workspace root changed during creation.');
+    let current = realRoot;
+    for (const [index, segment] of segments.entries()) {
+      current = path.join(current, segment);
+      try {
+        if (createMissing) {
+          // Never recursively traverse unchecked ancestors. EEXIST is checked
+          // with lstat below, including a concurrent creator of this directory.
+          const exclusiveLeaf = requireFresh && index === segments.length - 1;
+          try {
+            await fs.mkdir(current);
+            if (exclusiveLeaf) freshDirectoryCreated = true;
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+            if (exclusiveLeaf) throw conflict('directory_exists');
+          }
+        }
+        const stat = await fs.lstat(current);
+        if (stat.isSymbolicLink() || !stat.isDirectory() || await fs.realpath(current) !== current) {
+          throw invalidPath('Project paths cannot traverse symlinks or non-directory entries.');
+        }
+      } catch (error) {
+        if (!createMissing && (error as NodeJS.ErrnoException).code === 'ENOENT') return;
+        throw error;
+      }
+    }
+  };
+  await walk(false);
+  if (requireFresh) {
+    if (projectsDb.getProjectPath(projectPath)) throw conflict('project_already_registered');
+    try {
+      await fs.lstat(projectPath);
+      throw conflict('directory_exists');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
+  const result = await createProject({ ...input, projectPath }, {
+    ...defaultDependencies,
+    persistProjectPath: (resolvedPath, customName) => {
+      const persisted = projectsDb.createProjectPath(resolvedPath, customName, { requireFresh });
+      if (requireFresh && persisted.outcome !== 'created') throw conflict('project_already_registered');
+      return persisted;
+    },
+    validatePath: async () => {
+      // Keep the existing system-directory restrictions in addition to the
+      // stricter MCP-only root/ancestor validation, without changing REST.
+      const validation = await validateWorkspacePath(projectPath);
+      if (!validation.valid) return validation;
+      await walk(false);
+      return { valid: true, resolvedPath: projectPath };
+    },
+    ensureWorkspaceDirectory: async () => {
+      await walk(true);
+      await walk(false);
+    },
+  });
+  return { ...result, freshDirectoryCreated };
+}

@@ -289,6 +289,13 @@ const WRITE_CALLS: Array<{ tool: string; args: AnyRecord; sessionTitle: string |
   // deepEqual against the registry-derived set is the reading that forces a new
   // write tool to be called here.
   { tool: 'ui_open_session', args: { session: SEND_SESSION }, sessionTitle: SEND_TITLE },
+  // gap-mcp-project-create / gap-mcp-project-delete: neither verb takes a
+  // session, so neither carries a session title — the notification still fires
+  // because both are `readOnlyHint: false`.
+  // The path is never touched: this file's project-create dep is a fake that
+  // echoes it back. It only has to be a non-empty absolute-looking string.
+  { tool: 'project_create', args: { projectPath: '/tmp/mcp-write-notification-created', requireFresh: true }, sessionTitle: null },
+  { tool: 'project_delete', args: { projectId: 'proj-notified' }, sessionTitle: null },
   // gap-mcp-ui-focus-turn-show-diff-open-task: the three sibling `readOnlyHint:
   // false` navigation tools notify like every other write tool, so the plan must
   // carry them too — the plan's deepEqual against the registry-derived set is the
@@ -460,6 +467,26 @@ async function withHarness(options: HarnessOptions, run: (harness: Harness) => P
           uiFocusTurn: uiNavDeps,
           uiShowDiff: uiNavDeps,
           uiOpenTask: uiNavDeps,
+          // gap-mcp-project-create / gap-mcp-project-delete: the two project verbs
+          // are `readOnlyHint: false` too, so they notify here like every other
+          // write tool. The fakes are the smallest bag the handlers accept — the
+          // services themselves are exercised by their own suites.
+          projectCreate: {
+            createProject: async (input: { projectPath: string }) => ({
+              project: {
+                projectId: 'proj-notified',
+                path: input.projectPath,
+                displayName: 'notified',
+                isArchived: false,
+              },
+              outcome: 'created',
+              freshDirectoryCreated: true,
+            }),
+          } as never,
+          projectDelete: {
+            readProject: () => ({ projectId: 'proj-notified', path: fixtureProject, isArchived: false }),
+            deleteProject: async () => undefined,
+          } as never,
         },
         residentTools: {
           control: { cancelQueued: async () => 'withdrawn' },

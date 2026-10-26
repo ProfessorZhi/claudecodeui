@@ -152,6 +152,8 @@ import type {
 // same barrel when it is handed a partial bag; index.ts states them because the
 // voice executor (AC-312) needs the full `McpReadToolDeps` — see `mcpReadToolDeps`.
 import {
+    createProjectWithinWorkspaceRoot,
+    deleteOrArchiveProject,
     getArchivedProjectsWithSessions,
     getProjectSessionsPage,
     getProjectsWithSessions,
@@ -2239,6 +2241,23 @@ const mcpGateway = mountMcpGateway(
         // `runGet` reuses AC-248's deps so a `waitSeconds` send and a `run_get`
         // wait move through one clock.
         writeTools: {
+            projectCreate: {
+                createProject: (input) => createProjectWithinWorkspaceRoot(input, process.env.WORKSPACES_ROOT),
+            },
+            projectDelete: {
+                // One row read, then the service's own delete: the read is what
+                // the result echoes, so a caller learns which path it acted on
+                // even after the row is gone.
+                readProject: (projectId: string) => {
+                    const row = projectsDb.getProjectById(projectId);
+                    return row === null ? null : {
+                        projectId: row.project_id,
+                        path: row.project_path,
+                        isArchived: row.isArchived !== 0,
+                    };
+                },
+                deleteProject: deleteOrArchiveProject,
+            },
             // AC-249/AC-272's send deps, shared with the voice control plane so a
             // spoken instruction and an MCP call open their runs through one path.
             runGet: mcpSessionSendDeps.runGet,

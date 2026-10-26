@@ -448,6 +448,11 @@ const PROBE_TABLE: Record<string, ToolProbe> = {
   session_background: { probeClass: '参数类型错', args: { session: 5 }, expect: 'INVALID_ARGUMENT' },
   approvals_list: { probeClass: '参数类型错', args: { session: 5 }, expect: 'INVALID_ARGUMENT' },
   approval_answer: { probeClass: '参数缺失', args: {}, expect: 'INVALID_ARGUMENT' },
+  // gap-mcp-project-create / gap-mcp-project-delete: a missing required argument
+  // is the shallowest failure each has — the wrapper's validation branch answers
+  // it before either handler (or any filesystem/database call) runs.
+  project_create: { probeClass: '参数缺失', args: {}, expect: 'INVALID_ARGUMENT' },
+  project_delete: { probeClass: '参数缺失', args: {}, expect: 'INVALID_ARGUMENT' },
   // `client` is a declared optional string, so a wrong-typed one fails the
   // wrapper's validation before any device resolution runs.
   ui_visible_context: { probeClass: '参数类型错', args: { client: 5 }, expect: 'INVALID_ARGUMENT' },
@@ -688,7 +693,7 @@ test('(d) the probe table covers exactly the tools the registry lists', async ()
   // the read tools (including `changes`, the on-demand incremental read surface),
   // the write tools, and the `ui_*` navigation tools. A mount that registered
   // nothing would fail the equality below, not pass it.
-  assert.equal(registryNames.length, 28, `tools/list must return the full 28-tool set, got ${registryNames.join(', ')}`);
+  assert.equal(registryNames.length, 30, `tools/list must return the full 30-tool set, got ${registryNames.join(', ')}`);
   say(`(d) registry names: ${registryNames.join(', ')}`);
 
   assert.deepEqual(

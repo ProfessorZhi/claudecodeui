@@ -16,17 +16,24 @@ function normalizeProjectDisplayName(projectPath: string, customProjectName: str
 }
 
 export const projectsDb = {
-    createProjectPath(projectPath: string, customProjectName: string | null = null): CreateProjectPathResult {
+    // Projects' rooted MCP service uses requireFresh to atomically refuse every
+    // prior row, including an archived row inserted by another process.
+    createProjectPath(
+        projectPath: string,
+        customProjectName: string | null = null,
+        options: { requireFresh?: boolean } = {},
+    ): CreateProjectPathResult {
         const db = getConnection();
         const normalizedProjectPath = normalizeProjectPath(projectPath);
         const normalizedProjectName = normalizeProjectDisplayName(normalizedProjectPath, customProjectName);
         const attemptedId = randomUUID();
+        const conflictClause = options.requireFresh
+            ? 'DO NOTHING'
+            : 'DO UPDATE SET isArchived = 0 WHERE projects.isArchived = 1';
         const row = db.prepare(`
         INSERT INTO projects (project_id, project_path, custom_project_name, isArchived)
             VALUES (?, ?, ?, 0)
-            ON CONFLICT(project_path) DO UPDATE SET
-            isArchived = 0
-            WHERE projects.isArchived = 1
+            ON CONFLICT(project_path) ${conflictClause}
             RETURNING project_id, project_path, custom_project_name, isStarred, isArchived, session_filter
         `).get(attemptedId, normalizedProjectPath, normalizedProjectName) as ProjectRepositoryRow | undefined;
 

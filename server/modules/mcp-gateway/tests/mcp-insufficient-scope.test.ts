@@ -138,6 +138,11 @@ function declaredToolScopes(): Map<string, string> {
   scopes.set('ui_focus_turn', NAVIGATE_SCOPE);
   scopes.set('ui_show_diff', NAVIGATE_SCOPE);
   scopes.set('ui_open_task', NAVIGATE_SCOPE);
+  // gap-mcp-project-create / gap-mcp-project-delete: registered alongside the
+  // stage-4 table too, each with its own scope — minting a project needs
+  // `session:create`, taking stored state away needs `session:control`.
+  scopes.set('project_create', SESSION_CREATE_SCOPE);
+  scopes.set('project_delete', SESSION_CONTROL_SCOPE);
   return scopes;
 }
 

@@ -105,6 +105,15 @@ export type McpGatewayToolName =
   // gap-mcp-ui-open-session: registered alongside `MCP_STAGE4_WRITE_TOOLS` (it
   // is the sixth write tool but not one of AC-249's five), so it is named here.
   | 'ui_open_session'
+  // gap-mcp-project-create: minting a project writes a directory and a row, so
+  // it is annotate-able rather than read-only. The verb lives in its own row of
+  // this union because the generic write profile (destructiveHint omitted) does
+  // not describe a create.
+  | 'project_create'
+  // It removes stored state (archive by default, rows and transcripts with
+  // `force`), so its profile is the opposite of `project_create`'s on the two
+  // hints that matter: not read-only, and destructive.
+  | 'project_delete'
   // gap-mcp-ui-focus-turn-show-diff-open-task: three more navigation tools with
   // the SAME annotation profile as `ui_open_session` — each asks one browser to
   // reveal a turn / a diff / a task, discards nothing, drives no provider agent,
@@ -174,6 +183,13 @@ export const MCP_TOOL_ANNOTATIONS: Record<McpGatewayToolName, ToolAnnotations> =
   // idempotent for the same cursor: the same read repeats the same events and
   // stores nothing, so the world stays closed.
   changes: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+
+  // Creates a directory and project row; repeats of active paths are conflicts.
+  project_create: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  // Archives or removes a project row; a repeat of a force delete finds nothing
+  // rather than re-removing it, but the FIRST call loses stored state, so the
+  // destructive hint is stated rather than inherited.
+  project_delete: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
 
   // -- stage-4 write tools ---------------------------------------------------
   // additive: a message is queued/sent and a run starts; nothing is discarded.

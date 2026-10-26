@@ -646,6 +646,25 @@ function makeWriteTools(control: ReturnType<typeof makeControl>): McpWriteToolDe
     uiFocusTurn: uiNavDeps,
     uiShowDiff: uiNavDeps,
     uiOpenTask: uiNavDeps,
+    // gap-mcp-project-create / gap-mcp-project-delete: the smallest bags the two
+    // handlers accept. The rooted-create service and the real delete are covered
+    // by their own suites; here they only have to answer with English payloads.
+    projectCreate: {
+      createProject: async (input: { projectPath: string }) => ({
+        project: {
+          projectId: 'proj-created',
+          path: input.projectPath,
+          displayName: 'proj-created',
+          isArchived: false,
+        },
+        outcome: 'created',
+        freshDirectoryCreated: true,
+      }),
+    } as never,
+    projectDelete: {
+      readProject: () => ({ projectId: 'proj-1', path: '/tmp/proj-1', isArchived: false }),
+      deleteProject: async () => undefined,
+    } as never,
   } as unknown as McpWriteToolDeps;
 }
 
@@ -951,6 +970,11 @@ const SUCCESS_TABLE: Record<string, AnyRecord> = {
   ui_focus_turn: { session: 'sess-1', turnId: 'anchor-1' },
   ui_show_diff: { session: 'sess-1', filePath: 'src/app.ts' },
   ui_open_task: { session: 'sess-1', taskId: 'QX-1' },
+  // gap-mcp-project-create / gap-mcp-project-delete: both answer from the fakes
+  // in `makeWriteTools` below. Every field they echo is an ASCII identifier, so
+  // the payload walk reads the same nothing-to-translate answer as the rest.
+  project_create: { projectPath: '/tmp/proj-created', requireFresh: true },
+  project_delete: { projectId: 'proj-1' },
   // gap-mcp-session-search: the injected engine above answers with one session
   // whose one Chinese transcript line matched, so the payload's user data — the
   // title, the project display name and the snippet — is drawn from the CJK
@@ -998,6 +1022,10 @@ const FAILURE_TABLE: Record<string, { args: AnyRecord; expect: string }> = {
   session_background: { args: { session: 5 }, expect: 'INVALID_ARGUMENT' },
   approvals_list: { args: { session: 5 }, expect: 'INVALID_ARGUMENT' },
   approval_answer: { args: {}, expect: 'INVALID_ARGUMENT' },
+  // A wrong-typed required argument is a shallow validation failure like the
+  // rest — neither handler runs, so no directory or row is touched.
+  project_create: { args: { projectPath: 5 }, expect: 'INVALID_ARGUMENT' },
+  project_delete: { args: { force: 'yes' }, expect: 'INVALID_ARGUMENT' },
   // `client` is a declared optional string, so a wrong-typed one is a shallow
   // validation failure like the rest — no device resolution is reached.
   ui_visible_context: { args: { client: 5 }, expect: 'INVALID_ARGUMENT' },
@@ -1212,7 +1240,7 @@ test('(a) the success and failure tables cover exactly the tools the registry li
   const listed = await listClient.listTools();
   const registryNames = listed.tools.map((tool) => tool.name).sort();
 
-  assert.equal(registryNames.length, 28, `tools/list must return the full 28-tool set, got ${registryNames.join(', ')}`);
+  assert.equal(registryNames.length, 30, `tools/list must return the full 30-tool set, got ${registryNames.join(', ')}`);
   assert.deepEqual(
     Object.keys(SUCCESS_TABLE).sort(),
     registryNames,
@@ -1251,7 +1279,7 @@ test('(a) every tool description and parameter description is English', async ()
       }
     }
   }
-  assert.ok(scanned >= 28, `every one of the 28 tools must declare a description, scanned ${scanned}`);
+  assert.ok(scanned >= 30, `every one of the 30 tools must declare a description, scanned ${scanned}`);
   say(`(a) scanned ${scanned} tool/parameter descriptions, all English`);
 });
 
