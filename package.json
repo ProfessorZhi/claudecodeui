@@ -1,6 +1,6 @@
 {
   "name": "@yalehwang/cloudcli",
-  "version": "1.40.0-fleet.1",
+  "version": "1.40.0-fleet.2",
   "publishConfig": {
     "access": "public"
   },
