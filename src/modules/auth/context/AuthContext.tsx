@@ -40,7 +40,9 @@ const AUTH_ERROR_MESSAGES = {
   sessionExpired: 'errors.sessionExpired',
 } as const;
 
-type AuthActionResult = { success: true } | { success: false; error: string };
+type AuthActionResult =
+  | { success: true }
+  | { success: false; error: string; totpRequired?: boolean };
 
 type AuthSessionPayload = {
   token?: string;
@@ -62,7 +64,7 @@ type OnboardingStatusPayload = {
 };
 
 type ApiErrorPayload = {
-  error?: string;
+  error?: string | { code?: string; message?: string };
   message?: string;
 };
 
@@ -73,7 +75,7 @@ type AuthContextValue = {
   needsSetup: boolean;
   hasCompletedOnboarding: boolean;
   error: string | null;
-  login: (username: string, password: string) => Promise<AuthActionResult>;
+  login: (username: string, password: string, totp?: string) => Promise<AuthActionResult>;
   register: (username: string, password: string) => Promise<AuthActionResult>;
   logout: () => void;
   refreshOnboardingStatus: () => Promise<void>;
@@ -96,7 +98,14 @@ function resolveApiErrorMessage(payload: ApiErrorPayload | null, fallback: strin
     return fallback;
   }
 
+  if (typeof payload.error === 'object' && payload.error !== null) {
+    return payload.error.message ?? payload.message ?? fallback;
+  }
   return payload.error ?? payload.message ?? fallback;
+}
+
+function apiErrorCode(payload: ApiErrorPayload | null): string | undefined {
+  return typeof payload?.error === 'object' && payload.error !== null ? payload.error.code : undefined;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -437,18 +446,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [refreshSession, token, user]);
 
   const login = useCallback<AuthContextValue['login']>(
-    async (username, password) => {
+    async (username, password, totp) => {
       try {
         // An explicit auth attempt is the one thing that retires the latch.
         sessionExpiredNotifiedRef.current = false;
         setError(null);
-        const response = await api.auth.login(username, password);
-        const payload = await parseJsonSafely<AuthSessionPayload>(response);
+        const response = await api.auth.login(username, password, totp);
+        const payload = await parseJsonSafely<AuthSessionPayload & ApiErrorPayload>(response);
 
         if (!response.ok || !payload?.token || !payload.user) {
+          // The password was right and a second factor is on: ask for the code
+          // without showing an error the user did nothing to cause.
+          if (apiErrorCode(payload) === 'AUTH_TOTP_REQUIRED') {
+            return { success: false, error: '', totpRequired: true };
+          }
           const message = resolveApiErrorMessage(payload, t(AUTH_ERROR_MESSAGES.loginFailed));
           setError(message);
-          return { success: false, error: message };
+          return { success: false, error: message, totpRequired: apiErrorCode(payload) === 'AUTH_INVALID_TOTP' };
         }
 
         setSession(payload.user, payload.token);

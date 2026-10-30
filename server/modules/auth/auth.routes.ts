@@ -35,7 +35,12 @@ export function createAuthRouter(
 
   router.post('/login', async (req, res, next) => {
     try {
-      const body = req.body as { username?: unknown; password?: unknown; clientClock?: unknown };
+      const body = req.body as {
+        username?: unknown;
+        password?: unknown;
+        totp?: unknown;
+        clientClock?: unknown;
+      };
       // The login is the one request that carries no credential, so it doubles as
       // the carrier for the client's account of why its last session ended. The
       // report is published for the request logger to print; it is NOT read by the
@@ -44,7 +49,44 @@ export function createAuthRouter(
       if (clientClock) {
         res.locals[AUTH_CLIENT_CLOCK_LOCALS_KEY] = clientClock;
       }
-      res.json(await service.login(body.username, body.password));
+      res.json(await service.login(body.username, body.password, body.totp));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Two-factor (TOTP) management for the signed-in user. Setup issues a secret
+  // that does nothing until /2fa/enable sees a code from it; turning it off
+  // needs the password and a current code, not just a session.
+  router.get('/2fa/status', authenticateToken, (req, res, next) => {
+    try {
+      res.json(service.totpStatus((req as AuthenticatedRequest).user));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/2fa/setup', authenticateToken, (req, res, next) => {
+    try {
+      res.json(service.totpSetup((req as AuthenticatedRequest).user));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/2fa/enable', authenticateToken, (req, res, next) => {
+    try {
+      const body = req.body as { code?: unknown };
+      res.json(service.totpEnable((req as AuthenticatedRequest).user, body.code));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/2fa/disable', authenticateToken, async (req, res, next) => {
+    try {
+      const body = req.body as { password?: unknown; code?: unknown };
+      res.json(await service.totpDisable((req as AuthenticatedRequest).user, body.password, body.code));
     } catch (error) {
       next(error);
     }

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Lock, User } from 'lucide-react';
+import { KeyRound, Loader2, Lock, User } from 'lucide-react';
 
 import { OAUTH_CONSENT_SPA_PATH } from '@shared/oauthConsent';
 import { useAuth } from '@/modules/auth/context/AuthContext';
@@ -12,11 +12,13 @@ import AuthScreenLayout from '@/modules/auth/AuthScreenLayout';
 type LoginFormState = {
   username: string;
   password: string;
+  totp: string;
 };
 
 const initialState: LoginFormState = {
   username: '',
   password: '',
+  totp: '',
 };
 
 /**
@@ -32,6 +34,8 @@ export default function LoginForm() {
   const [formState, setFormState] = useState<LoginFormState>(initialState);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Shown once the server says this account has a second factor on.
+  const [needsTotp, setNeedsTotp] = useState(false);
 
   // A visitor who reached the OAuth consent route without a session is signing
   // in FOR that authorization: a neutral line says why, in place of the (false)
@@ -54,14 +58,26 @@ export default function LoginForm() {
         return;
       }
 
+      if (needsTotp && !formState.totp.trim()) {
+        setErrorMessage(t('login.errors.totpRequired'));
+        return;
+      }
+
       setIsSubmitting(true);
-      const result = await login(formState.username.trim(), formState.password);
+      const result = await login(
+        formState.username.trim(),
+        formState.password,
+        needsTotp ? formState.totp.trim() : undefined,
+      );
       if (!result.success) {
+        if (result.totpRequired) {
+          setNeedsTotp(true);
+        }
         setErrorMessage(result.error);
       }
       setIsSubmitting(false);
     },
-    [formState.password, formState.username, login, t],
+    [formState.password, formState.totp, formState.username, login, needsTotp, t],
   );
 
   return (
@@ -101,6 +117,19 @@ export default function LoginForm() {
           autoComplete="current-password"
           icon={Lock}
         />
+
+        {needsTotp && (
+          <AuthInputField
+            id="totp"
+            label={t('login.totp')}
+            value={formState.totp}
+            onChange={(value) => updateField('totp', value)}
+            placeholder={t('login.placeholders.totp')}
+            isDisabled={isSubmitting}
+            autoComplete="one-time-code"
+            icon={KeyRound}
+          />
+        )}
 
         <AuthErrorAlert errorMessage={errorMessage || sessionError || ''} />
 

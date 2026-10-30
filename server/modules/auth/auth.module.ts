@@ -24,6 +24,10 @@ const authService = createAuthService({
     createUser: (username, passwordHash) => userDb.createUser(username, passwordHash),
     getUserByUsername: (username) => userDb.getUserByUsername(username),
     updateLastLogin: (userId) => userDb.updateLastLogin(userId),
+    setPendingTotpSecret: (userId, secret) => userDb.setPendingTotpSecret(userId, secret),
+    enableTotp: (userId, counter) => userDb.enableTotp(userId, counter),
+    disableTotp: (userId) => userDb.disableTotp(userId),
+    consumeTotpCounter: (userId, counter) => userDb.consumeTotpCounter(userId, counter),
   },
   transaction: {
     begin: () => databaseConnection.prepare('BEGIN').run(),

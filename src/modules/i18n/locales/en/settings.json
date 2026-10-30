@@ -1012,5 +1012,19 @@
       "disableButton": "Disable",
       "disableConfirm": "Are you sure you want to disable this client? Every grant and token under it is rejected immediately. This cannot be undone."
     }
+  },
+  "twoFactor": {
+    "title": "Two-factor sign-in",
+    "description": "Ask for a code from an authenticator app at sign-in, after the password.",
+    "on": "Two-factor sign-in is on.",
+    "turnOn": "Turn on two-factor sign-in",
+    "addToApp": "Add this secret to your authenticator app (or open the link on your phone), then enter the 6-digit code it shows.",
+    "code": "6-digit code",
+    "password": "Password",
+    "confirm": "Confirm and turn on",
+    "turnOff": "Turn off",
+    "enabledMessage": "Two-factor sign-in is on. Your next sign-in will ask for a code.",
+    "disabledMessage": "Two-factor sign-in is off.",
+    "failed": "That did not work. Check the code and try again."
   }
 }

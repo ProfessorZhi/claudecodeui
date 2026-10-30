@@ -1021,6 +1021,13 @@ export const runMigrations = (db: Database) => {
       'has_completed_onboarding',
       'BOOLEAN DEFAULT 0'
     );
+    // Second factor (TOTP). `totp_pending_secret` holds a secret between setup
+    // and the first verified code; `totp_last_counter` refuses a code reused
+    // inside its validity window.
+    addColumnToTableIfNotExists(db, 'users', userColumnNames, 'totp_secret', 'TEXT');
+    addColumnToTableIfNotExists(db, 'users', userColumnNames, 'totp_pending_secret', 'TEXT');
+    addColumnToTableIfNotExists(db, 'users', userColumnNames, 'totp_enabled', 'BOOLEAN DEFAULT 0');
+    addColumnToTableIfNotExists(db, 'users', userColumnNames, 'totp_last_counter', 'INTEGER');
 
     db.exec(APP_CONFIG_TABLE_SCHEMA_SQL);
     db.exec(USER_NOTIFICATION_PREFERENCES_TABLE_SCHEMA_SQL);
