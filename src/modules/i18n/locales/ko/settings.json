@@ -53,6 +53,20 @@
     "reportIssue": "문제 신고",
     "joinCommunity": "커뮤니티 참여"
   },
+  "twoFactor": {
+    "title": "2단계 로그인",
+    "description": "로그인할 때 비밀번호 다음에 인증 앱의 코드를 요구합니다.",
+    "on": "2단계 로그인이 켜져 있습니다.",
+    "turnOn": "2단계 로그인 켜기",
+    "addToApp": "이 보안 키를 인증 앱에 추가하거나 휴대폰에서 링크를 연 다음, 앱에 표시되는 6자리 코드를 입력하세요.",
+    "code": "6자리 코드",
+    "password": "비밀번호",
+    "confirm": "확인하고 켜기",
+    "turnOff": "끄기",
+    "enabledMessage": "2단계 로그인을 켰습니다. 다음 로그인부터 코드를 요구합니다.",
+    "disabledMessage": "2단계 로그인이 꺼져 있습니다.",
+    "failed": "실패했습니다. 코드를 확인한 뒤 다시 시도하세요."
+  },
   "voiceSettings": {
     "title": "음성",
     "description": "OpenAI 호환 오디오 백엔드를 통한 음성-텍스트 입력 및 소리 내어 읽기 기능입니다.",

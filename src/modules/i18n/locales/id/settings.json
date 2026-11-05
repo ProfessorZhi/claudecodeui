@@ -53,6 +53,20 @@
     "reportIssue": "Laporkan Masalah",
     "joinCommunity": "Gabung Komunitas"
   },
+  "twoFactor": {
+    "title": "Masuk dua faktor",
+    "description": "Minta kode dari aplikasi autentikator saat masuk, setelah kata sandi.",
+    "on": "Masuk dua faktor aktif.",
+    "turnOn": "Aktifkan masuk dua faktor",
+    "addToApp": "Tambahkan rahasia ini ke aplikasi autentikator Anda (atau buka tautannya di ponsel), lalu masukkan kode 6 digit yang ditampilkan.",
+    "code": "Kode 6 digit",
+    "password": "Kata sandi",
+    "confirm": "Konfirmasi dan aktifkan",
+    "turnOff": "Nonaktifkan",
+    "enabledMessage": "Masuk dua faktor aktif. Saat masuk berikutnya Anda akan diminta kode.",
+    "disabledMessage": "Masuk dua faktor nonaktif.",
+    "failed": "Tidak berhasil. Periksa kodenya lalu coba lagi."
+  },
   "voiceSettings": {
     "title": "Suara",
     "description": "Input speech-to-text dan fitur bacakan melalui backend audio yang kompatibel dengan OpenAI.",

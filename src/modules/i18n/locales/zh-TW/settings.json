@@ -646,6 +646,20 @@
       "disableConfirm": "確定要停用此用戶端嗎？其名下所有授權與權杖會立即被拒絕，且無法復原。"
     }
   },
+  "twoFactor": {
+    "title": "兩步驟驗證登入",
+    "description": "登入時在密碼之後，要求輸入驗證器 App 產生的驗證碼。",
+    "on": "兩步驟驗證登入已開啟。",
+    "turnOn": "開啟兩步驟驗證登入",
+    "addToApp": "將此金鑰加入驗證器 App（或在手機上開啟連結），再輸入 App 顯示的 6 位數驗證碼。",
+    "code": "6 位數驗證碼",
+    "password": "密碼",
+    "confirm": "確認並開啟",
+    "turnOff": "關閉",
+    "enabledMessage": "兩步驟驗證登入已開啟。下次登入時需要輸入驗證碼。",
+    "disabledMessage": "兩步驟驗證登入已關閉。",
+    "failed": "操作未成功。請確認驗證碼後再試一次。"
+  },
   "voiceSettings": {
     "speakerModelTitle": "聲紋模型",
     "speakerModelDescription": "CAM++ 聲紋追蹤模型由伺服器按需安裝，不隨應用程式套件分發。",

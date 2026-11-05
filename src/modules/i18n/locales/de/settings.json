@@ -645,6 +645,20 @@
       "disableConfirm": "Möchtest du diesen Client wirklich deaktivieren? Jede Autorisierung und jeder Token darunter wird sofort abgelehnt. Das kann nicht rückgängig gemacht werden."
     }
   },
+  "twoFactor": {
+    "title": "Zwei-Faktor-Anmeldung",
+    "description": "Bei der Anmeldung nach dem Passwort einen Code aus einer Authenticator-App abfragen.",
+    "on": "Zwei-Faktor-Anmeldung ist aktiviert.",
+    "turnOn": "Zwei-Faktor-Anmeldung aktivieren",
+    "addToApp": "Füge dieses Secret deiner Authenticator-App hinzu (oder öffne den Link auf deinem Smartphone) und gib dann den angezeigten 6-stelligen Code ein.",
+    "code": "6-stelliger Code",
+    "password": "Passwort",
+    "confirm": "Bestätigen und aktivieren",
+    "turnOff": "Deaktivieren",
+    "enabledMessage": "Zwei-Faktor-Anmeldung ist aktiviert. Bei der nächsten Anmeldung wird ein Code abgefragt.",
+    "disabledMessage": "Zwei-Faktor-Anmeldung ist deaktiviert.",
+    "failed": "Das hat nicht funktioniert. Prüfe den Code und versuche es erneut."
+  },
   "voiceSettings": {
     "speakerModelTitle": "Sprechermodell",
     "speakerModelDescription": "Das CAM++-Modell zur Sprecherverfolgung wird bei Bedarf auf dem Server installiert. Es ist nicht Teil des App-Pakets.",

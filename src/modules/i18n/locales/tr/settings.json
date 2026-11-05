@@ -652,6 +652,20 @@
       "disableConfirm": "Bu istemciyi devre dışı bırakmak istediğinize emin misiniz? Altındaki tüm yetkiler ve jetonlar anında reddedilir. Bu işlem geri alınamaz."
     }
   },
+  "twoFactor": {
+    "title": "İki adımlı giriş",
+    "description": "Girişte paroladan sonra kimlik doğrulama uygulamasından bir kod iste.",
+    "on": "İki adımlı giriş açık.",
+    "turnOn": "İki adımlı girişi aç",
+    "addToApp": "Bu gizli anahtarı kimlik doğrulama uygulamanıza ekleyin (veya bağlantıyı telefonunuzda açın), ardından gösterilen 6 haneli kodu girin.",
+    "code": "6 haneli kod",
+    "password": "Parola",
+    "confirm": "Onayla ve aç",
+    "turnOff": "Kapat",
+    "enabledMessage": "İki adımlı giriş açıldı. Bir sonraki girişinizde kod istenecek.",
+    "disabledMessage": "İki adımlı giriş kapalı.",
+    "failed": "Olmadı. Kodu kontrol edip yeniden deneyin."
+  },
   "voiceSettings": {
     "speakerModelTitle": "Konuşmacı modeli",
     "speakerModelDescription": "CAM++ konuşmacı izleme modeli gerektiğinde sunucuya kurulur. Uygulama paketinin parçası değildir.",

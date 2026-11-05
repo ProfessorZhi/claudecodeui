@@ -53,6 +53,20 @@
     "reportIssue": "Informar de un problema",
     "joinCommunity": "Unirse a la comunidad"
   },
+  "twoFactor": {
+    "title": "Inicio de sesión en dos pasos",
+    "description": "Solicitar un código de una app de autenticación al iniciar sesión, después de la contraseña.",
+    "on": "El inicio de sesión en dos pasos está activado.",
+    "turnOn": "Activar el inicio de sesión en dos pasos",
+    "addToApp": "Añade este secreto a tu app de autenticación (o abre el enlace en tu teléfono) e introduce el código de 6 dígitos que muestra.",
+    "code": "Código de 6 dígitos",
+    "password": "Contraseña",
+    "confirm": "Confirmar y activar",
+    "turnOff": "Desactivar",
+    "enabledMessage": "El inicio de sesión en dos pasos está activado. En tu próximo inicio de sesión se pedirá un código.",
+    "disabledMessage": "El inicio de sesión en dos pasos está desactivado.",
+    "failed": "No ha funcionado. Comprueba el código e inténtalo de nuevo."
+  },
   "voiceSettings": {
     "title": "Voz",
     "description": "Entrada de voz a texto y lectura en voz alta, mediante un backend de audio compatible con OpenAI.",
