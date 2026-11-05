@@ -310,10 +310,15 @@ export const api = {
     // login so the server's `[AuthReq]` line can print it. The server reads only
     // username and password for the authentication decision; the report changes
     // nothing about it.
-    login: (username: string, password: string) => fetch('/api/auth/login', {
+    login: (username: string, password: string, totp?: string) => fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, clientClock: readAuthLapseReport() }),
+      body: JSON.stringify({
+        username,
+        password,
+        ...(totp ? { totp } : {}),
+        clientClock: readAuthLapseReport(),
+      }),
     }),
     register: (username: string, password: string) => fetch('/api/auth/register', {
       method: 'POST',

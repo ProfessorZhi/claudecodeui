@@ -34,11 +34,11 @@ export type CredentialVerifier = (
  * factory does not bind to the concrete service class.
  */
 export type CredentialVerifierAuthService = {
-  login(username: unknown, password: unknown): Promise<{ user: { id: number | bigint } }>;
+  verifyPassword(username: unknown, password: unknown): Promise<{ id: number | bigint }>;
 };
 
 /**
- * Wraps `authService.login` as a non-throwing credential check. A resolved login
+ * Wraps `authService.verifyPassword` as a non-throwing credential check. A resolved login
  * becomes `{ ok: true, userId }` (the store keys users by `number`, while sqlite
  * may hand back a `bigint`, so the id is normalized); a thrown error — the
  * expected `AUTH_INVALID_CREDENTIALS` path — becomes `{ ok: false }`.
@@ -48,8 +48,10 @@ export function createCredentialVerifier(
 ): CredentialVerifier {
   return async (username: string, password: string): Promise<CredentialVerificationResult> => {
     try {
-      const result = await authService.login(username, password);
-      return { ok: true, userId: Number(result.user.id) };
+      // The password alone: the consent page re-confirms a user whose session
+      // was already established through login, including its second factor.
+      const user = await authService.verifyPassword(username, password);
+      return { ok: true, userId: Number(user.id) };
     } catch {
       // Authentication failures are the normal path here, not an exception: the
       // consent page renders a 401 error page, so nothing may propagate.

@@ -703,6 +703,20 @@
       "disableConfirm": "Voulez-vous vraiment désactiver ce client ? Toutes ses autorisations et tous ses jetons sont rejetés immédiatement. Cette action est irréversible."
     }
   },
+  "twoFactor": {
+    "title": "Connexion à deux facteurs",
+    "description": "Demander un code d'une application d'authentification à la connexion, après le mot de passe.",
+    "on": "La connexion à deux facteurs est activée.",
+    "turnOn": "Activer la connexion à deux facteurs",
+    "addToApp": "Ajoutez ce secret à votre application d'authentification (ou ouvrez le lien sur votre téléphone), puis saisissez le code à 6 chiffres affiché.",
+    "code": "Code à 6 chiffres",
+    "password": "Mot de passe",
+    "confirm": "Confirmer et activer",
+    "turnOff": "Désactiver",
+    "enabledMessage": "La connexion à deux facteurs est activée. Votre prochaine connexion demandera un code.",
+    "disabledMessage": "La connexion à deux facteurs est désactivée.",
+    "failed": "Cela n'a pas fonctionné. Vérifiez le code et réessayez."
+  },
   "voiceSettings": {
     "speakerModelTitle": "Modèle de locuteur",
     "speakerModelDescription": "Le modèle CAM++ de suivi des locuteurs est installé sur le serveur à la demande. Il ne fait pas partie du paquet de l’application.",

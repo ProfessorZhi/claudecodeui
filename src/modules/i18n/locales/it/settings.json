@@ -651,6 +651,20 @@
       "disableConfirm": "Vuoi davvero disabilitare questo client? Ogni autorizzazione e token sotto di esso viene rifiutato immediatamente. L'operazione non è reversibile."
     }
   },
+  "twoFactor": {
+    "title": "Accesso a due fattori",
+    "description": "All'accesso, dopo la password, chiedi un codice da un'app di autenticazione.",
+    "on": "L'accesso a due fattori è attivo.",
+    "turnOn": "Attiva l'accesso a due fattori",
+    "addToApp": "Aggiungi questo segreto alla tua app di autenticazione (o apri il link sul telefono), poi inserisci il codice a 6 cifre che mostra.",
+    "code": "Codice a 6 cifre",
+    "password": "Password",
+    "confirm": "Conferma e attiva",
+    "turnOff": "Disattiva",
+    "enabledMessage": "L'accesso a due fattori è attivo. Al prossimo accesso ti verrà chiesto un codice.",
+    "disabledMessage": "L'accesso a due fattori è disattivato.",
+    "failed": "Non ha funzionato. Controlla il codice e riprova."
+  },
   "voiceSettings": {
     "speakerModelTitle": "Modello del parlante",
     "speakerModelDescription": "Il modello CAM++ per il tracciamento dei parlanti viene installato sul server su richiesta. Non fa parte del pacchetto dell’app.",

@@ -10,7 +10,11 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN DEFAULT 1,
     git_name TEXT,
     git_email TEXT,
-    has_completed_onboarding BOOLEAN DEFAULT 0
+    has_completed_onboarding BOOLEAN DEFAULT 0,
+    totp_secret TEXT,
+    totp_pending_secret TEXT,
+    totp_enabled BOOLEAN DEFAULT 0,
+    totp_last_counter INTEGER
 );
 `;
 

@@ -783,5 +783,19 @@
       "disableButton": "禁用",
       "disableConfirm": "确定要禁用该客户端吗？其名下所有授权与令牌会立即被拒绝，且无法撤销。"
     }
+  },
+  "twoFactor": {
+    "title": "两步验证登录",
+    "description": "登录时在密码之后，再输入验证器 App 中的验证码。",
+    "on": "两步验证登录已开启。",
+    "turnOn": "开启两步验证登录",
+    "addToApp": "把这个密钥添加到验证器 App（或在手机上打开链接），然后输入 App 显示的 6 位验证码。",
+    "code": "6 位验证码",
+    "password": "密码",
+    "confirm": "确认并开启",
+    "turnOff": "关闭",
+    "enabledMessage": "两步验证登录已开启，下次登录会要求输入验证码。",
+    "disabledMessage": "两步验证登录已关闭。",
+    "failed": "操作未成功，请检查验证码后重试。"
   }
 }

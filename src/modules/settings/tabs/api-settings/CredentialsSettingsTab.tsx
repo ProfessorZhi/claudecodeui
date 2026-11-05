@@ -10,6 +10,7 @@ import McpNavigationSection from '@/modules/settings/tabs/api-settings/sections/
 import NewAccessTokenAlert from '@/modules/settings/tabs/api-settings/sections/NewAccessTokenAlert';
 import NewOAuthClientAlert from '@/modules/settings/tabs/api-settings/sections/NewOAuthClientAlert';
 import OAuthClientsSection from '@/modules/settings/tabs/api-settings/sections/OAuthClientsSection';
+import TwoFactorSection from '@/modules/settings/tabs/api-settings/sections/TwoFactorSection';
 
 /** Rendered by Settings for the "api" tab, managing CloudCLI personal access tokens, connected apps (OAuth grants and clients) and GitHub credentials. */
 export default function CredentialsSettingsTab() {
@@ -88,6 +89,8 @@ export default function CredentialsSettingsTab() {
           onDismiss={dismissNewlyCreatedToken}
         />
       )}
+
+      <TwoFactorSection />
 
       <McpGatewaySection status={mcpGatewayStatus} />
 

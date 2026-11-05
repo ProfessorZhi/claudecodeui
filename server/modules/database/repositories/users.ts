@@ -18,6 +18,10 @@ type UserRow = {
   git_name: string | null;
   git_email: string | null;
   has_completed_onboarding: number;
+  totp_secret?: string | null;
+  totp_pending_secret?: string | null;
+  totp_enabled?: number | null;
+  totp_last_counter?: number | null;
 };
 
 type UserPublicRow = Pick<UserRow, 'id' | 'username' | 'created_at' | 'last_login'>;
@@ -64,6 +68,49 @@ export const userDb = {
     return db
       .prepare('SELECT * FROM users WHERE username = ? AND is_active = 1')
       .get(username) as UserRow | undefined;
+  },
+
+  /** Stores a secret awaiting its first verified code. Does not enable 2FA. */
+  setPendingTotpSecret(userId: number, secret: string): void {
+    getConnection()
+      .prepare('UPDATE users SET totp_pending_secret = ? WHERE id = ?')
+      .run(secret, userId);
+  },
+
+  /** Promotes the pending secret and turns 2FA on, at the counter just used. */
+  enableTotp(userId: number, counter: number): boolean {
+    const result = getConnection()
+      .prepare(
+        `UPDATE users SET totp_secret = totp_pending_secret, totp_pending_secret = NULL,
+           totp_enabled = 1, totp_last_counter = ?
+         WHERE id = ? AND totp_pending_secret IS NOT NULL`
+      )
+      .run(counter, userId);
+    return result.changes === 1;
+  },
+
+  /** Turns 2FA off and forgets every secret. */
+  disableTotp(userId: number): void {
+    getConnection()
+      .prepare(
+        `UPDATE users SET totp_secret = NULL, totp_pending_secret = NULL,
+           totp_enabled = 0, totp_last_counter = NULL WHERE id = ?`
+      )
+      .run(userId);
+  },
+
+  /**
+   * Records `counter` as used, atomically. False when that code (or a later
+   * one) was already used: the caller refuses it as a replay.
+   */
+  consumeTotpCounter(userId: number, counter: number): boolean {
+    const result = getConnection()
+      .prepare(
+        `UPDATE users SET totp_last_counter = ?
+         WHERE id = ? AND (totp_last_counter IS NULL OR totp_last_counter < ?)`
+      )
+      .run(counter, userId, counter);
+    return result.changes === 1;
   },
 
   /** Updates the last_login timestamp. Non-fatal — logs but does not throw. */
